@@ -1,0 +1,26 @@
+/* src/index.css */
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* IMPORTANTE: Esto elimina los márgenes por defecto del navegador */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f8f9fa; /* Un gris muy suave de fondo */
+}
+
+/* Hacemos que el contenedor raíz ocupe todo el alto */
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Reset básico para que el padding no aumente el tamaño de las cajas */
+*, *::before, *::after {
+  box-sizing: border-box;
+}

@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider } from
 // 2. Importa el TIPO 'User' por separado usando 'import type'
 import type { User } from "firebase/auth"; 
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { auth } from "../firebase";
 
 // Definimos los tipos para TypeScript

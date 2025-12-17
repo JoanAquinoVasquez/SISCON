@@ -13,8 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
         $middleware->append(ForceJsonResponse::class);
+
+        // Register Firebase Auth middleware
+        $middleware->alias([
+            'firebase.auth' => \App\Http\Middleware\FirebaseAuth::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

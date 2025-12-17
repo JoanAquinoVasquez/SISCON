@@ -2,29 +2,56 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-namespace App\Models;
-
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject; // Importante
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements JWTSubject
+class User extends Authenticatable
 {
-    use SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'password'];
-    protected $hidden = ['password', 'remember_token'];
+    protected $fillable = [
+        'firebase_uid',
+        'name',
+        'email',
+        'role',
+        'is_active',
+    ];
 
-    // Métodos obligatorios de la interfaz JWTSubject
-    public function getJWTIdentifier()
+    protected $hidden = [
+        'remember_token',
+    ];
+
+    protected function casts(): array
     {
-        return $this->getKey();
+        return [
+            'email_verified_at' => 'datetime',
+            'is_active' => 'boolean',
+        ];
     }
 
-    public function getJWTCustomClaims()
+    // Scopes
+    public function scopeByFirebaseUid($query, string $uid)
     {
-        return []; // Puedes añadir roles aquí si quieres
+        return $query->where('firebase_uid', $uid);
+    }
+
+    // Check if user is admin
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    // Create user from Firebase data
+    public static function createFromFirebase(array $firebaseUser): self
+    {
+        return self::create([
+            'firebase_uid' => $firebaseUser['uid'],
+            'name' => $firebaseUser['name'] ?? 'User',
+            'email' => $firebaseUser['email'],
+            'role' => 'user',
+            'is_active' => true,
+        ]);
     }
 }

@@ -11,6 +11,7 @@ export interface Docente {
   direccion?: string;
   especialidad?: string;
   grado_academico?: string;
+  titulo_profesional?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -24,6 +25,7 @@ export interface CreateDocenteDto {
   direccion?: string;
   especialidad?: string;
   grado_academico?: string;
+  titulo_profesional?: string;
 }
 
 export interface UpdateDocenteDto {
@@ -35,6 +37,7 @@ export interface UpdateDocenteDto {
   direccion?: string;
   especialidad?: string;
   grado_academico?: string;
+  titulo_profesional?: string;
 }
 
 export const docenteService = {

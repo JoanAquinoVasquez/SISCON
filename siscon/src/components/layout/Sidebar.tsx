@@ -1,7 +1,8 @@
 // src/components/layout/Sidebar.tsx
 import { Link, useLocation } from 'react-router-dom';
+import logo from '../../assets/logo-epg.webp';
 import { 
-  Users, 
+  Users,    
   GraduationCap, 
   BookOpen, 
   Calendar, 
@@ -39,12 +40,12 @@ export function Sidebar() {
     <aside className="w-64 bg-gradient-to-b from-slate-50 to-slate-100 border-r border-slate-200 h-screen sticky top-0 shadow-lg">
       <div className="p-6 border-b border-slate-200 bg-white/50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-lg">S</span>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-md">
+            <img src={logo} alt="logo" />
           </div>
           <div>
             <h1 className="text-xl font-bold gradient-text">SISCON</h1>
-            <p className="text-xs text-slate-600">Sistema de Contabilidad</p>
+            <p className="text-xs text-slate-600">Sistema de Contabilidad EPG</p>
           </div>
         </div>
       </div>

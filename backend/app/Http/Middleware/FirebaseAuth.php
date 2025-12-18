@@ -57,16 +57,18 @@ class FirebaseAuth
                 ], 403);
             }
 
-            // Sync Firebase UID if not already set
-            if (!$user->firebase_uid) {
+            // Sync firebase_uid if not set
+            if (empty($user->firebase_uid)) {
                 $user->firebase_uid = $firebaseUser['uid'];
                 $user->save();
             }
 
-            // Update name if changed in Firebase
-            if ($user->name !== $firebaseUser['name']) {
-                $user->name = $firebaseUser['name'];
-                $user->save();
+            // Update name from Firebase if it's different and Firebase has a name
+            if (isset($firebaseUser['name']) && !empty($firebaseUser['name'])) {
+                if ($user->name !== $firebaseUser['name']) {
+                    $user->name = $firebaseUser['name'];
+                    $user->save();
+                }
             }
 
             // Attach user to request

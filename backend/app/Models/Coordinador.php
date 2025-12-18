@@ -17,6 +17,7 @@ class Coordinador extends Model
         'nombres',
         'apellido_paterno',
         'apellido_materno',
+        'titulo_profesional',
         'genero',
         'dni',
         'numero_telefono',

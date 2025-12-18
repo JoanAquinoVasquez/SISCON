@@ -15,16 +15,38 @@ class AdminUserSeeder extends Seeder
     {
         User::create([
             'name' => 'Administrador',
-            'email' => 'admin@siscon.com',
-            'password' => Hash::make('admin123'),
+            'email' => 'jaquinov@unprg.edu.pe',
             'role' => 'admin',
             'is_active' => true,
         ]);
 
         User::create([
             'name' => 'Usuario Demo',
-            'email' => 'user@siscon.com',
-            'password' => Hash::make('user123'),
+            'email' => 'alopezca@unprg.edu.pe',
+            'role' => 'user',
+            'is_active' => true,
+        ]);
+        User::create([
+            'name' => 'Usuario Demo',
+            'email' => 'cacostam@unprg.edu.pe',
+            'role' => 'user',
+            'is_active' => true,
+        ]);
+        User::create([
+            'name' => 'Usuario Demo',
+            'email' => 'kdavilade@unprg.edu.pe',
+            'role' => 'user',
+            'is_active' => true,
+        ]);
+        User::create([
+            'name' => 'Usuario Demo',
+            'email' => 'mcanevaroc@unprg.edu.pe',
+            'role' => 'user',
+            'is_active' => true,
+        ]);
+        User::create([
+            'name' => 'Usuario Demo',
+            'email' => 'mcromero@unprg.edu.pe',
             'role' => 'user',
             'is_active' => true,
         ]);

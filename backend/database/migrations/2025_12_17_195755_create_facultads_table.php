@@ -10,16 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('programas', function (Blueprint $table) {
+        Schema::create('facultads', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('grado_id')->constrained('grados')->onDelete('cascade');
             $table->string('nombre');
-            $table->string('periodo')->nullable(); // Ej: "2024-I", "2024-II", "2025-I"
-            $table->text('descripcion')->nullable();
+            $table->string('codigo', 10)->unique();
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index(['grado_id', 'periodo']);
         });
     }
 
@@ -28,6 +24,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('programas');
+        Schema::dropIfExists('facultads');
     }
 };

@@ -1,33 +1,68 @@
 // src/pages/Dashboard.tsx
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Users, BookOpen, GraduationCap, Building2 } from 'lucide-react';
+import { api } from '../services/api';
 
 export function Dashboard() {
+  // Fetch real statistics from API
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: async () => {
+      const response = await api.get<{ data: any[] }>('/users');
+      return response.data;
+    },
+  });
+
+  const { data: programasData } = useQuery({
+    queryKey: ['programas'],
+    queryFn: async () => {
+      const response = await api.get<{ data: any[] }>('/programas');
+      return response.data;
+    },
+  });
+
+  const { data: cursosData } = useQuery({
+    queryKey: ['cursos'],
+    queryFn: async () => {
+      const response = await api.get<{ data: any[] }>('/cursos');
+      return response.data;
+    },
+  });
+
+  const { data: docentesData } = useQuery({
+    queryKey: ['docentes'],
+    queryFn: async () => {
+      const response = await api.get<{ data: any[] }>('/docentes');
+      return response.data;
+    },
+  });
+
   const stats = [
     { 
       title: 'Usuarios', 
-      value: '0', 
+      value: usersData?.length?.toString() || '0', 
       icon: Users, 
       gradient: 'from-blue-500 to-cyan-500',
       bgGradient: 'from-blue-50 to-cyan-50'
     },
     { 
       title: 'Programas', 
-      value: '0', 
+      value: programasData?.length?.toString() || '0', 
       icon: Building2, 
       gradient: 'from-purple-500 to-pink-500',
       bgGradient: 'from-purple-50 to-pink-50'
     },
     { 
       title: 'Cursos', 
-      value: '0', 
+      value: cursosData?.length?.toString() || '0', 
       icon: BookOpen, 
       gradient: 'from-green-500 to-emerald-500',
       bgGradient: 'from-green-50 to-emerald-50'
     },
     { 
       title: 'Docentes', 
-      value: '0', 
+      value: docentesData?.length?.toString() || '0', 
       icon: GraduationCap, 
       gradient: 'from-orange-500 to-red-500',
       bgGradient: 'from-orange-50 to-red-50'

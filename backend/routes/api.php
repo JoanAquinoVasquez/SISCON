@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\LugarProcedenciaController;
 use App\Http\Controllers\GradoController;
 use App\Http\Controllers\ProgramaController;
@@ -37,13 +38,17 @@ Route::middleware('firebase.auth')->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
 
     // ========================================
+    // User Management
+    Route::apiResource('users', UserController::class);
+
+    // ========================================
     // Academic Structure Management
     // ========================================
 
     // Lugares de Procedencia
     Route::apiResource('lugares-procedencia', LugarProcedenciaController::class);
 
-    // Grados
+    // Grados Académicos
     Route::apiResource('grados', GradoController::class);
 
     // Programas

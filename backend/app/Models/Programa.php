@@ -14,6 +14,7 @@ class Programa extends Model
 
     protected $fillable = [
         'grado_id',
+        'facultad_id',
         'nombre',
         'periodo',
         'descripcion',
@@ -23,6 +24,11 @@ class Programa extends Model
     public function grado()
     {
         return $this->belongsTo(Grado::class);
+    }
+
+    public function facultad()
+    {
+        return $this->belongsTo(Facultad::class);
     }
 
     public function semestres()

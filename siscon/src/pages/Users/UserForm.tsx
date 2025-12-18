@@ -1,4 +1,5 @@
 // src/pages/Users/UserForm.tsx
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -49,20 +50,28 @@ export function UserForm({ user, open, onClose, onSubmit, isLoading }: UserFormP
     reset,
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: user
-      ? {
+  });
+
+  // Reset form when user changes or modal opens
+  React.useEffect(() => {
+    if (open) {
+      if (user) {
+        reset({
           name: user.name,
           email: user.email,
           role: user.role,
           is_active: user.is_active,
-        }
-      : {
+        });
+      } else {
+        reset({
           name: '',
           email: '',
           role: 'user',
           is_active: true,
-        },
-  });
+        });
+      }
+    }
+  }, [user, open, reset]);
 
   const handleClose = () => {
     reset();

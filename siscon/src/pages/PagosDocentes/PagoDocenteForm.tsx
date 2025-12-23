@@ -39,8 +39,8 @@ const DocumentField = ({ label, value, onChange, urlValue, onUrlChange, showUplo
     <div className={showUpload ? "grid grid-cols-2 gap-3" : ""}>
       <div>
         <Label className="text-sm">{label}</Label>
-        <Input 
-          value={value} 
+        <Input
+          value={value}
           onChange={(e) => onChange(e.target.value)}
           className="h-9"
           placeholder="Número"
@@ -64,6 +64,7 @@ export default function PagoDocenteForm() {
   const [activeTab, setActiveTab] = useState('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Estados principales
   const [docente, setDocente] = useState<Docente | null>(null);
@@ -288,7 +289,7 @@ export default function PagoDocenteForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!docente || !curso || !periodo || fechasEnsenanza.length === 0) {
       alert('Por favor complete todos los campos requeridos');
       return;
@@ -337,6 +338,68 @@ export default function PagoDocenteForm() {
   useEffect(() => {
     setActiveTab('general');
   }, [docente?.tipo_docente]);
+
+  // Generar resolución
+  const handleGenerateResolucion = async () => {
+    if (!id) return;
+
+    setIsGenerating(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-resolucion`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Resolucion_${id}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert('Resolución generada exitosamente');
+    } catch (error) {
+      console.error('Error al generar resolución:', error);
+      alert('Error al generar la resolución');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Generar oficio de contabilidad
+  const handleGenerateOficio = async () => {
+    if (!id) return;
+
+    setIsGenerating(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-oficio`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Oficio_Conta_${id}.docx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert('Oficio generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar oficio:', error);
+      alert('Error al generar el oficio');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const getTabs = () => {
     const baseTabs = [
@@ -452,7 +515,7 @@ export default function PagoDocenteForm() {
                   />
                 </div>
               </div>
-              
+
               <div>
                 <Label>Importe en Letras</Label>
                 <textarea
@@ -490,46 +553,46 @@ export default function PagoDocenteForm() {
                   <DocumentField
                     label="Oficio Presentación Facultad"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_facultad : docExterno.numero_oficio_presentacion_facultad}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno' 
-                      ? setDocInterno({...docInterno, numero_oficio_presentacion_facultad: v})
-                      : setDocExterno({...docExterno, numero_oficio_presentacion_facultad: v})}
+                    onChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_facultad: v })}
                     urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_facultad_url : docExterno.numero_oficio_presentacion_facultad_url}
                     onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_presentacion_facultad_url: v})
-                      : setDocExterno({...docExterno, numero_oficio_presentacion_facultad_url: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_facultad_url: v })}
                   />
                   <DocumentField
                     label="Oficio Presentación Coordinador"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_coordinador : docExterno.numero_oficio_presentacion_coordinador}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_presentacion_coordinador: v})
-                      : setDocExterno({...docExterno, numero_oficio_presentacion_coordinador: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador: v })}
                     urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_coordinador_url : docExterno.numero_oficio_presentacion_coordinador_url}
                     onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_presentacion_coordinador_url: v})
-                      : setDocExterno({...docExterno, numero_oficio_presentacion_coordinador_url: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador_url: v })}
                   />
                   <DocumentField
                     label="Oficio Conformidad Facultad"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_facultad : docExterno.numero_oficio_conformidad_facultad}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_conformidad_facultad: v})
-                      : setDocExterno({...docExterno, numero_oficio_conformidad_facultad: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_conformidad_facultad: v })}
                     urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_facultad_url : docExterno.numero_oficio_conformidad_facultad_url}
                     onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_conformidad_facultad_url: v})
-                      : setDocExterno({...docExterno, numero_oficio_conformidad_facultad_url: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_conformidad_facultad_url: v })}
                   />
                   <DocumentField
                     label="Oficio Conformidad Coordinador"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_coordinador : docExterno.numero_oficio_conformidad_coordinador}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_conformidad_coordinador: v})
-                      : setDocExterno({...docExterno, numero_oficio_conformidad_coordinador: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador: v })}
                     urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_coordinador_url : docExterno.numero_oficio_conformidad_coordinador_url}
                     onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({...docInterno, numero_oficio_conformidad_coordinador_url: v})
-                      : setDocExterno({...docExterno, numero_oficio_conformidad_coordinador_url: v})}
+                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador_url: v })}
                   />
                 </div>
               </div>
@@ -544,38 +607,38 @@ export default function PagoDocenteForm() {
                 <DocumentField
                   label="Oficio Conformidad Dirección"
                   value={docInterno.numero_oficio_conformidad_direccion}
-                  onChange={(v: string) => setDocInterno({...docInterno, numero_oficio_conformidad_direccion: v})}
+                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
                   urlValue={docInterno.numero_oficio_conformidad_direccion_url}
-                  onUrlChange={(v: string) => setDocInterno({...docInterno, numero_oficio_conformidad_direccion_url: v})}
+                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
                 />
                 <DocumentField
                   label="Resolución"
                   value={docInterno.numero_resolucion}
-                  onChange={(v: string) => setDocInterno({...docInterno, numero_resolucion: v})}
+                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion: v })}
                   urlValue={docInterno.numero_resolucion_url}
-                  onUrlChange={(v: string) => setDocInterno({...docInterno, numero_resolucion_url: v})}
+                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_url: v })}
                 />
                 <div>
                   <Label>Fecha Resolución</Label>
                   <Input
                     type="date"
                     value={docInterno.fecha_resolucion}
-                    onChange={(e) => setDocInterno({...docInterno, fecha_resolucion: e.target.value})}
+                    onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })}
                   />
                 </div>
                 <DocumentField
                   label="Oficio Contabilidad"
                   value={docInterno.numero_oficio_contabilidad}
-                  onChange={(v: string) => setDocInterno({...docInterno, numero_oficio_contabilidad: v})}
+                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })}
                   urlValue={docInterno.numero_oficio_contabilidad_url}
-                  onUrlChange={(v: string) => setDocInterno({...docInterno, numero_oficio_contabilidad_url: v})}
+                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })}
                 />
                 <div>
                   <Label>Fecha Oficio Contabilidad</Label>
                   <Input
                     type="date"
                     value={docInterno.fecha_oficio_contabilidad}
-                    onChange={(e) => setDocInterno({...docInterno, fecha_oficio_contabilidad: e.target.value})}
+                    onChange={(e) => setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })}
                   />
                 </div>
               </div>
@@ -591,7 +654,7 @@ export default function PagoDocenteForm() {
                   <Label>¿Retención del 8%? *</Label>
                   <select
                     value={docExterno.tiene_retencion_8_porciento ? 'si' : 'no'}
-                    onChange={(e) => setDocExterno({...docExterno, tiene_retencion_8_porciento: e.target.value === 'si'})}
+                    onChange={(e) => setDocExterno({ ...docExterno, tiene_retencion_8_porciento: e.target.value === 'si' })}
                     className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm"
                   >
                     <option value="no">No</option>
@@ -601,24 +664,24 @@ export default function PagoDocenteForm() {
                 <DocumentField
                   label="Recibo por Honorario"
                   value={docExterno.numero_recibo_honorario}
-                  onChange={(v: string) => setDocExterno({...docExterno, numero_recibo_honorario: v})}
+                  onChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario: v })}
                   urlValue={docExterno.numero_recibo_honorario_url}
-                  onUrlChange={(v: string) => setDocExterno({...docExterno, numero_recibo_honorario_url: v})}
+                  onUrlChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario_url: v })}
                 />
                 <div>
                   <Label>Fecha Recibo Honorario</Label>
                   <Input
                     type="date"
                     value={docExterno.fecha_recibo_honorario}
-                    onChange={(e) => setDocExterno({...docExterno, fecha_recibo_honorario: e.target.value})}
+                    onChange={(e) => setDocExterno({ ...docExterno, fecha_recibo_honorario: e.target.value })}
                   />
                 </div>
                 <DocumentField
                   label="Pedido de Servicio"
                   value={docExterno.numero_pedido_servicio}
-                  onChange={(v: string) => setDocExterno({...docExterno, numero_pedido_servicio: v})}
+                  onChange={(v: string) => setDocExterno({ ...docExterno, numero_pedido_servicio: v })}
                   urlValue={docExterno.numero_pedido_servicio_url}
-                  onUrlChange={(v: string) => setDocExterno({...docExterno, numero_pedido_servicio_url: v})}
+                  onUrlChange={(v: string) => setDocExterno({ ...docExterno, numero_pedido_servicio_url: v })}
                 />
               </div>
             </div>
@@ -638,6 +701,31 @@ export default function PagoDocenteForm() {
                   showUpload={true}
                 />
               </div>
+
+              {/* Sección de Generación de Documentos */}
+              {id && (
+                <div className="mt-8 pt-6 border-t border-purple-200">
+                  <h4 className="text-lg font-semibold text-purple-800 mb-4">📄 Generar Documentos</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Button
+                      type="button"
+                      onClick={handleGenerateResolucion}
+                      disabled={isGenerating}
+                      className="bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isGenerating ? '⏳ Generando...' : '📋 Generar Resolución'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleGenerateOficio}
+                      disabled={isGenerating}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {isGenerating ? '⏳ Generando...' : '📄 Generar Oficio Contabilidad'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </TabPanel>
 

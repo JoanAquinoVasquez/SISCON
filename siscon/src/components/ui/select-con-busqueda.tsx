@@ -91,6 +91,13 @@ export function SelectConBusqueda({
     setOptions([]);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && options.length > 0) {
+      e.preventDefault();
+      handleSelect(options[0]);
+    }
+  };
+
   return (
     <div className={cn('relative', className)}>
       <Label>{label}</Label>
@@ -106,6 +113,7 @@ export function SelectConBusqueda({
             }
           }}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className="pr-8"

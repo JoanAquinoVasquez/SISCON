@@ -103,6 +103,67 @@ export function CalendarioMultiple({
     return `${days[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
+  const formatearFechasLegibles = (fechas: string[]): string => {
+    if (!fechas || fechas.length === 0) return '';
+    
+    const meses = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    
+    // Agrupar fechas por mes y año
+    const fechasPorMesAnio: Record<string, number[]> = {};
+    
+    fechas.forEach(fecha => {
+      const [year, month, day] = fecha.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      const mes = date.getMonth();
+      const anio = date.getFullYear();
+      const dia = date.getDate();
+      const key = `${mes}-${anio}`;
+      
+      if (!fechasPorMesAnio[key]) {
+        fechasPorMesAnio[key] = [];
+      }
+      fechasPorMesAnio[key].push(dia);
+    });
+    
+    // Construir el texto formateado
+    const grupos = Object.entries(fechasPorMesAnio).map(([key, dias]) => {
+      const [mes, anio] = key.split('-').map(Number);
+      dias.sort((a, b) => a - b);
+      
+      // Formatear los días con "y" antes del último
+      let diasTexto = '';
+      if (dias.length === 1) {
+        diasTexto = dias[0].toString();
+      } else if (dias.length === 2) {
+        diasTexto = `${dias[0]} y ${dias[1]}`;
+      } else {
+        const ultimos = dias.slice(-1)[0];
+        const anteriores = dias.slice(0, -1).join(', ');
+        diasTexto = `${anteriores} y ${ultimos}`;
+      }
+      
+      return { diasTexto, mes: meses[mes], anio };
+    });
+    
+    // Si todas las fechas son del mismo año
+    const anioUnico = grupos.every(g => g.anio === grupos[0].anio) ? grupos[0].anio : null;
+    
+    if (grupos.length === 1) {
+      return `${grupos[0].diasTexto} de ${grupos[0].mes} de ${grupos[0].anio}`;
+    } else {
+      const partes = grupos.map((g, i) => {
+        if (i === grupos.length - 1 && anioUnico) {
+          return `${g.diasTexto} de ${g.mes} de ${anioUnico}`;
+        }
+        return `${g.diasTexto} de ${g.mes}`;
+      });
+      return partes.join(' y ');
+    }
+  };
+
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
@@ -193,27 +254,13 @@ export function CalendarioMultiple({
               Limpiar todo
             </Button>
           </div>
-          <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
-            {selectedDates.map((date) => (
-              <div
-                key={date}
-                className={cn(
-                  'inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm',
-                  highlightWeekends && isWeekend(date)
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                    : 'bg-gray-100 text-gray-800 border border-gray-300'
-                )}
-              >
-                <span>{formatDate(date)}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDate(date)}
-                  className="text-gray-500 hover:text-gray-700 font-bold"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+          
+          
+          {/* Fechas formateadas en texto legible */}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm font-medium text-blue-900">
+              📅 {formatearFechasLegibles(selectedDates)}
+            </p>
           </div>
         </div>
       )}

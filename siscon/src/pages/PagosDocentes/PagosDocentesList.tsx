@@ -1,42 +1,104 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from '../../lib/axios';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from "@/components/ui/select";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Plus, 
-  Search, 
-  Eye, 
-  Pencil, 
-  Trash2, 
-  FileText, 
-  ChevronLeft, 
+import {
+  Plus,
+  Search,
+  Eye,
+  Pencil,
+  Trash2,
+  FileText,
+  ChevronLeft,
   ChevronRight,
   Loader2
 } from 'lucide-react';
+
+// Función para formatear fechas en formato legible
+const formatearFechasLegibles = (fechas: string[]): string => {
+  if (!fechas || fechas.length === 0) return '';
+
+  const meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+
+  // Agrupar fechas por mes y año
+  const fechasPorMesAnio: Record<string, number[]> = {};
+
+  fechas.forEach(fecha => {
+    const [year, month, day] = fecha.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const mes = date.getMonth();
+    const anio = date.getFullYear();
+    const dia = date.getDate();
+    const key = `${mes}-${anio}`;
+
+    if (!fechasPorMesAnio[key]) {
+      fechasPorMesAnio[key] = [];
+    }
+    fechasPorMesAnio[key].push(dia);
+  });
+
+  // Construir el texto formateado
+  const grupos = Object.entries(fechasPorMesAnio).map(([key, dias]) => {
+    const [mes, anio] = key.split('-').map(Number);
+    dias.sort((a, b) => a - b);
+
+    // Formatear los días con "y" antes del último
+    let diasTexto = '';
+    if (dias.length === 1) {
+      diasTexto = dias[0].toString();
+    } else if (dias.length === 2) {
+      diasTexto = `${dias[0]} y ${dias[1]}`;
+    } else {
+      const ultimos = dias.slice(-1)[0];
+      const anteriores = dias.slice(0, -1).join(', ');
+      diasTexto = `${anteriores} y ${ultimos}`;
+    }
+
+    return { diasTexto, mes: meses[mes], anio };
+  });
+
+  // Si todas las fechas son del mismo año
+  const anioUnico = grupos.every(g => g.anio === grupos[0].anio) ? grupos[0].anio : null;
+
+  if (grupos.length === 1) {
+    return `${grupos[0].diasTexto} de ${grupos[0].mes} de ${grupos[0].anio}`;
+  } else {
+    const partes = grupos.map((g, i) => {
+      if (i === grupos.length - 1 && anioUnico) {
+        return `${g.diasTexto} de ${g.mes} de ${anioUnico}`;
+      }
+      return `${g.diasTexto} de ${g.mes}`;
+    });
+    return partes.join(' y ');
+  }
+};
 
 interface PagoDocente {
   id: number;
@@ -67,6 +129,7 @@ interface PagoDocente {
     nombre: string;
     codigo: string;
   };
+  fechas_ensenanza?: string[];
 }
 
 interface PaginationData {
@@ -90,7 +153,7 @@ export default function PagosDocentesList() {
   });
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
-  
+
   // Modal de detalle
   const [selectedPago, setSelectedPago] = useState<PagoDocente | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -104,7 +167,7 @@ export default function PagosDocentesList() {
         search,
         ...filters
       };
-      
+
       const response = await axios.get('/pagos-docentes', { params });
       setPagos(response.data.data);
       setPagination({
@@ -194,15 +257,15 @@ export default function PagosDocentesList() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Input 
-          placeholder="Periodo (ej. 2024-1)" 
+        <Input
+          placeholder="Periodo (ej. 2024-1)"
           className="w-full md:w-40"
           value={filters.periodo}
-          onChange={(e) => setFilters({...filters, periodo: e.target.value})}
+          onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
         />
-        <Select 
-          value={filters.tipo_docente} 
-          onValueChange={(value) => setFilters({...filters, tipo_docente: value})}
+        <Select
+          value={filters.tipo_docente}
+          onValueChange={(value) => setFilters({ ...filters, tipo_docente: value })}
         >
           <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Tipo Docente" />
@@ -321,7 +384,7 @@ export default function PagosDocentesList() {
             <DialogTitle>Detalle del Pago</DialogTitle>
             <DialogDescription>Información completa del expediente de pago</DialogDescription>
           </DialogHeader>
-          
+
           {loadingDetail ? (
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -349,6 +412,18 @@ export default function PagosDocentesList() {
                   <p className="text-sm text-muted-foreground">Código: {selectedPago.curso?.codigo}</p>
                 </div>
               </div>
+
+              {/* Fechas de Enseñanza */}
+              {selectedPago.fechas_ensenanza && selectedPago.fechas_ensenanza.length > 0 && (
+                <div className="border-b pb-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fechas de Enseñanza</h3>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm font-medium text-blue-900">
+                      📅 {formatearFechasLegibles(selectedPago.fechas_ensenanza)}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Detalles Financieros */}
               <div className="grid grid-cols-3 gap-4 border-b pb-4">

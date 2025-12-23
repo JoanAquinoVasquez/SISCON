@@ -8,6 +8,8 @@ import { DocentesPage } from './pages/Docentes';
 import { CoordinadoresPage } from './pages/Coordinadores';
 import PagosDocentesList from './pages/PagosDocentes/PagosDocentesList';
 import PagoDocenteForm from './pages/PagosDocentes/PagoDocenteForm';
+import ExpedientesList from './pages/Expedientes/ExpedientesList';
+import ExpedienteForm from './pages/Expedientes/ExpedienteForm';
 import { MainLayout } from './components/layout/MainLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
@@ -26,7 +28,8 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="programas" element={<ProgramasPage />} />
         <Route path="docentes" element={<DocentesPage />} />
@@ -44,6 +47,21 @@ function App() {
         <Route path="pagos-docentes/:id/editar" element={
           <ErrorBoundary>
             <PagoDocenteForm />
+          </ErrorBoundary>
+        } />
+        <Route path="expedientes" element={
+          <ErrorBoundary>
+            <ExpedientesList />
+          </ErrorBoundary>
+        } />
+        <Route path="expedientes/nuevo" element={
+          <ErrorBoundary>
+            <ExpedienteForm />
+          </ErrorBoundary>
+        } />
+        <Route path="expedientes/:id/editar" element={
+          <ErrorBoundary>
+            <ExpedienteForm />
           </ErrorBoundary>
         } />
         <Route path="*" element={<Navigate to="/" replace />} />

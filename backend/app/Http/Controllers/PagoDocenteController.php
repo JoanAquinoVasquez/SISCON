@@ -6,6 +6,7 @@ use App\Models\PagoDocente;
 use App\Models\Docente;
 use App\Models\Programa;
 use App\Models\Curso;
+use App\Services\DocumentGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -342,5 +343,53 @@ class PagoDocenteController extends Controller
         ];
 
         return response()->json(['data' => $datos], 200);
+    }
+
+    /**
+     * Genera y descarga el documento de resolución
+     */
+    public function generateResolucion(string $id)
+    {
+        $pago = PagoDocente::find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago no encontrado'], 404);
+        }
+
+        try {
+            $service = new DocumentGeneratorService();
+            $filePath = $service->generateResolucion($pago);
+
+            return response()->download($filePath)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al generar la resolución',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera y descarga el oficio de contabilidad
+     */
+    public function generateOficioContabilidad(string $id)
+    {
+        $pago = PagoDocente::find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago no encontrado'], 404);
+        }
+
+        try {
+            $service = new DocumentGeneratorService();
+            $filePath = $service->generateOficioContabilidad($pago);
+
+            return response()->download($filePath)->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al generar el oficio',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

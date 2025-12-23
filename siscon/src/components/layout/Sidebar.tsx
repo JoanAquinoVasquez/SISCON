@@ -13,6 +13,7 @@ import {
   MapPin,
   DollarSign,
   Stethoscope,
+  FolderOpen,
   Home
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -30,6 +31,7 @@ const menuItems = [
   { icon: Stethoscope, label: 'Asignación Enfermería', path: '/asignaciones-enfermeria' },
   { icon: DollarSign, label: 'Pagos Coordinador', path: '/pagos-coordinadores' },
   { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
+  { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
   { icon: MapPin, label: 'Lugares Procedencia', path: '/lugares-procedencia' },
   { icon: FileText, label: 'Oficios', path: '/oficios' },
 ];

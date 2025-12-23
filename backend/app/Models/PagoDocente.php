@@ -104,4 +104,9 @@ class PagoDocente extends Model
     {
         return $this->docente && $this->docente->tipo_docente === 'externo';
     }
+
+    public function expedientes()
+    {
+        return $this->hasMany(Expediente::class);
+    }
 }

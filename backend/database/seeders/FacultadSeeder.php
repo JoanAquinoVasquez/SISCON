@@ -16,7 +16,7 @@ class FacultadSeeder extends Seeder
             ['nombre' => 'Facultad de Ingeniería Química e Industrias Alimentarias', 'codigo' => 'FIQUIA', 'director_nombre' => 'Dr. Luis Antonio Pozo Suclupe', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Ingeniería Civil, Sistemas y Arquitectura', 'codigo' => 'FICSA', 'director_nombre' => 'Dra. Arq. Carla Rosario Escalante Medina', 'director_genero' => 'F'],
             ['nombre' => 'Facultad de Ciencias Económicas, Administrativas y Contables', 'codigo' => 'FACEAC', 'director_nombre' => 'Dr. Antonio Gilberto Escajadillo Durand', 'director_genero' => 'M'],
-            ['nombre' => 'Facultad de Enfermería', 'codigo' => 'FE', 'director_nombre' => null, 'director_genero' => null], // No hay director en el archivo
+            ['nombre' => 'Facultad de Enfermería', 'codigo' => 'FE', 'director_nombre' => 'Dra. Clarivel De Fátima Diaz Olano', 'director_genero' => 'F'],
             ['nombre' => 'Facultad de Ingeniería Mecánica y Eléctrica', 'codigo' => 'FIME', 'director_nombre' => 'Dr. James Skinner Celada Padilla', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Derecho y Ciencias Políticas', 'codigo' => 'FDCP', 'director_nombre' => 'Dr. Victor Ruperto Anacleto Guerrero', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Ingeniería Agrícola', 'codigo' => 'FIA', 'director_nombre' => 'Dr. Juan Manuel Saavedra Tineo', 'director_genero' => 'M'],

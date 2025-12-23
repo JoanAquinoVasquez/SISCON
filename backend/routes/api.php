@@ -14,6 +14,8 @@ use App\Http\Controllers\AsignacionEnfermeriaController;
 use App\Http\Controllers\CoordinadorController;
 use App\Http\Controllers\PagoCoordinadorController;
 use App\Http\Controllers\PagoDocenteController;
+use App\Http\Controllers\ExpedienteController;
+use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\OficioController;
 
@@ -115,11 +117,30 @@ Route::middleware('firebase.auth')->group(function () {
     Route::get('pagos-docentes/programa/{id}/datos', [PagoDocenteController::class, 'obtenerDatosPrograma']);
     Route::get('pagos-docentes/buscar-curso', [PagoDocenteController::class, 'buscarCursos']);
     Route::get('pagos-docentes/curso/{id}/datos', [PagoDocenteController::class, 'obtenerDatosCurso']);
+    Route::post('pagos-docentes/{id}/generar-resolucion', [PagoDocenteController::class, 'generateResolucion']);
+    Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 
     // File Upload
     Route::post('upload-documento', [FileUploadController::class, 'upload']);
     Route::post('delete-documento', [FileUploadController::class, 'delete']);
+
+    // ========================================
+    // Expedientes (Document Tracking)
+    // ========================================
+
+    // Expedientes - Rutas de búsqueda con prefijo para evitar conflictos
+    Route::get('expedientes/buscar-docente', [ExpedienteController::class, 'buscarDocentes']);
+    Route::get('expedientes/buscar-curso', [ExpedienteController::class, 'buscarCursos']);
+    Route::get('expedientes/buscar-directores', [ExpedienteController::class, 'buscarDirectores']);
+    Route::apiResource('expedientes', ExpedienteController::class);
+
+    // ========================================
+    // Devoluciones (Refunds)
+    // ========================================
+
+    Route::patch('devoluciones/{id}/estado', [DevolucionController::class, 'actualizarEstado']);
+    Route::apiResource('devoluciones', DevolucionController::class);
 
     // ========================================
     // Administrative Documents

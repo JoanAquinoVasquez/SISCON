@@ -13,6 +13,8 @@ use App\Http\Controllers\AsignacionDocenciaController;
 use App\Http\Controllers\AsignacionEnfermeriaController;
 use App\Http\Controllers\CoordinadorController;
 use App\Http\Controllers\PagoCoordinadorController;
+use App\Http\Controllers\PagoDocenteController;
+use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\OficioController;
 
 /*
@@ -106,6 +108,18 @@ Route::middleware('firebase.auth')->group(function () {
     Route::apiResource('pagos-coordinadores', PagoCoordinadorController::class);
     Route::get('pagos-coordinadores/coordinador/{coordinador_id}', [PagoCoordinadorController::class, 'byCoordinador']);
     Route::get('pagos-coordinadores/programa/{programa_id}', [PagoCoordinadorController::class, 'byPrograma']);
+
+    // Pagos de Docentes - Rutas de búsqueda con prefijo para evitar conflictos
+    Route::get('pagos-docentes/buscar-docente', [PagoDocenteController::class, 'buscarDocentes']);
+    Route::get('pagos-docentes/buscar-programa', [PagoDocenteController::class, 'buscarProgramas']);
+    Route::get('pagos-docentes/programa/{id}/datos', [PagoDocenteController::class, 'obtenerDatosPrograma']);
+    Route::get('pagos-docentes/buscar-curso', [PagoDocenteController::class, 'buscarCursos']);
+    Route::get('pagos-docentes/curso/{id}/datos', [PagoDocenteController::class, 'obtenerDatosCurso']);
+    Route::apiResource('pagos-docentes', PagoDocenteController::class);
+
+    // File Upload
+    Route::post('upload-documento', [FileUploadController::class, 'upload']);
+    Route::post('delete-documento', [FileUploadController::class, 'delete']);
 
     // ========================================
     // Administrative Documents

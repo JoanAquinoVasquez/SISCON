@@ -12,41 +12,70 @@ class SemestreCursoSeeder extends Seeder
     public function run(): void
     {
         $maestrias = $this->getMaestrias();
+        $periodos = ['2024-II', '2025-I']; // Mismos periodos que en ProgramaSeeder
 
         foreach ($maestrias as $maestriaData) {
-            $programa = Programa::where('nombre', 'LIKE', '%' . $maestriaData['nombre'] . '%')
-                ->where('periodo', '2024-II')
+            // Obtener el primer programa para crear el catálogo de cursos
+            $primerPrograma = Programa::where('nombre', 'LIKE', '%' . $maestriaData['nombre'] . '%')
+                ->where('periodo', $periodos[0])
                 ->first();
 
-            if (!$programa) {
+            if (!$primerPrograma) {
                 $this->command->warn("Programa no encontrado: {$maestriaData['nombre']}");
                 continue;
             }
 
-            $this->command->info("Procesando: {$programa->nombre}");
+            $this->command->info("Procesando: {$maestriaData['nombre']}");
 
+            // Crear cursos una sola vez para este programa (catálogo)
+            $cursosPorSemestre = [];
             foreach ($maestriaData['semestres'] as $semestreData) {
-                // Crear semestre con nombre
-                $semestre = Semestre::create([
-                    'programa_id' => $programa->id,
-                    'numero_semestre' => $semestreData['numero'],
-                    'nombre' => $this->getNombreSemestre($semestreData['numero']),
-                ]);
+                $cursosPorSemestre[$semestreData['numero']] = [];
 
                 foreach ($semestreData['cursos'] as $index => $cursoData) {
-                    Curso::create([
-                        'semestre_id' => $semestre->id,
-                        'nombre' => $cursoData['nombre'],
-                        'codigo' => $this->generarCodigoCurso($programa->id, $semestreData['numero'], $index + 1),
-                        'creditos' => $cursoData['creditos'],
-                    ]);
+                    $codigo = $this->generarCodigoCurso($primerPrograma->id, $semestreData['numero'], $index + 1);
+
+                    // Crear curso una sola vez (sin duplicados)
+                    $curso = Curso::firstOrCreate(
+                        ['codigo' => $codigo],
+                        [
+                            'nombre' => $cursoData['nombre'],
+                            'creditos' => $cursoData['creditos'],
+                        ]
+                    );
+
+                    $cursosPorSemestre[$semestreData['numero']][] = $curso->id;
+                }
+            }
+
+            // Asociar cursos a semestres de todos los periodos
+            foreach ($periodos as $periodo) {
+                $programa = Programa::where('nombre', 'LIKE', '%' . $maestriaData['nombre'] . '%')
+                    ->where('periodo', $periodo)
+                    ->first();
+
+                if (!$programa) {
+                    $this->command->warn("Programa no encontrado: {$maestriaData['nombre']} - Periodo: {$periodo}");
+                    continue;
                 }
 
-                $this->command->info("  - Semestre {$semestreData['numero']}: " . count($semestreData['cursos']) . " cursos");
+                foreach ($maestriaData['semestres'] as $semestreData) {
+                    // Crear semestre
+                    $semestre = Semestre::create([
+                        'programa_id' => $programa->id,
+                        'numero_semestre' => $semestreData['numero'],
+                        'nombre' => $this->getNombreSemestre($semestreData['numero']),
+                    ]);
+
+                    // Asociar cursos al semestre mediante la tabla pivote
+                    $semestre->cursos()->attach($cursosPorSemestre[$semestreData['numero']]);
+
+                    $this->command->info("  - {$periodo} - Semestre {$semestreData['numero']}: " . count($cursosPorSemestre[$semestreData['numero']]) . " cursos asociados");
+                }
             }
         }
 
-        $this->command->info('✅ Seeder completado: ' . count($maestrias) . ' maestrías procesadas');
+        $this->command->info('✅ Seeder completado: ' . count($maestrias) . ' maestrías procesadas en ' . count($periodos) . ' periodos');
     }
 
     private function getNombreSemestre(int $numero): string

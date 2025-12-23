@@ -17,6 +17,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminUserSeeder::class,
+            FacultadSeeder::class,
+            GradoSeeder::class,
+            ProgramaSeeder::class,        // Primero crear programas
+            CoordinadorSeeder::class,     // Luego crear y asociar coordinadores
+            SemestreCursoSeeder::class,
+            DocenteSeeder::class,
         ]);
     }
 }

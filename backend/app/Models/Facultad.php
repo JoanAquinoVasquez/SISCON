@@ -15,6 +15,8 @@ class Facultad extends Model
     protected $fillable = [
         'nombre',
         'codigo',
+        'director_nombre',
+        'director_genero',
     ];
 
     // Relaciones

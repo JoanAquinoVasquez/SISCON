@@ -10,16 +10,17 @@ class CursoController extends Controller
 {
     public function index()
     {
-        $cursos = Curso::with(['semestre', 'semestre.programa'])->get();
+        $cursos = Curso::with(['semestres', 'semestres.programa'])->get();
         return response()->json(['data' => $cursos]);
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'semestre_id' => 'required|exists:semestres,id',
+            'semestre_ids' => 'required|array',
+            'semestre_ids.*' => 'exists:semestres,id',
             'nombre' => 'required|string|min:3',
-            'codigo' => 'nullable|string',
+            'codigo' => 'required|string|unique:cursos,codigo',
             'creditos' => 'nullable|integer|min:1',
             'horas_teoricas' => 'nullable|integer|min:0',
             'horas_practicas' => 'nullable|integer|min:0',
@@ -29,13 +30,15 @@ class CursoController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $curso = Curso::create($request->all());
-        return response()->json(['data' => $curso, 'message' => 'Curso creado exitosamente'], 201);
+        $curso = Curso::create($request->except('semestre_ids'));
+        $curso->semestres()->attach($request->semestre_ids);
+
+        return response()->json(['data' => $curso->load('semestres'), 'message' => 'Curso creado exitosamente'], 201);
     }
 
     public function show($id)
     {
-        $curso = Curso::with(['semestre', 'semestre.programa'])->find($id);
+        $curso = Curso::with(['semestres', 'semestres.programa'])->find($id);
 
         if (!$curso) {
             return response()->json(['message' => 'Curso no encontrado'], 404);
@@ -53,9 +56,10 @@ class CursoController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'semestre_id' => 'sometimes|exists:semestres,id',
+            'semestre_ids' => 'sometimes|array',
+            'semestre_ids.*' => 'exists:semestres,id',
             'nombre' => 'sometimes|string|min:3',
-            'codigo' => 'nullable|string',
+            'codigo' => 'sometimes|string|unique:cursos,codigo,' . $id,
             'creditos' => 'nullable|integer|min:1',
             'horas_teoricas' => 'nullable|integer|min:0',
             'horas_practicas' => 'nullable|integer|min:0',
@@ -65,8 +69,13 @@ class CursoController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $curso->update($request->all());
-        return response()->json(['data' => $curso, 'message' => 'Curso actualizado exitosamente']);
+        $curso->update($request->except('semestre_ids'));
+
+        if ($request->has('semestre_ids')) {
+            $curso->semestres()->sync($request->semestre_ids);
+        }
+
+        return response()->json(['data' => $curso->load('semestres'), 'message' => 'Curso actualizado exitosamente']);
     }
 
     public function destroy($id)

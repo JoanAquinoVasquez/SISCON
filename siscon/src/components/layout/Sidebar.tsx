@@ -29,6 +29,7 @@ const menuItems = [
   { icon: FileText, label: 'Asignación Docencia', path: '/asignaciones-docencia' },
   { icon: Stethoscope, label: 'Asignación Enfermería', path: '/asignaciones-enfermeria' },
   { icon: DollarSign, label: 'Pagos Coordinador', path: '/pagos-coordinadores' },
+  { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
   { icon: MapPin, label: 'Lugares Procedencia', path: '/lugares-procedencia' },
   { icon: FileText, label: 'Oficios', path: '/oficios' },
 ];

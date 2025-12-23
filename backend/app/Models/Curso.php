@@ -13,7 +13,6 @@ class Curso extends Model
     protected $table = 'cursos';
 
     protected $fillable = [
-        'semestre_id',
         'nombre',
         'codigo',
         'creditos',
@@ -25,9 +24,10 @@ class Curso extends Model
     ];
 
     // Relaciones
-    public function semestre()
+    public function semestres()
     {
-        return $this->belongsTo(Semestre::class);
+        return $this->belongsToMany(Semestre::class, 'curso_semestre')
+            ->withTimestamps();
     }
 
     public function asignacionesDocencia()

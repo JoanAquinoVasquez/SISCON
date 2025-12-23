@@ -6,7 +6,10 @@ import UsersPage from './pages/Users';
 import ProgramasPage from './pages/Programas';
 import { DocentesPage } from './pages/Docentes';
 import { CoordinadoresPage } from './pages/Coordinadores';
+import PagosDocentesList from './pages/PagosDocentes/PagosDocentesList';
+import PagoDocenteForm from './pages/PagosDocentes/PagoDocenteForm';
 import { MainLayout } from './components/layout/MainLayout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -28,6 +31,21 @@ function App() {
         <Route path="programas" element={<ProgramasPage />} />
         <Route path="docentes" element={<DocentesPage />} />
         <Route path="coordinadores" element={<CoordinadoresPage />} />
+        <Route path="pagos-docentes" element={
+          <ErrorBoundary>
+            <PagosDocentesList />
+          </ErrorBoundary>
+        } />
+        <Route path="pagos-docentes/nuevo" element={
+          <ErrorBoundary>
+            <PagoDocenteForm />
+          </ErrorBoundary>
+        } />
+        <Route path="pagos-docentes/:id/editar" element={
+          <ErrorBoundary>
+            <PagoDocenteForm />
+          </ErrorBoundary>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

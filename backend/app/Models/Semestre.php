@@ -31,6 +31,7 @@ class Semestre extends Model
 
     public function cursos()
     {
-        return $this->hasMany(Curso::class);
+        return $this->belongsToMany(Curso::class, 'curso_semestre')
+            ->withTimestamps();
     }
 }

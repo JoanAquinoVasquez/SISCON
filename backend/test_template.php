@@ -5,13 +5,13 @@ require __DIR__ . '/vendor/autoload.php';
 use PhpOffice\PhpWord\TemplateProcessor;
 
 // Probar plantilla de docente externo
-$templatePath = __DIR__ . '/storage/templates/Ofic. Conta Plantilla - DocExt.docx';
+$templatePath = __DIR__ . '/storage/templates/Resoluciones Plantilla DocInt.docx';
 
 if (!file_exists($templatePath)) {
     die("Plantilla no encontrada: {$templatePath}\n");
 }
 
-echo "Analizando plantilla: Ofic. Conta Plantilla - DocExt.docx\n";
+echo "Analizando plantilla: Resoluciones Plantilla DocInt.docx\n";
 echo "=======================================================\n\n";
 
 try {

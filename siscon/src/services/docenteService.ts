@@ -4,14 +4,14 @@ import { api } from './api';
 export interface Docente {
   id: number;
   nombres: string;
-  apellidos: string;
+  apellido_paterno: string;
+  apellido_materno: string;
+  genero: 'M' | 'F';
   dni: string;
-  email: string;
-  telefono?: string;
-  direccion?: string;
-  especialidad?: string;
-  grado_academico?: string;
+  numero_telefono?: string;
+  tipo_docente: 'interno' | 'externo' | 'interno_enfermeria' | 'externo_enfermeria';
   titulo_profesional?: string;
+  lugar_procedencia_id?: number;
   created_at?: string;
   updated_at?: string;
 }

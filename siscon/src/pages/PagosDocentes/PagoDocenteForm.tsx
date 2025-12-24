@@ -57,6 +57,39 @@ const DocumentField = ({ label, value, onChange, urlValue, onUrlChange, showUplo
   </div>
 );
 
+// Helper function to format dates for input[type="date"]
+const formatDateForInput = (dateValue: any): string => {
+  if (!dateValue) return '';
+
+  // If it's already in YYYY-MM-DD format, return as is
+  if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue;
+  }
+
+  // If it's an ISO string with time (e.g., "2025-12-24T00:00:00.000000Z")
+  // Extract just the date part to avoid timezone issues
+  if (typeof dateValue === 'string' && dateValue.includes('T')) {
+    const datePart = dateValue.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      return datePart;
+    }
+  }
+
+  // For any other format, try to parse it
+  try {
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return '';
+
+    // Use UTC methods to avoid timezone offset issues
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return '';
+  }
+};
+
 export default function PagoDocenteForm() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -64,7 +97,6 @@ export default function PagoDocenteForm() {
   const [activeTab, setActiveTab] = useState('general');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
 
   // Estados principales
   const [docente, setDocente] = useState<Docente | null>(null);
@@ -171,7 +203,8 @@ export default function PagoDocenteForm() {
           // Poblar estados
           setDocente({
             id: data.docente_id,
-            label: `${data.docente.nombres} ${data.docente.apellido_paterno} ${data.docente.apellido_materno}`,
+            label: (data.docente.titulo_profesional ? data.docente.titulo_profesional + ' ' : '') +
+              `${data.docente.nombres} ${data.docente.apellido_paterno} ${data.docente.apellido_materno}`,
             tipo_docente: data.docente.tipo_docente
           });
 
@@ -193,35 +226,36 @@ export default function PagoDocenteForm() {
           setNumeroOficioPagoDireccion(data.numero_oficio_pago_direccion || '');
           setNumeroOficioPagoDireccionUrl(data.numero_oficio_pago_direccion_url || '');
 
-          // Poblar documentos internos/externos según corresponda
-          if (data.docente.tipo_docente === 'interno') {
-            setDocInterno({
-              numero_oficio_presentacion_facultad: data.numero_oficio_presentacion_facultad || '',
-              numero_oficio_presentacion_facultad_url: data.numero_oficio_presentacion_facultad_url || '',
-              numero_oficio_presentacion_coordinador: data.numero_oficio_presentacion_coordinador || '',
-              numero_oficio_presentacion_coordinador_url: data.numero_oficio_presentacion_coordinador_url || '',
-              numero_oficio_conformidad_facultad: data.numero_oficio_conformidad_facultad || '',
-              numero_oficio_conformidad_facultad_url: data.numero_oficio_conformidad_facultad_url || '',
-              numero_oficio_conformidad_coordinador: data.numero_oficio_conformidad_coordinador || '',
-              numero_oficio_conformidad_coordinador_url: data.numero_oficio_conformidad_coordinador_url || '',
-              numero_oficio_conformidad_direccion: data.numero_oficio_conformidad_direccion || '',
-              numero_oficio_conformidad_direccion_url: data.numero_oficio_conformidad_direccion_url || '',
-              numero_resolucion: data.numero_resolucion || '',
-              numero_resolucion_url: data.numero_resolucion_url || '',
-              fecha_resolucion: data.fecha_resolucion || '',
-              numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
-              numero_oficio_contabilidad_url: data.numero_oficio_contabilidad_url || '',
-              fecha_oficio_contabilidad: data.fecha_oficio_contabilidad || '',
-            });
-          } else {
+          // Siempre poblar documentos internos (disponibles para todos los tipos)
+          setDocInterno({
+            numero_oficio_presentacion_facultad: data.numero_oficio_presentacion_facultad || '',
+            numero_oficio_presentacion_facultad_url: data.numero_oficio_presentacion_facultad_url || '',
+            numero_oficio_presentacion_coordinador: data.numero_oficio_presentacion_coordinador || '',
+            numero_oficio_presentacion_coordinador_url: data.numero_oficio_presentacion_coordinador_url || '',
+            numero_oficio_conformidad_facultad: data.numero_oficio_conformidad_facultad || '',
+            numero_oficio_conformidad_facultad_url: data.numero_oficio_conformidad_facultad_url || '',
+            numero_oficio_conformidad_coordinador: data.numero_oficio_conformidad_coordinador || '',
+            numero_oficio_conformidad_coordinador_url: data.numero_oficio_conformidad_coordinador_url || '',
+            numero_oficio_conformidad_direccion: data.numero_oficio_conformidad_direccion || '',
+            numero_oficio_conformidad_direccion_url: data.numero_oficio_conformidad_direccion_url || '',
+            numero_resolucion: data.numero_resolucion || '',
+            numero_resolucion_url: data.numero_resolucion_url || '',
+            fecha_resolucion: formatDateForInput(data.fecha_resolucion),
+            numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
+            numero_oficio_contabilidad_url: data.numero_oficio_contabilidad_url || '',
+            fecha_oficio_contabilidad: formatDateForInput(data.fecha_oficio_contabilidad),
+          });
+
+          // Poblar documentos externos solo si es externo
+          if (data.docente.tipo_docente === 'externo') {
             setDocExterno({
               tiene_retencion_8_porciento: data.tiene_retencion_8_porciento || false,
               numero_recibo_honorario: data.numero_recibo_honorario || '',
               numero_recibo_honorario_url: data.numero_recibo_honorario_url || '',
-              fecha_recibo_honorario: data.fecha_recibo_honorario || '',
+              fecha_recibo_honorario: formatDateForInput(data.fecha_recibo_honorario),
               numero_pedido_servicio: data.numero_pedido_servicio || '',
               numero_pedido_servicio_url: data.numero_pedido_servicio_url || '',
-              // Mapear campos comunes
+              // Campos comunes (ya están en docInterno, pero los mantenemos aquí para consistencia)
               numero_oficio_presentacion_facultad: data.numero_oficio_presentacion_facultad || '',
               numero_oficio_presentacion_facultad_url: data.numero_oficio_presentacion_facultad_url || '',
               numero_oficio_presentacion_coordinador: data.numero_oficio_presentacion_coordinador || '',
@@ -234,10 +268,10 @@ export default function PagoDocenteForm() {
               numero_oficio_conformidad_direccion_url: data.numero_oficio_conformidad_direccion_url || '',
               numero_resolucion: data.numero_resolucion || '',
               numero_resolucion_url: data.numero_resolucion_url || '',
-              fecha_resolucion: data.fecha_resolucion || '',
+              fecha_resolucion: formatDateForInput(data.fecha_resolucion),
               numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
               numero_oficio_contabilidad_url: data.numero_oficio_contabilidad_url || '',
-              fecha_oficio_contabilidad: data.fecha_oficio_contabilidad || '',
+              fecha_oficio_contabilidad: formatDateForInput(data.fecha_oficio_contabilidad),
             });
           }
 
@@ -339,67 +373,6 @@ export default function PagoDocenteForm() {
     setActiveTab('general');
   }, [docente?.tipo_docente]);
 
-  // Generar resolución
-  const handleGenerateResolucion = async () => {
-    if (!id) return;
-
-    setIsGenerating(true);
-    try {
-      const response = await axios.post(
-        `/pagos-docentes/${id}/generar-resolucion`,
-        {},
-        { responseType: 'blob' }
-      );
-
-      // Crear URL del blob y descargar
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Resolucion_${id}.docx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      alert('Resolución generada exitosamente');
-    } catch (error) {
-      console.error('Error al generar resolución:', error);
-      alert('Error al generar la resolución');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // Generar oficio de contabilidad
-  const handleGenerateOficio = async () => {
-    if (!id) return;
-
-    setIsGenerating(true);
-    try {
-      const response = await axios.post(
-        `/pagos-docentes/${id}/generar-oficio`,
-        {},
-        { responseType: 'blob' }
-      );
-
-      // Crear URL del blob y descargar
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Oficio_Conta_${id}.docx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      alert('Oficio generado exitosamente');
-    } catch (error) {
-      console.error('Error al generar oficio:', error);
-      alert('Error al generar el oficio');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   const getTabs = () => {
     const baseTabs = [
@@ -701,31 +674,6 @@ export default function PagoDocenteForm() {
                   showUpload={true}
                 />
               </div>
-
-              {/* Sección de Generación de Documentos */}
-              {id && (
-                <div className="mt-8 pt-6 border-t border-purple-200">
-                  <h4 className="text-lg font-semibold text-purple-800 mb-4">📄 Generar Documentos</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Button
-                      type="button"
-                      onClick={handleGenerateResolucion}
-                      disabled={isGenerating}
-                      className="bg-purple-600 hover:bg-purple-700"
-                    >
-                      {isGenerating ? '⏳ Generando...' : '📋 Generar Resolución'}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleGenerateOficio}
-                      disabled={isGenerating}
-                      className="bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      {isGenerating ? '⏳ Generando...' : '📄 Generar Oficio Contabilidad'}
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           </TabPanel>
 

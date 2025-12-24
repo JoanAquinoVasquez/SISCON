@@ -33,6 +33,7 @@ import {
   Pencil,
   Trash2,
   FileText,
+  Clipboard,
   ChevronLeft,
   ChevronRight,
   Loader2
@@ -120,6 +121,7 @@ interface PagoDocente {
   numero_recibo_honorario?: string;
   numero_recibo_honorario_url?: string;
   docente?: {
+    titulo_profesional?: string;
     nombres: string;
     apellido_paterno: string;
     apellido_materno: string;
@@ -216,6 +218,86 @@ export default function PagosDocentesList() {
     }
   };
 
+  // Generar resolución
+  const [isGeneratingResolucion, setIsGeneratingResolucion] = useState(false);
+  const handleGenerateResolucion = async (id: number) => {
+    setIsGeneratingResolucion(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-resolucion`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Extraer nombre de archivo del header Content-Disposition
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Resolucion_${id}.docx`; // Fallback
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert('Resolución generada exitosamente');
+    } catch (error) {
+      console.error('Error al generar resolución:', error);
+      alert('Error al generar la resolución');
+    } finally {
+      setIsGeneratingResolucion(false);
+    }
+  };
+
+  // Generar oficio de contabilidad
+  const [isGeneratingOficio, setIsGeneratingOficio] = useState(false);
+  const handleGenerateOficio = async (id: number) => {
+    setIsGeneratingOficio(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-oficio`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Extraer nombre de archivo del header Content-Disposition
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Oficio_Conta_${id}.docx`; // Fallback
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert('Oficio generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar oficio:', error);
+      alert('Error al generar el oficio');
+    } finally {
+      setIsGeneratingOficio(false);
+    }
+  };
+
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
       case 'pendiente':
@@ -284,7 +366,6 @@ export default function PagosDocentesList() {
           <TableHeader>
             <TableRow>
               <TableHead>Docente</TableHead>
-              <TableHead>Tipo</TableHead>
               <TableHead>Curso</TableHead>
               <TableHead>Programa</TableHead>
               <TableHead>Periodo</TableHead>
@@ -314,9 +395,8 @@ export default function PagosDocentesList() {
                 <TableRow key={pago.id}>
                   <TableCell>
                     <div className="font-medium">{pago.docente_nombre}</div>
-                    <div className="text-xs text-muted-foreground">{pago.docente_dni}</div>
+                    <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente}</div>
                   </TableCell>
-                  <TableCell className="capitalize">{pago.tipo_docente}</TableCell>
                   <TableCell>{pago.curso_nombre}</TableCell>
                   <TableCell className="max-w-[200px] truncate" title={pago.programa_nombre}>
                     {pago.programa_nombre}
@@ -330,13 +410,41 @@ export default function PagosDocentesList() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleViewDetail(pago.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => handleViewDetail(pago.id)} title="Ver detalle">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleGenerateResolucion(pago.id)}
+                        disabled={isGeneratingResolucion}
+                        title="Generar Resolución"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        {isGeneratingResolucion ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileText className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleGenerateOficio(pago.id)}
+                        disabled={isGeneratingOficio}
+                        title="Generar Oficio de Contabilidad"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      >
+                        {isGeneratingOficio ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Clipboard className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)} title="Editar">
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(pago.id)}>
+                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(pago.id)} title="Eliminar">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -395,7 +503,7 @@ export default function PagosDocentesList() {
               <div className="grid grid-cols-2 gap-4 border-b pb-4">
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Docente</h3>
-                  <p>{selectedPago.docente?.nombres} {selectedPago.docente?.apellido_paterno} {selectedPago.docente?.apellido_materno}</p>
+                  <p>{selectedPago.docente?.titulo_profesional ? selectedPago.docente.titulo_profesional + ' ' : ''}{selectedPago.docente?.nombres} {selectedPago.docente?.apellido_paterno} {selectedPago.docente?.apellido_materno}</p>
                   <p className="text-sm text-muted-foreground">DNI: {selectedPago.docente?.dni}</p>
                 </div>
                 <div>
@@ -442,6 +550,47 @@ export default function PagosDocentesList() {
                 <div className="col-span-3">
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Importe en Letras</h3>
                   <p className="italic">{selectedPago.importe_letras}</p>
+                </div>
+              </div>
+
+              {/* Generar Documentos */}
+              <div className="border-b pb-4">
+                <h3 className="font-semibold mb-3">Generar Documentos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <Button
+                    onClick={() => selectedPago && handleGenerateResolucion(selectedPago.id)}
+                    disabled={isGeneratingResolucion}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    {isGeneratingResolucion ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Generar Resolución
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={() => selectedPago && handleGenerateOficio(selectedPago.id)}
+                    disabled={isGeneratingOficio}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    {isGeneratingOficio ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Generando...
+                      </>
+                    ) : (
+                      <>
+                        <Clipboard className="mr-2 h-4 w-4" />
+                        Generar Oficio de Contabilidad
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
 

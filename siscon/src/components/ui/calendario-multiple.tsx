@@ -18,7 +18,6 @@ export function CalendarioMultiple({
   selectedDates,
   onChange,
   className,
-  highlightWeekends = true,
 }: CalendarioMultipleProps) {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
@@ -40,7 +39,7 @@ export function CalendarioMultiple({
 
     while (current <= end) {
       const dayOfWeek = current.getDay();
-      
+
       // Si no hay días seleccionados, agregar todas las fechas del rango
       // Si hay días seleccionados, solo agregar los que coincidan
       if (selectedDays.length === 0 || selectedDays.includes(dayOfWeek)) {
@@ -49,12 +48,12 @@ export function CalendarioMultiple({
         const month = String(current.getMonth() + 1).padStart(2, '0');
         const day = String(current.getDate()).padStart(2, '0');
         const dateString = `${year}-${month}-${day}`;
-        
+
         if (!selectedDates.includes(dateString) && !newDates.includes(dateString)) {
           newDates.push(dateString);
         }
       }
-      
+
       current.setDate(current.getDate() + 1);
     }
 
@@ -67,9 +66,7 @@ export function CalendarioMultiple({
     }
   };
 
-  const handleRemoveDate = (dateToRemove: string) => {
-    onChange(selectedDates.filter(date => date !== dateToRemove));
-  };
+
 
   const handleClearAll = () => {
     onChange([]);
@@ -83,37 +80,21 @@ export function CalendarioMultiple({
     }
   };
 
-  const getDayOfWeek = (dateString: string): number => {
-    // Parse date in local timezone to avoid offset issues
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.getDay();
-  };
 
-  const isWeekend = (dateString: string): boolean => {
-    const day = getDayOfWeek(dateString);
-    return day === 0 || day === 6;
-  };
 
-  const formatDate = (dateString: string): string => {
-    // Parse date in local timezone to avoid offset issues
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    return `${days[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
-  };
+
 
   const formatearFechasLegibles = (fechas: string[]): string => {
     if (!fechas || fechas.length === 0) return '';
-    
+
     const meses = [
       'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
       'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
     ];
-    
+
     // Agrupar fechas por mes y año
     const fechasPorMesAnio: Record<string, number[]> = {};
-    
+
     fechas.forEach(fecha => {
       const [year, month, day] = fecha.split('-').map(Number);
       const date = new Date(year, month - 1, day);
@@ -121,18 +102,18 @@ export function CalendarioMultiple({
       const anio = date.getFullYear();
       const dia = date.getDate();
       const key = `${mes}-${anio}`;
-      
+
       if (!fechasPorMesAnio[key]) {
         fechasPorMesAnio[key] = [];
       }
       fechasPorMesAnio[key].push(dia);
     });
-    
+
     // Construir el texto formateado
     const grupos = Object.entries(fechasPorMesAnio).map(([key, dias]) => {
       const [mes, anio] = key.split('-').map(Number);
       dias.sort((a, b) => a - b);
-      
+
       // Formatear los días con "y" antes del último
       let diasTexto = '';
       if (dias.length === 1) {
@@ -144,13 +125,13 @@ export function CalendarioMultiple({
         const anteriores = dias.slice(0, -1).join(', ');
         diasTexto = `${anteriores} y ${ultimos}`;
       }
-      
+
       return { diasTexto, mes: meses[mes], anio };
     });
-    
+
     // Si todas las fechas son del mismo año
     const anioUnico = grupos.every(g => g.anio === grupos[0].anio) ? grupos[0].anio : null;
-    
+
     if (grupos.length === 1) {
       return `${grupos[0].diasTexto} de ${grupos[0].mes} de ${grupos[0].anio}`;
     } else {
@@ -169,11 +150,11 @@ export function CalendarioMultiple({
   return (
     <div className={cn('space-y-4', className)}>
       <Label>{label}</Label>
-      
+
       {/* Selector de rango con días específicos (opcional) */}
       <div className="border rounded-lg p-4 bg-gradient-to-br from-blue-50 to-indigo-50">
         <p className="text-sm font-medium text-blue-800 mb-3">📅 Seleccionar fechas</p>
-        
+
         <div className="mb-3">
           <DatePicker
             selectsRange={true}
@@ -230,7 +211,7 @@ export function CalendarioMultiple({
           size="sm"
           className="w-full"
         >
-          {selectedDays.length > 0 
+          {selectedDays.length > 0
             ? `Agregar ${selectedDays.map(d => dayNames[d]).join(', ')}`
             : 'Agregar Rango Completo'
           }
@@ -254,8 +235,8 @@ export function CalendarioMultiple({
               Limpiar todo
             </Button>
           </div>
-          
-          
+
+
           {/* Fechas formateadas en texto legible */}
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm font-medium text-blue-900">

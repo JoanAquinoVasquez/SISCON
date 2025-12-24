@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { cn } from '../../lib/utils';
 
 interface Tab {
@@ -47,7 +46,7 @@ interface TabPanelProps {
 
 export function TabPanel({ id, activeTab, children }: TabPanelProps) {
   if (id !== activeTab) return null;
-  
+
   return (
     <div className="py-6">
       {children}

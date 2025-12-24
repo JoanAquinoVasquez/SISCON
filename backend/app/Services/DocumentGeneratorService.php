@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PagoDocente;
+use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Illuminate\Support\Facades\Storage;
 
@@ -14,12 +15,21 @@ class DocumentGeneratorService
     public function generateResolucion(PagoDocente $pago): string
     {
         // Cargar relaciones necesarias
-        $pago->load(['docente', 'curso.semestres.programa.grado']);
+        $pago->load([
+            'docente',
+            'curso.semestres.programa.grado',
+            'curso.semestres.programa.facultad',
+            'curso.semestres.programa.coordinadores'
+        ]);
 
         // Determinar plantilla según tipo de docente
-        $templateName = $pago->docente->tipo_docente === 'interno'
-            ? 'Resoluciones Plantilla DocInt 2024.docx'
-            : 'Resoluciones Plantilla DocExt 2024.docx';
+        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'interno') {
+            $templateName = 'Resoluciones Plantilla DI.docx';
+        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Resoluciones Plantilla DE.docx';
+        } elseif ($pago->periodo === '2024-II') {
+            $templateName = 'Resolucion Plantilla 2024.docx';
+        }
 
         $templatePath = storage_path('templates/' . $templateName);
 
@@ -34,7 +44,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'Resolucion_' . $pago->docente->apellido_paterno . '_' . date('Ymd') . '.docx';
+        $fileName = 'RES ' . $pago->numero_resolucion . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe
@@ -54,12 +64,21 @@ class DocumentGeneratorService
     public function generateOficioContabilidad(PagoDocente $pago): string
     {
         // Cargar relaciones necesarias
-        $pago->load(['docente', 'curso.semestres.programa.grado']);
+        $pago->load([
+            'docente',
+            'curso.semestres.programa.grado',
+            'curso.semestres.programa.facultad',
+            'curso.semestres.programa.coordinadores'
+        ]);
 
         // Determinar plantilla según tipo de docente
-        $templateName = $pago->docente->tipo_docente === 'interno'
-            ? 'Ofic. Conta Plantilla - DocInt.docx'
-            : 'Ofic. Conta Plantilla - DocExt.docx';
+        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'interno') {
+            $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
+        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
+        } elseif ($pago->periodo === '2024-II') {
+            $templateName = 'Ofic. Conta Plantilla 2024.docx';
+        }
 
         $templatePath = storage_path('templates/' . $templateName);
 
@@ -74,7 +93,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'Oficio_Conta_' . $pago->docente->apellido_paterno . '_' . date('Ymd') . '.docx';
+        $fileName = 'OFICIO ' . $pago->numero_oficio_contabilidad . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe
@@ -105,16 +124,59 @@ class DocumentGeneratorService
 
         // Nombre del programa
         $nombrePrograma = $programa
-            ? "{$programa->grado->nombre} en {$programa->nombre} {$programa->periodo}"
+            ? "{$programa->grado->nombre} en {$programa->nombre}"
             : '';
 
         // Formatear fechas de enseñanza
         $fechasEnsenanza = $this->formatearFechasEnsenanza($pago->fechas_ensenanza);
 
-        // Determinar artículos según género del docente (asumiendo que existe el campo)
-        // Si no existe, usar genérico
-        $articuloDelODeLa = 'del'; // Por defecto masculino
-        $articuloLaOEl = 'el';
+        // Determinar artículos según género del docente
+        $genero = strtoupper($pago->docente->genero ?? 'M'); // Por defecto masculino si no está definido
+
+        if ($genero === 'F') {
+            $articuloDelODeLa = 'de la';
+            $articuloLaOEl = 'la';
+            $articuloAloAla = 'a la';
+        } else {
+            $articuloDelODeLa = 'del';
+            $articuloLaOEl = 'el';
+            $articuloAloAla = 'al';
+        }
+
+        // Determinar artículos y títulos según género del director
+        $directorGenero = 'M'; // Por defecto
+        $directorODirectora = 'Director';
+        $artDirectorFacultad = 'el';
+
+        if ($programa && $programa->facultad && $programa->facultad->director_genero) {
+            $directorGenero = strtoupper($programa->facultad->director_genero);
+            if ($directorGenero === 'F') {
+                $directorODirectora = 'Directora';
+                $artDirectorFacultad = 'la';
+            }
+        }
+
+        // Determinar artículos y títulos según género del coordinador
+        $coordinadorGenero = 'M'; // Por defecto
+        $coordinadorOCoordinadora = 'Coordinador';
+        $artCoordinador = 'el';
+
+        if ($programa && $programa->coordinadores && $programa->coordinadores->isNotEmpty()) {
+            // Buscar coordinador activo (sin fecha_fin o con fecha_fin futura)
+            $coordinadorActivo = $programa->coordinadores
+                ->filter(function ($coord) {
+                    return is_null($coord->pivot->fecha_fin) || $coord->pivot->fecha_fin >= now();
+                })
+                ->first();
+
+            if ($coordinadorActivo && $coordinadorActivo->genero) {
+                $coordinadorGenero = strtoupper($coordinadorActivo->genero);
+                if ($coordinadorGenero === 'F') {
+                    $coordinadorOCoordinadora = 'Coordinadora';
+                    $artCoordinador = 'la';
+                }
+            }
+        }
 
         // Variables comunes - Usando nombres exactos de la plantilla
         $template->setValue('DOCENTE', $nombreCompleto);
@@ -131,17 +193,30 @@ class DocumentGeneratorService
         $template->setValue('FECHAS', $fechasEnsenanza); // FECHAS en lugar de FECHAS_ENSENANZA
         $template->setValue('FECHAS_ENSENANZA', $fechasEnsenanza); // Por compatibilidad
         $template->setValue('FACULTAD', $pago->facultad_nombre ?? '');
-        $template->setValue('DIRECTOR', $pago->director_nombre ?? '');
+        $template->setValue('DIRECTOR_FACULTAD', $pago->director_nombre ?? '');
         $template->setValue('COORDINADOR', $pago->coordinador_nombre ?? '');
 
-        // Artículos de género
+        // Artículos de género del docente
         $template->setValue('Articulo_del_o_de_la', $articuloDelODeLa);
         $template->setValue('Articulo_la_o_el', $articuloLaOEl);
+        $template->setValue('Articulo_al_o_a_la', $articuloAloAla);
+
+
+        // Artículos y títulos del director
+        $template->setValue('Director_o_directora', $directorODirectora);
+        $template->setValue('Art_Director_Facultad', $artDirectorFacultad);
+
+        //Informe final docente
+        $template->setValue('N_INFORME_FINAL_DOCENTE', $pago->numero_informe_final ?? '');
+
+        // Artículos y títulos del coordinador
+        $template->setValue('Coordinador_o_Coordinadora', $coordinadorOCoordinadora);
+        $template->setValue('Art_Coordinador', $artCoordinador);
 
         // Variables de resolución
         $template->setValue('RESOLUCION', $pago->numero_resolucion ?? '');
         $template->setValue('NUMERO_RESOLUCION', $pago->numero_resolucion ?? '');
-        $template->setValue('FECHA_RESOLUCION', $this->formatearFecha($pago->fecha_resolucion));
+        $template->setValue('FECHA_DE_RESOLUCION', $this->formatearFecha($pago->fecha_resolucion));
 
         // Variables de oficios - Usando nombres exactos de la plantilla
         $template->setValue('OFICIO_DE_PRESENTACION_FAC', $pago->numero_oficio_presentacion_facultad ?? '');
@@ -155,6 +230,19 @@ class DocumentGeneratorService
         $template->setValue('NUMERO_OFICIO_CONTABILIDAD', $pago->numero_oficio_contabilidad ?? '');
         $template->setValue('FECHA_DE_OF_DE_CONTABILIDAD', $this->formatearFecha($pago->fecha_oficio_contabilidad));
         $template->setValue('FECHA_OFICIO_CONTABILIDAD', $this->formatearFecha($pago->fecha_oficio_contabilidad));
+
+        //Importe y costo
+        $template->setValue('IMPORTE', number_format((float) $pago->importe_total, 2));
+        $template->setValue('COSTO_X_HORA', number_format((float) $pago->costo_por_hora, 2));
+
+        // Convertir importe en letras a formato de oración (primera letra mayúscula, resto minúsculas)
+        $importeLetras = $pago->importe_letras;
+        if ($importeLetras) {
+            $importeLetras = mb_strtolower($importeLetras, 'UTF-8');
+            $importeLetras = mb_strtoupper(mb_substr($importeLetras, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($importeLetras, 1, null, 'UTF-8');
+        }
+        $template->setValue('IMPORTE_EN_LETRAS', $importeLetras);
+        $template->setValue('N_HORAS', number_format((float) $pago->numero_horas, 0));
 
         // Variables solo para externos
         if ($pago->docente->tipo_docente === 'externo') {

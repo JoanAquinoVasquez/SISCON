@@ -62,7 +62,8 @@ class PagoDocenteController extends Controller
             return [
                 'id' => $pago->id,
                 'docente_nombre' => $pago->docente
-                    ? "{$pago->docente->nombres} {$pago->docente->apellido_paterno} {$pago->docente->apellido_materno}"
+                    ? ($pago->docente->titulo_profesional ? $pago->docente->titulo_profesional . ' ' : '') .
+                    "{$pago->docente->nombres} {$pago->docente->apellido_paterno} {$pago->docente->apellido_materno}"
                     : null,
                 'docente_dni' => $pago->docente->dni ?? null,
                 'tipo_docente' => $pago->docente->tipo_docente ?? null,
@@ -192,13 +193,15 @@ class PagoDocenteController extends Controller
             ->orWhere('apellido_paterno', 'LIKE', "%{$query}%")
             ->orWhere('apellido_materno', 'LIKE', "%{$query}%")
             ->orWhere('dni', 'LIKE', "%{$query}%")
-            ->select('id', 'nombres', 'apellido_paterno', 'apellido_materno', 'dni', 'tipo_docente')
+            ->select('id', 'titulo_profesional', 'nombres', 'apellido_paterno', 'apellido_materno', 'dni', 'tipo_docente')
             ->limit(10)
             ->get()
             ->map(function ($docente) {
+                $nombreCompleto = ($docente->titulo_profesional ? $docente->titulo_profesional . ' ' : '') .
+                    "{$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}";
                 return [
                     'id' => $docente->id,
-                    'label' => "{$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno} - DNI: {$docente->dni}",
+                    'label' => "{$nombreCompleto} - DNI: {$docente->dni}",
                     'tipo_docente' => $docente->tipo_docente,
                 ];
             });
@@ -359,8 +362,13 @@ class PagoDocenteController extends Controller
         try {
             $service = new DocumentGeneratorService();
             $filePath = $service->generateResolucion($pago);
+            $fileName = basename($filePath);
 
-            return response()->download($filePath)->deleteFileAfterSend(true);
+            return response()->file($filePath, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition' => "attachment; filename*=UTF-8''" . rawurlencode($fileName),
+                'Access-Control-Expose-Headers' => 'Content-Disposition'
+            ])->deleteFileAfterSend(true);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al generar la resolución',
@@ -383,8 +391,13 @@ class PagoDocenteController extends Controller
         try {
             $service = new DocumentGeneratorService();
             $filePath = $service->generateOficioContabilidad($pago);
+            $fileName = basename($filePath);
 
-            return response()->download($filePath)->deleteFileAfterSend(true);
+            return response()->file($filePath, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition' => "attachment; filename*=UTF-8''" . rawurlencode($fileName),
+                'Access-Control-Expose-Headers' => 'Content-Disposition'
+            ])->deleteFileAfterSend(true);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al generar el oficio',

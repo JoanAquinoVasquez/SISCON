@@ -68,7 +68,7 @@ class PagoDocenteController extends Controller
                 'docente_dni' => $pago->docente->dni ?? null,
                 'tipo_docente' => $pago->docente->tipo_docente ?? null,
                 'curso_nombre' => $pago->curso->nombre ?? null,
-                'programa_nombre' => $programa ? "{$programa->grado->nombre} en {$programa->nombre} {$programa->periodo}" : null,
+                'programa_nombre' => $programa ? "{$programa->grado->nombre} en {$programa->nombre}" : null,
                 'periodo' => $pago->periodo,
                 'numero_horas' => $pago->numero_horas,
                 'costo_por_hora' => $pago->costo_por_hora,
@@ -275,38 +275,53 @@ class PagoDocenteController extends Controller
     public function buscarCursos(Request $request)
     {
         $query = $request->get('q', '');
+        $facultadCodigo = trim($request->get('facultad_codigo', ''));
+
+        \Illuminate\Support\Facades\Log::info('PagoDocenteController::buscarCursos', ['query' => $query, 'facultad_codigo' => $facultadCodigo]);
 
         if (strlen($query) < 2) {
             return response()->json(['data' => []], 200);
         }
 
-        $cursos = Curso::with(['semestres.programa.grado'])
-            ->where('nombre', 'LIKE', "%{$query}%")
-            ->orWhere('codigo', 'LIKE', "%{$query}%")
-            ->limit(10)
-            ->get()
-            ->map(function ($curso) {
-                // Obtener el primer semestre para obtener programa y periodo
-                $semestre = $curso->semestres->first();
+        $cursosQuery = Curso::with(['semestres.programa.grado', 'semestres.programa.facultad'])
+            ->where(function ($q) use ($query) {
+                $q->where('nombre', 'LIKE', "%{$query}%")
+                    ->orWhere('codigo', 'LIKE', "%{$query}%");
+            });
 
-                if (!$semestre) {
-                    return null;
+        // Filter by faculty code if provided
+        if ($facultadCodigo) {
+            $cursosQuery->whereHas('semestres.programa.facultad', function ($q) use ($facultadCodigo) {
+                $q->where('codigo', $facultadCodigo);
+            });
+        }
+
+        $cursos = $cursosQuery->limit(10)->get();
+        $resultados = [];
+
+        foreach ($cursos as $curso) {
+            foreach ($curso->semestres as $semestre) {
+                $programa = $semestre->programa;
+
+                // If filtering by faculty, ensure this specific semester's program belongs to the faculty
+                if ($facultadCodigo && ($programa->facultad->codigo ?? '') !== $facultadCodigo) {
+                    continue;
                 }
 
-                $programa = $semestre->programa;
                 $grado = $programa->grado->nombre ?? '';
+                $facultad = $programa->facultad->codigo ?? '';
 
-                return [
-                    'id' => $curso->id,
+                $resultados[] = [
+                    'id' => $curso->id . '-' . $semestre->id, // Composite ID
+                    'original_id' => $curso->id,
                     'label' => "{$curso->nombre} ({$grado} en {$programa->nombre} - {$semestre->programa->periodo})",
-                    'periodo' => $semestre->periodo,
+                    'periodo' => $semestre->programa->periodo,
                     'programa_id' => $semestre->programa_id,
                     'semestre_id' => $semestre->id,
                 ];
-            })
-            ->filter(); // Remove null values
-
-        return response()->json(['data' => $cursos->values()], 200);
+            }
+        }
+        return response()->json(['data' => $resultados], 200);
     }
 
     /**
@@ -372,6 +387,35 @@ class PagoDocenteController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Error al generar la resolución',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Genera y descarga el documento de resolución de aceptación (Docentes Externos)
+     */
+    public function generateResolucionAceptacion(string $id)
+    {
+        $pago = PagoDocente::find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago no encontrado'], 404);
+        }
+
+        try {
+            $service = new DocumentGeneratorService();
+            $filePath = $service->generateResolucionAceptacion($pago);
+            $fileName = basename($filePath);
+
+            return response()->file($filePath, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition' => "attachment; filename*=UTF-8''" . rawurlencode($fileName),
+                'Access-Control-Expose-Headers' => 'Content-Disposition'
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al generar la resolución de aceptación',
                 'error' => $e->getMessage()
             ], 500);
         }

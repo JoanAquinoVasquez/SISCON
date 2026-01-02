@@ -37,10 +37,10 @@ class ExpedienteController extends Controller
 
         // Filter by fecha range
         if ($request->has('fecha_desde') && $request->fecha_desde) {
-            $query->where('fecha_documento', '>=', $request->fecha_desde);
+            $query->where('fecha_mesa_partes', '>=', $request->fecha_desde);
         }
         if ($request->has('fecha_hasta') && $request->fecha_hasta) {
-            $query->where('fecha_documento', '<=', $request->fecha_hasta);
+            $query->where('fecha_mesa_partes', '<=', $request->fecha_hasta);
         }
 
         // Filter by estado_pago (via pagoDocente relationship)
@@ -58,7 +58,7 @@ class ExpedienteController extends Controller
                 'id' => $expediente->id,
                 'numero_expediente_mesa_partes' => $expediente->numero_expediente_mesa_partes,
                 'numero_documento' => $expediente->numero_documento,
-                'fecha_documento' => $expediente->fecha_documento,
+                'fecha_mesa_partes' => $expediente->fecha_mesa_partes,
                 'fecha_recepcion_contabilidad' => $expediente->fecha_recepcion_contabilidad,
                 'remitente' => $expediente->remitente,
                 'tipo_asunto' => $expediente->tipo_asunto,
@@ -73,6 +73,8 @@ class ExpedienteController extends Controller
                 'pago_docente_id' => $expediente->pago_docente_id,
                 'created_at' => $expediente->created_at,
                 'updated_at' => $expediente->updated_at,
+                // 'programa_nombre' => $expediente->curso->semestre->programa->nombre ?? null,
+                // 'grado_nombre' => $expediente->curso->semestre->programa->grado->nombre ?? null,
             ];
         });
 
@@ -87,7 +89,7 @@ class ExpedienteController extends Controller
         $validator = Validator::make($request->all(), [
             'numero_expediente_mesa_partes' => 'nullable|string',
             'numero_documento' => 'required|string',
-            'fecha_documento' => 'required|date',
+            'fecha_mesa_partes' => 'required|date',
             'fecha_recepcion_contabilidad' => 'required|date',
             'remitente' => 'required|string',
             'tipo_asunto' => 'required|in:descripcion,presentacion,conformidad,devolucion',
@@ -122,7 +124,7 @@ class ExpedienteController extends Controller
                     $expedienteData = [
                         'numero_expediente_mesa_partes' => $request->numero_expediente_mesa_partes,
                         'numero_documento' => $request->numero_documento,
-                        'fecha_documento' => $request->fecha_documento,
+                        'fecha_mesa_partes' => $request->fecha_mesa_partes,
                         'fecha_recepcion_contabilidad' => $request->fecha_recepcion_contabilidad,
                         'remitente' => $request->remitente,
                         'tipo_asunto' => $request->tipo_asunto,
@@ -224,7 +226,7 @@ class ExpedienteController extends Controller
         $validator = Validator::make($request->all(), [
             'numero_expediente_mesa_partes' => 'sometimes|nullable|string',
             'numero_documento' => 'sometimes|string',
-            'fecha_documento' => 'sometimes|date',
+            'fecha_mesa_partes' => 'sometimes|date',
             'fecha_recepcion_contabilidad' => 'sometimes|date',
             'remitente' => 'sometimes|string',
             'tipo_asunto' => 'sometimes|in:descripcion,presentacion,conformidad,devolucion',
@@ -298,13 +300,12 @@ class ExpedienteController extends Controller
 
                                 $pagoCoincidente = null;
                                 foreach ($pagos as $p) {
-                                    $fechasPago = is_array($p->fechas_ensenanza) ? $p->fechas_ensenanza : (is_string($p->fechas_ensenanza) ? json_decode($p->fechas_ensenanza, true) : []);
-                                    $fechasExpediente = is_array($expediente->fechas_ensenanza) ? $expediente->fechas_ensenanza : (is_string($expediente->fechas_ensenanza) ? json_decode($expediente->fechas_ensenanza, true) : []);
+                                    // Comparar por mes y año en lugar de fechas exactas
+                                    $monthsYearsPago = $this->extractMonthsYearsFromArray($p->fechas_ensenanza);
+                                    $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
 
-                                    sort($fechasPago);
-                                    sort($fechasExpediente);
-
-                                    if ($fechasPago === $fechasExpediente) {
+                                    // Si los meses y años coinciden, vincular
+                                    if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
                                         $pagoCoincidente = $p;
                                         break;
                                     }
@@ -389,6 +390,36 @@ class ExpedienteController extends Controller
     }
 
     /**
+     * Extract unique month-year combinations from a date array
+     * Returns array of "YYYY-MM" strings
+     */
+    private function extractMonthsYearsFromArray($fechas)
+    {
+        // Handle JSON string input
+        if (is_string($fechas)) {
+            $fechas = json_decode($fechas, true);
+        }
+
+        // Handle null or empty array
+        if (!is_array($fechas) || empty($fechas)) {
+            return [];
+        }
+
+        $monthsYears = [];
+        foreach ($fechas as $fecha) {
+            // Extract YYYY-MM from date string
+            $date = \Carbon\Carbon::parse($fecha);
+            $monthYear = $date->format('Y-m');
+            if (!in_array($monthYear, $monthsYears)) {
+                $monthsYears[] = $monthYear;
+            }
+        }
+
+        sort($monthsYears);
+        return $monthsYears;
+    }
+
+    /**
      * Buscar docentes con debounce
      */
     public function buscarDocentes(Request $request)
@@ -420,18 +451,34 @@ class ExpedienteController extends Controller
     /**
      * Buscar cursos con debounce
      */
+    /**
+     * Buscar cursos con debounce
+     */
     public function buscarCursos(Request $request)
     {
         $query = $request->get('q', '');
+        $facultadCodigo = trim($request->get('facultad_codigo', ''));
+
+        \Illuminate\Support\Facades\Log::info('buscarCursos', ['query' => $query, 'facultad_codigo' => $facultadCodigo]);
 
         if (strlen($query) < 2) {
             return response()->json(['data' => []], 200);
         }
 
-        $cursos = Curso::with(['semestres.programa.grado'])
-            ->where('nombre', 'LIKE', "%{$query}%")
-            ->orWhere('codigo', 'LIKE', "%{$query}%")
-            ->limit(10)
+        $cursosQuery = Curso::with(['semestres.programa.grado', 'semestres.programa.facultad'])
+            ->where(function ($q) use ($query) {
+                $q->where('nombre', 'LIKE', "%{$query}%")
+                    ->orWhere('codigo', 'LIKE', "%{$query}%");
+            });
+
+        // Filter by faculty code if provided
+        if ($facultadCodigo) {
+            $cursosQuery->whereHas('semestres.programa.facultad', function ($q) use ($facultadCodigo) {
+                $q->where('codigo', $facultadCodigo);
+            });
+        }
+
+        $cursos = $cursosQuery->limit(10)
             ->get()
             ->map(function ($curso) {
                 $semestre = $curso->semestres->first();
@@ -442,10 +489,11 @@ class ExpedienteController extends Controller
 
                 $programa = $semestre->programa;
                 $grado = $programa->grado->nombre ?? '';
+                $facultad = $programa->facultad->codigo ?? '';
 
                 return [
                     'id' => $curso->id,
-                    'label' => "{$curso->nombre} ({$grado} en {$programa->nombre} - {$semestre->programa->periodo})",
+                    'label' => "{$curso->nombre} ({$grado} en {$programa->nombre} - {$semestre->programa->periodo}) [{$facultad}]",
                     'periodo' => $semestre->programa->periodo,
                     'programa_id' => $semestre->programa_id,
                     'semestre_id' => $semestre->id,
@@ -507,6 +555,28 @@ class ExpedienteController extends Controller
                 'id' => 'epg_director',
                 'label' => 'Dr. Leandro Agapito Aznarán Castillo - Director de Escuela de Posgrado (EPG)',
                 'nombre' => 'Dr. Leandro Agapito Aznarán Castillo',
+            ];
+        } elseif (
+            empty($search) ||
+            stripos('Mg. José Luis Carranza García', $search) !== false ||
+            stripos('DGA-UNPRG', $search) !== false ||
+            stripos('Dirección General de Administración', $search) !== false
+        ) {
+            $directores[] = [
+                'id' => 'mg_carranza',
+                'label' => 'Mg. José Luis Carranza García - Director de Dirección General de Administración (DGA)',
+                'nombre' => 'Mg. José Luis Carranza García',
+            ];
+        } elseif (
+            empty($search) ||
+            stripos('Mg. Juan Fernando Yalta Vallejos', $search) !== false ||
+            stripos('DGA/UA', $search) !== false ||
+            stripos('Unidad de Abastecimiento', $search) !== false
+        ) {
+            $directores[] = [
+                'id' => 'mg_yalta',
+                'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',
+                'nombre' => 'Mg. Juan Fernando Yalta Vallejos',
             ];
         }
 

@@ -38,7 +38,8 @@ class FirebaseService
     public function verifyIdToken(string $idToken): array
     {
         try {
-            $verifiedIdToken = $this->auth->verifyIdToken($idToken);
+            // Add leeway to handle clock skew between servers (5 minutes tolerance)
+            $verifiedIdToken = $this->auth->verifyIdToken($idToken, true, 300);
 
             return [
                 'uid' => $verifiedIdToken->claims()->get('sub'),

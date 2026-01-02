@@ -54,6 +54,12 @@ class PagoDocente extends Model
         // Doc Recibido
         'numero_oficio_pago_direccion',
         'numero_oficio_pago_direccion_url',
+        'orden_servicio',
+        'acta_conformidad',
+        'numero_exp_siaf',
+        'numero_exp_siaf',
+        'nota_pago',
+        'fecha_mesa_partes',
     ];
 
     protected $casts = [
@@ -65,6 +71,7 @@ class PagoDocente extends Model
         'fecha_resolucion' => 'date',
         'fecha_recibo_honorario' => 'date',
         'fecha_oficio_contabilidad' => 'date',
+        'fecha_mesa_partes' => 'date',
     ];
 
     // Relaciones

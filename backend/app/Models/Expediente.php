@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 
 class Expediente extends Model
 {
@@ -15,7 +16,7 @@ class Expediente extends Model
     protected $fillable = [
         'numero_expediente_mesa_partes',
         'numero_documento',
-        'fecha_documento',
+        'fecha_mesa_partes',
         'fecha_recepcion_contabilidad',
         'remitente',
         'tipo_asunto',
@@ -39,7 +40,7 @@ class Expediente extends Model
     ];
 
     protected $casts = [
-        'fecha_documento' => 'date',
+        'fecha_mesa_partes' => 'date',
         'fecha_recepcion_contabilidad' => 'date',
         'fechas_ensenanza' => 'array',
         'importe_devolucion' => 'decimal:2',
@@ -79,6 +80,36 @@ class Expediente extends Model
     // Business Logic Methods
 
     /**
+     * Extract unique month-year combinations from a date array
+     * Returns array of "YYYY-MM" strings
+     */
+    private function extractMonthsYears($fechas)
+    {
+        // Handle JSON string input
+        if (is_string($fechas)) {
+            $fechas = json_decode($fechas, true);
+        }
+
+        // Handle null or empty array
+        if (!is_array($fechas) || empty($fechas)) {
+            return [];
+        }
+
+        $monthsYears = [];
+        foreach ($fechas as $fecha) {
+            // Extract YYYY-MM from date string
+            $date = \Carbon\Carbon::parse($fecha);
+            $monthYear = $date->format('Y-m');
+            if (!in_array($monthYear, $monthsYears)) {
+                $monthsYears[] = $monthYear;
+            }
+        }
+
+        sort($monthsYears);
+        return $monthsYears;
+    }
+
+    /**
      * Procesar expediente de tipo presentación
      * Crea un nuevo pago docente en estado pendiente
      */
@@ -93,12 +124,18 @@ class Expediente extends Model
             throw new \Exception('El expediente debe tener un semestre_id');
         }
 
-        $semestre = \App\Models\Semestre::with('programa')->find($this->semestre_id);
+        $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
         if (!$semestre || !$semestre->programa) {
             throw new \Exception('No se encontró el semestre o programa asociado');
         }
 
         $periodo = $semestre->programa->periodo;
+        $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
+        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null; 
+
+        // Obtener coordinador (asumiendo el primero activo o el más reciente)
+        $coordinador = $semestre->programa->coordinadores->first();
+        $coordinadorNombre = $coordinador ? ($coordinador->nombres . ' ' . $coordinador->apellidos) : null;
 
         // Crear pago docente pendiente
         $pago = PagoDocente::create([
@@ -107,6 +144,9 @@ class Expediente extends Model
             'periodo' => $periodo,
             'estado' => 'pendiente',
             'fechas_ensenanza' => $this->fechas_ensenanza,
+            'facultad_nombre' => $facultadNombre,
+            'director_nombre' => $directorNombre,
+            'coordinador_nombre' => $coordinadorNombre,
             'numero_horas' => 0,
             'costo_por_hora' => 0,
             'importe_total' => 0,
@@ -114,6 +154,7 @@ class Expediente extends Model
             // Documentos de presentación (se llenarán desde el expediente)
             'numero_oficio_presentacion_facultad' => $this->numero_documento,
             'numero_oficio_presentacion_coordinador' => $this->numero_oficio_presentacion_coordinador,
+            'fecha_mesa_partes' => $this->fecha_mesa_partes,
         ]);
 
         // Vincular expediente con pago
@@ -138,12 +179,17 @@ class Expediente extends Model
             throw new \Exception('El expediente debe tener un semestre_id');
         }
 
-        $semestre = \App\Models\Semestre::with('programa')->find($this->semestre_id);
+        $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
         if (!$semestre || !$semestre->programa) {
             throw new \Exception('No se encontró el semestre o programa asociado');
         }
 
         $periodo = $semestre->programa->periodo;
+        $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
+        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->decano : null;
+
+        $coordinador = $semestre->programa->coordinadores->first();
+        $coordinadorNombre = $coordinador ? ($coordinador->nombres . ' ' . $coordinador->apellidos) : null;
 
         // Si ya tiene un pago vinculado, actualizarlo
         if ($this->pago_docente_id) {
@@ -153,6 +199,10 @@ class Expediente extends Model
                     'numero_oficio_conformidad_direccion' => $this->numero_documento,
                     'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
                     'estado' => 'en_proceso',
+                    // Actualizar nombres por si cambiaron
+                    'facultad_nombre' => $facultadNombre,
+                    'director_nombre' => $directorNombre,
+                    'coordinador_nombre' => $coordinadorNombre,
                 ]);
                 return $pago;
             }
@@ -166,17 +216,15 @@ class Expediente extends Model
             ->where('estado', 'pendiente')
             ->get();
 
-        // Buscar el pago que tenga las mismas fechas de enseñanza
+        // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)
         $pago = null;
         foreach ($pagos as $p) {
-            // Comparar arrays de fechas (ordenados para comparación correcta)
-            $fechasPago = is_array($p->fechas_ensenanza) ? $p->fechas_ensenanza : (is_string($p->fechas_ensenanza) ? json_decode($p->fechas_ensenanza, true) : []);
-            $fechasExpediente = is_array($this->fechas_ensenanza) ? $this->fechas_ensenanza : (is_string($this->fechas_ensenanza) ? json_decode($this->fechas_ensenanza, true) : []);
+            // Comparar por mes y año en lugar de fechas exactas
+            $monthsYearsPago = $this->extractMonthsYears($p->fechas_ensenanza);
+            $monthsYearsExpediente = $this->extractMonthsYears($this->fechas_ensenanza);
 
-            sort($fechasPago);
-            sort($fechasExpediente);
-
-            if ($fechasPago === $fechasExpediente) {
+            // Si los meses y años coinciden, vincular
+            if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
                 $pago = $p;
                 break;
             }
@@ -188,6 +236,9 @@ class Expediente extends Model
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
                 'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
                 'estado' => 'en_proceso',
+                'facultad_nombre' => $facultadNombre,
+                'director_nombre' => $directorNombre,
+                'coordinador_nombre' => $coordinadorNombre,
             ]);
 
             $this->pago_docente_id = $pago->id;
@@ -207,6 +258,9 @@ class Expediente extends Model
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
                 'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
                 'estado' => 'en_proceso',
+                'facultad_nombre' => $facultadNombre,
+                'director_nombre' => $directorNombre,
+                'coordinador_nombre' => $coordinadorNombre,
             ]);
 
             $this->pago_docente_id = $nuevoPago->id;
@@ -254,7 +308,7 @@ class Expediente extends Model
             // Actualizar con documento de resolución
             $pago->update([
                 'numero_resolucion' => $this->numero_documento,
-                'fecha_resolucion' => $this->fecha_documento,
+                'fecha_resolucion' => $this->fecha_mesa_partes,
                 'estado' => 'completado',
             ]);
 

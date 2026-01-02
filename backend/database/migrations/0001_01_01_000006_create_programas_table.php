@@ -12,14 +12,28 @@ return new class extends Migration {
     {
         Schema::create('programas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('grado_id')->constrained('grados')->onDelete('cascade');
+
+            // Relaciones
+            $table->foreignId('grado_id')
+                ->constrained('grados')
+                ->onDelete('cascade');
+
+            $table->foreignId('facultad_id')
+                ->nullable()
+                ->constrained('facultads')
+                ->onDelete('set null');
+
+            // Datos del programa
             $table->string('nombre');
-            $table->string('periodo')->nullable(); // Ej: "2024-I", "2024-II", "2025-I"
+            $table->string('periodo'); // "2024-II", "2025-I"
             $table->text('descripcion')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['grado_id', 'periodo']);
+            $table->index('grado_id');
+            $table->index('facultad_id');
+            $table->index('periodo');
         });
     }
 

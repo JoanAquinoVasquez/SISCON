@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabPanel } from '@/components/ui/tabs';
 import { SelectConBusqueda } from '@/components/ui/select-con-busqueda';
+import { ComboboxEditable } from '@/components/ui/combobox-editable';
 import { CalendarioMultiple } from '@/components/ui/calendario-multiple';
 import { ArrowLeft, Plus } from 'lucide-react';
 import DocenteCursoBlock from './DocenteCursoBlock';
@@ -22,7 +23,7 @@ export default function ExpedienteForm() {
   // General fields
   const [numeroExpedienteMP, setNumeroExpedienteMP] = useState('');
   const [numeroDocumento, setNumeroDocumento] = useState('');
-  const [fechaDocumento, setFechaDocumento] = useState('');
+  const [fechaMesaPartes, setFechaMesaPartes] = useState('');
   const [fechaRecepcion, setFechaRecepcion] = useState('');
   const [remitente, setRemitente] = useState<any>(null);
 
@@ -42,6 +43,9 @@ export default function ExpedienteForm() {
   // Multiple docentes-cursos (for exceptional cases)
   const [docentesCursos, setDocentesCursos] = useState<any[]>([]);
   const [usarMultiple, setUsarMultiple] = useState(false);
+
+  // Faculty code for filtering courses
+  const [facultadCodigo, setFacultadCodigo] = useState('');
 
   // Devolucion fields
   const [personaDevolucion, setPersonaDevolucion] = useState('');
@@ -79,7 +83,10 @@ export default function ExpedienteForm() {
 
   // Auto-detect faculty code from numeroDocumento and fill remitente
   useEffect(() => {
-    if (!numeroDocumento || numeroDocumento.length < 3) return;
+    if (!numeroDocumento || numeroDocumento.length < 3) {
+      setFacultadCodigo('');
+      return;
+    }
 
     // Debounce the search to avoid too many requests
     const timeoutId = setTimeout(() => {
@@ -98,30 +105,68 @@ export default function ExpedienteForm() {
         const response = await axios.get('/expedientes/buscar-directores?q=EPG');
         const directors = response.data.data || [];
         const epgDirector = directors.find((d: any) => d.id === 'epg_director');
-        
+
         if (epgDirector && !remitente) {
           setRemitente(epgDirector);
           return; // Salir temprano si encontramos EPG
         }
       }
 
+      //Verificar si tiene DGA-UA
+      const dgaRegex = /\b(DGA|UA)\b/i;
+      if (dgaRegex.test(numeroDocumento)) {
+        // Buscar específicamente el director de EPG
+        const response = await axios.get('/expedientes/buscar-directores?q=DGA-UNPRG');
+        const directors = response.data.data || [];
+        const epgDirector = directors.find((d: any) => d.id === 'mg_carranza');
+
+        if (epgDirector && !remitente) {
+          setRemitente(epgDirector);
+          return; // Salir temprano si encontramos EPG
+        }
+      }
+
+      //Verificar si tiene DGA/UA
+      const dgaUaRegex = /\b(DGA|UA)\b/i;
+      if (dgaUaRegex.test(numeroDocumento)) {
+        // Buscar específicamente el director de EPG
+        const response = await axios.get('/expedientes/buscar-directores?q=DGA/UA');
+        const directors = response.data.data || [];
+        const epgDirector = directors.find((d: any) => d.id === 'mg_yalta');
+
+        if (epgDirector && !remitente) {
+          setRemitente(epgDirector);
+          return; // Salir temprano si encontramos EPG
+        }
+      }
+
+
       // Si no es EPG, buscar por código de facultad
       const response = await axios.get('/expedientes/buscar-directores?q=all');
       const allDirectors = response.data.data || [];
-      
+
       // Try to find a director whose faculty code appears in the document number
       // Look for the code as a separate word or surrounded by delimiters
       const matchedDirector = allDirectors.find((director: any) => {
         if (director.codigo) {
           // Match codigo as a whole word or surrounded by non-letter characters
           const regex = new RegExp(`(^|[^A-Za-z])${director.codigo}([^A-Za-z]|$)`, 'i');
-          return regex.test(numeroDocumento);
+          const match = regex.test(numeroDocumento);
+
+          if (match) {
+            console.log('Found matching faculty code:', director.codigo);
+            setFacultadCodigo(director.codigo);
+            return true;
+          }
         }
         return false;
       });
-      
+
       if (matchedDirector && !remitente) {
         setRemitente(matchedDirector);
+      } else if (!matchedDirector) {
+        console.log('No matching faculty code found, resetting.');
+        setFacultadCodigo('');
       }
     } catch (error) {
       console.error('Error searching director by faculty code:', error);
@@ -135,11 +180,11 @@ export default function ExpedienteForm() {
 
       setNumeroExpedienteMP(data.numero_expediente_mesa_partes || '');
       setNumeroDocumento(data.numero_documento);
-      
+
       // Formatear fechas para inputs type="date" (solo YYYY-MM-DD)
-      setFechaDocumento(data.fecha_documento ? data.fecha_documento.split(' ')[0] : '');
+      setFechaMesaPartes(data.fecha_mesa_partes ? data.fecha_mesa_partes.split(' ')[0] : '');
       setFechaRecepcion(data.fecha_recepcion_contabilidad ? data.fecha_recepcion_contabilidad.split(' ')[0] : '');
-      
+
       // Parse remitente as object for SelectConBusqueda
       if (data.remitente) {
         setRemitente({
@@ -148,7 +193,7 @@ export default function ExpedienteForm() {
           nombre: data.remitente,
         });
       }
-      
+
       setTipoAsunto(data.tipo_asunto);
       setDescripcionAsunto(data.descripcion_asunto || '');
 
@@ -169,7 +214,7 @@ export default function ExpedienteForm() {
       setFechasEnsenanza(data.fechas_ensenanza || []);
       setNumeroOficioPresentacionCoordinador(data.numero_oficio_presentacion_coordinador || '');
       setNumeroOficioConformidadCoordinador(data.numero_oficio_conformidad_coordinador || '');
-      
+
       // Devolucion fields
       setPersonaDevolucion(data.persona_devolucion || '');
       setDniDevolucion(data.dni_devolucion || '');
@@ -250,7 +295,7 @@ export default function ExpedienteForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!numeroDocumento || !fechaDocumento || !fechaRecepcion || !remitente) {
+    if (!numeroDocumento || !fechaMesaPartes || !fechaRecepcion || !remitente) {
       alert('Por favor complete todos los campos requeridos');
       return;
     }
@@ -288,7 +333,7 @@ export default function ExpedienteForm() {
       const payload: any = {
         numero_expediente_mesa_partes: numeroExpedienteMP || null,
         numero_documento: numeroDocumento,
-        fecha_documento: fechaDocumento,
+        fecha_mesa_partes: fechaMesaPartes,
         fecha_recepcion_contabilidad: fechaRecepcion,
         remitente: remitente?.nombre || remitente?.label || '',
         tipo_asunto: tipoAsunto,
@@ -297,18 +342,40 @@ export default function ExpedienteForm() {
 
       // Si es presentacion/conformidad y usa múltiple, agregar array
       if ((tipoAsunto === 'presentacion' || tipoAsunto === 'conformidad') && usarMultiple && docentesCursos.length > 0) {
-        payload.docentes_cursos = docentesCursos.map(dc => ({
-          docente_id: dc.docente?.id,
-          curso_id: dc.curso?.id,
-          semestre_id: dc.curso?.semestre_id,
-          fechas_ensenanza: dc.fechas_ensenanza || [],
-          numero_oficio_coordinador: dc.numero_oficio_coordinador || null,
-        }));
+        payload.docentes_cursos = docentesCursos.map(dc => {
+          let cursoId = dc.curso?.id;
+          let semestreId = dc.curso?.semestre_id;
+
+          // Handle composite ID if present (format: curso_id-semestre_id)
+          if (dc.curso?.id && typeof dc.curso.id === 'string' && dc.curso.id.includes('-')) {
+            const parts = dc.curso.id.split('-');
+            cursoId = parts[0];
+            semestreId = parts[1];
+          }
+
+          return {
+            docente_id: dc.docente?.id,
+            curso_id: cursoId,
+            semestre_id: semestreId,
+            fechas_ensenanza: dc.fechas_ensenanza || [],
+            numero_oficio_coordinador: dc.numero_oficio_coordinador || null,
+          };
+        });
       } else if (tipoAsunto === 'presentacion' || tipoAsunto === 'conformidad') {
         // Flujo normal (un solo docente-curso)
+        let cursoId = curso?.id;
+        let semestreId = curso?.semestre_id;
+
+        // Handle composite ID if present (format: curso_id-semestre_id)
+        if (curso?.id && typeof curso.id === 'string' && curso.id.includes('-')) {
+          const parts = curso.id.split('-');
+          cursoId = parts[0];
+          semestreId = parts[1];
+        }
+
         payload.docente_id = docente?.id;
-        payload.curso_id = curso?.id;
-        payload.semestre_id = curso?.semestre_id;
+        payload.curso_id = cursoId;
+        payload.semestre_id = semestreId;
         payload.fechas_ensenanza = fechasEnsenanza;
         payload.numero_oficio_presentacion_coordinador = tipoAsunto === 'presentacion' ? numeroOficioPresentacionCoordinador : null;
         payload.numero_oficio_conformidad_coordinador = tipoAsunto === 'conformidad' ? numeroOficioConformidadCoordinador : null;
@@ -384,6 +451,15 @@ export default function ExpedienteForm() {
                   />
                 </div>
                 <div>
+                  <Label>Fecha de Mesa de Partes</Label>
+                  <Input
+                    type="date"
+                    value={fechaMesaPartes}
+                    onChange={(e) => setFechaMesaPartes(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
                   <Label>N° Documento *</Label>
                   <Input
                     value={numeroDocumento}
@@ -392,15 +468,7 @@ export default function ExpedienteForm() {
                     required
                   />
                 </div>
-                <div>
-                  <Label>Fecha del Documento *</Label>
-                  <Input
-                    type="date"
-                    value={fechaDocumento}
-                    onChange={(e) => setFechaDocumento(e.target.value)}
-                    required
-                  />
-                </div>
+
                 <div>
                   <Label>Fecha de Recepción en Contabilidad *</Label>
                   <Input
@@ -412,12 +480,11 @@ export default function ExpedienteForm() {
                 </div>
                 <div className="md:col-span-2">
                   <Label>Remitente (Quien escribe) *</Label>
-                  <SelectConBusqueda
-                    label=""
+                  <ComboboxEditable
                     searchEndpoint="/expedientes/buscar-directores"
                     value={remitente}
                     onChange={setRemitente}
-                    placeholder="Buscar director..."
+                    placeholder="Buscar director o escribir nombre..."
                   />
                 </div>
               </div>
@@ -428,7 +495,7 @@ export default function ExpedienteForm() {
           <TabPanel id="asunto" activeTab={activeTab}>
             <div className="bg-green-50 p-6 rounded-lg">
               <h3 className="text-2xl font-semibold text-green-800 mb-6">📝 Asunto del Documento</h3>
-              
+
               {/* Tipo de Asunto */}
               <div className="mb-6">
                 <Label>Tipo de Asunto *</Label>
@@ -441,11 +508,10 @@ export default function ExpedienteForm() {
                   ].map((option) => (
                     <label
                       key={option.value}
-                      className={`flex items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        tipoAsunto === option.value
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`flex items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all ${tipoAsunto === option.value
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       <input
                         type="radio"
@@ -544,6 +610,7 @@ export default function ExpedienteForm() {
                             value={curso}
                             onChange={setCurso}
                             placeholder="Buscar curso..."
+                            additionalParams={{ facultad_codigo: facultadCodigo }}
                           />
                         </div>
                         {/* Coordinator document field */}
@@ -557,7 +624,7 @@ export default function ExpedienteForm() {
                             />
                           </div>
                         )}
-                        
+
                         {tipoAsunto === 'conformidad' && (
                           <div>
                             <Label>N° Oficio Conformidad Coordinador (Opcional)</Label>
@@ -569,7 +636,7 @@ export default function ExpedienteForm() {
                             />
                           </div>
                         )}
-                        
+
                         <div className="md:col-span-2">
                           <CalendarioMultiple
                             label="Fechas de Enseñanza"
@@ -620,7 +687,7 @@ export default function ExpedienteForm() {
                       </div>
                       <div>
                         <Label>Tipo de Devolución *</Label>
-                        <select 
+                        <select
                           value={tipoDevolucion}
                           onChange={(e) => setTipoDevolucion(e.target.value)}
                           className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"

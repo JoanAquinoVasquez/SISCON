@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import axios from '@/lib/axios';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ interface Expediente {
   id: number;
   numero_expediente_mesa_partes: string | null;
   numero_documento: string;
-  fecha_documento: string;
   fecha_recepcion_contabilidad: string;
   remitente: string;
   tipo_asunto: 'descripcion' | 'presentacion' | 'conformidad' | 'resolucion';
@@ -22,6 +22,9 @@ interface Expediente {
   periodo: string | null;
   estado_pago: string | null;
   pago_docente_id: number | null;
+  fecha_mesa_partes: string;
+  programa_nombre: string | null;
+  grado_nombre: string | null;
 }
 
 export default function ExpedientesList() {
@@ -47,6 +50,7 @@ export default function ExpedientesList() {
       if (estadoPago) params.estado_pago = estadoPago;
 
       const response = await axios.get('/expedientes', { params });
+      console.log(response.data);
       setExpedientes(response.data.data);
       setTotalPages(response.data.last_page);
     } catch (error) {
@@ -64,7 +68,7 @@ export default function ExpedientesList() {
       fetchExpedientes();
     } catch (error) {
       console.error('Error al eliminar:', error);
-      alert('Error al eliminar el expediente');
+      toast.error('Error al eliminar el expediente');
     }
   };
 
@@ -179,13 +183,12 @@ export default function ExpedientesList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>N° Exp. MP</TableHead>
-                <TableHead>N° Documento</TableHead>
-                <TableHead>Fecha Doc.</TableHead>
+                <TableHead>Expediente MP</TableHead>
+                <TableHead>Documento Recibido</TableHead>
                 <TableHead>Fecha Recep.</TableHead>
-                <TableHead>Remitente</TableHead>
                 <TableHead>Tipo Asunto</TableHead>
-                <TableHead>Docente/Curso</TableHead>
+                <TableHead>Docente</TableHead>
+                <TableHead>Curso</TableHead>
                 <TableHead>Estado Pago</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -206,11 +209,14 @@ export default function ExpedientesList() {
               ) : (
                 expedientes.map((exp) => (
                   <TableRow key={exp.id}>
-                    <TableCell>{exp.numero_expediente_mesa_partes || '-'}</TableCell>
-                    <TableCell className="font-medium">{exp.numero_documento}</TableCell>
-                    <TableCell>{formatDate(exp.fecha_documento)}</TableCell>
+                    <TableCell>
+                      <div className="font-medium">N° {exp.numero_expediente_mesa_partes}</div>
+                      <div className="text-xs text-muted-foreground">{formatDate(exp.fecha_mesa_partes)}</div></TableCell>
+                    <TableCell className="font-medium">
+                      {exp.numero_documento}
+                      <div className="text-xs text-muted-foreground">{exp.remitente}</div>
+                    </TableCell>
                     <TableCell>{formatDate(exp.fecha_recepcion_contabilidad)}</TableCell>
-                    <TableCell>{exp.remitente}</TableCell>
                     <TableCell>{getTipoAsuntoBadge(exp.tipo_asunto)}</TableCell>
                     <TableCell>
                       {exp.docente_nombre ? (
@@ -218,12 +224,15 @@ export default function ExpedientesList() {
                           <div className="font-medium">
                             {exp.docente_titulo_profesional ? `${exp.docente_titulo_profesional} ` : ''}{exp.docente_nombre}
                           </div>
-                          <div className="text-gray-500">{exp.curso_nombre}</div>
                         </div>
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {exp.curso_nombre}
+                      <div className="text-xs text-muted-foreground">{exp.grado_nombre} en {exp.programa_nombre}</div>
+                      </TableCell>
                     <TableCell>{getEstadoPagoBadge(exp.estado_pago)}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">

@@ -127,6 +127,11 @@ export default function PagoDocenteForm() {
   // Doc Recibido
   const [numeroOficioPagoDireccion, setNumeroOficioPagoDireccion] = useState('');
   const [numeroOficioPagoDireccionUrl, setNumeroOficioPagoDireccionUrl] = useState('');
+  const [pedidoServicio, setPedidoServicio] = useState('');
+  const [ordenServicio, setOrdenServicio] = useState('');
+  const [actaConformidad, setActaConformidad] = useState('');
+  const [numeroExpSiaf, setNumeroExpSiaf] = useState('');
+  const [notaPago, setNotaPago] = useState('');
 
   // Documentos internos
   const [docInterno, setDocInterno] = useState({
@@ -225,6 +230,11 @@ export default function PagoDocenteForm() {
           setNumeroInformeFinalUrl(data.numero_informe_final_url || '');
           setNumeroOficioPagoDireccion(data.numero_oficio_pago_direccion || '');
           setNumeroOficioPagoDireccionUrl(data.numero_oficio_pago_direccion_url || '');
+          setPedidoServicio(data.numero_pedido_servicio || '');
+          setOrdenServicio(data.orden_servicio || '');
+          setActaConformidad(data.acta_conformidad || '');
+          setNumeroExpSiaf(data.numero_exp_siaf || '');
+          setNotaPago(data.nota_pago || '');
 
           // Siempre poblar documentos internos (disponibles para todos los tipos)
           setDocInterno({
@@ -348,6 +358,11 @@ export default function PagoDocenteForm() {
         numero_informe_final_url: numeroInformeFinalUrl,
         numero_oficio_pago_direccion: numeroOficioPagoDireccion,
         numero_oficio_pago_direccion_url: numeroOficioPagoDireccionUrl,
+        numero_pedido_servicio: pedidoServicio,
+        orden_servicio: ordenServicio,
+        acta_conformidad: actaConformidad,
+        numero_exp_siaf: numeroExpSiaf,
+        nota_pago: notaPago,
         ...(docente.tipo_docente === 'interno' ? docInterno : {}),
         ...(docente.tipo_docente === 'externo' ? docExterno : {}),
       };
@@ -663,7 +678,7 @@ export default function PagoDocenteForm() {
           {/* Tab para Doc Recibido */}
           <TabPanel id="doc-recibido" activeTab={activeTab}>
             <div className="bg-purple-50 p-6 rounded-lg">
-              <h3 className="text-2xl font-semibold text-purple-800 mb-6">📬 Documento Recibido</h3>
+              <h3 className="text-2xl font-semibold text-purple-800 mb-6">📬 Documentos Recibidos</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DocumentField
                   label="Oficio de Pago de Dirección"
@@ -673,6 +688,51 @@ export default function PagoDocenteForm() {
                   onUrlChange={(v: string) => setNumeroOficioPagoDireccionUrl(v)}
                   showUpload={true}
                 />
+                <div>
+                  <Label className="text-sm">Pedido de Servicio</Label>
+                  <Input
+                    value={pedidoServicio}
+                    onChange={(e) => setPedidoServicio(e.target.value)}
+                    className="h-9"
+                    placeholder="Número"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Orden de Servicio</Label>
+                  <Input
+                    value={ordenServicio}
+                    onChange={(e) => setOrdenServicio(e.target.value)}
+                    className="h-9"
+                    placeholder="Número"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Acta de Conformidad</Label>
+                  <Input
+                    value={actaConformidad}
+                    onChange={(e) => setActaConformidad(e.target.value)}
+                    className="h-9"
+                    placeholder="Número"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">N° Exp SIAF</Label>
+                  <Input
+                    value={numeroExpSiaf}
+                    onChange={(e) => setNumeroExpSiaf(e.target.value)}
+                    className="h-9"
+                    placeholder="Número"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm">Nota de Pago</Label>
+                  <Input
+                    value={notaPago}
+                    onChange={(e) => setNotaPago(e.target.value)}
+                    className="h-9"
+                    placeholder="Número"
+                  />
+                </div>
               </div>
             </div>
           </TabPanel>

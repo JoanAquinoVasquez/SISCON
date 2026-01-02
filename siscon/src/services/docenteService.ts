@@ -41,7 +41,7 @@ export interface UpdateDocenteDto {
 }
 
 export const docenteService = {
-  getAll: () => api.get<{ data: Docente[] }>('/docentes'),
+  getAll: (params?: any) => api.get<any>('/docentes', { params }),
   
   getById: (id: number) => api.get<{ data: Docente }>(`/docentes/${id}`),
   

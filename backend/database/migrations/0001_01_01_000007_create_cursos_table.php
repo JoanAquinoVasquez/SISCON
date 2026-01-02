@@ -10,14 +10,18 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('curso_semestre', function (Blueprint $table) {
+        Schema::create('cursos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('curso_id')->constrained('cursos')->onDelete('cascade');
-            $table->foreignId('semestre_id')->constrained('semestres')->onDelete('cascade');
-            $table->timestamps();
 
-            $table->unique(['curso_id', 'semestre_id']);
-            $table->index('semestre_id');
+            $table->string('nombre');
+            $table->string('codigo')->unique();
+            $table->integer('creditos')->default(0);
+            $table->text('descripcion')->nullable();
+
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('codigo');
         });
     }
 
@@ -26,6 +30,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('curso_semestre');
+        Schema::dropIfExists('cursos');
     }
 };

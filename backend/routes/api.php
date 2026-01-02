@@ -118,6 +118,7 @@ Route::middleware('firebase.auth')->group(function () {
     Route::get('pagos-docentes/buscar-curso', [PagoDocenteController::class, 'buscarCursos']);
     Route::get('pagos-docentes/curso/{id}/datos', [PagoDocenteController::class, 'obtenerDatosCurso']);
     Route::post('pagos-docentes/{id}/generar-resolucion', [PagoDocenteController::class, 'generateResolucion']);
+    Route::post('pagos-docentes/{id}/generar-resolucion-aceptacion', [PagoDocenteController::class, 'generateResolucionAceptacion']);
     Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 

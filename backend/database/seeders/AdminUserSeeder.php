@@ -16,6 +16,7 @@ class AdminUserSeeder extends Seeder
         User::create([
             'name' => 'Administrador',
             'email' => 'jaquinov@unprg.edu.pe',
+            'firebase_uid' => null, // Se sincronizará en el primer login
             'role' => 'admin',
             'is_active' => true,
         ]);
@@ -23,30 +24,35 @@ class AdminUserSeeder extends Seeder
         User::create([
             'name' => 'Usuario Demo',
             'email' => 'alopezca@unprg.edu.pe',
+            'firebase_uid' => null,
             'role' => 'user',
             'is_active' => true,
         ]);
         User::create([
             'name' => 'Usuario Demo',
             'email' => 'cacostam@unprg.edu.pe',
+            'firebase_uid' => null,
             'role' => 'user',
             'is_active' => true,
         ]);
         User::create([
             'name' => 'Usuario Demo',
             'email' => 'kdavilade@unprg.edu.pe',
+            'firebase_uid' => null,
             'role' => 'user',
             'is_active' => true,
         ]);
         User::create([
             'name' => 'Usuario Demo',
             'email' => 'mcanevaroc@unprg.edu.pe',
+            'firebase_uid' => null,
             'role' => 'user',
             'is_active' => true,
         ]);
         User::create([
             'name' => 'Usuario Demo',
             'email' => 'mcromero@unprg.edu.pe',
+            'firebase_uid' => null,
             'role' => 'user',
             'is_active' => true,
         ]);

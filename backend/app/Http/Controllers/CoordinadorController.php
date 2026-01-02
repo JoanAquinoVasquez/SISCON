@@ -8,10 +8,28 @@ use Illuminate\Support\Facades\Validator;
 
 class CoordinadorController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $coordinadores = Coordinador::all();
-        return response()->json(['data' => $coordinadores]);
+        $query = Coordinador::query();
+        // Search across name fields
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('nombres', 'like', "%{$search}%")
+                    ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                    ->orWhere('apellido_materno', 'like', "%{$search}%");
+            });
+        }
+        // Filter by tipo_coordinador
+        if ($tipo = $request->query('tipo_coordinador')) {
+            $query->where('tipo_coordinador', $tipo);
+        }
+        // Filter by genero
+        if ($genero = $request->query('genero')) {
+            $query->where('genero', $genero);
+        }
+        $perPage = $request->query('per_page', 10);
+        $coordinadores = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        return response()->json($coordinadores);
     }
 
     public function store(Request $request)

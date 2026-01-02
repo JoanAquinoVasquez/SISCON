@@ -37,8 +37,20 @@ export class ApiService {
     return response.json();
   }
 
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint);
+  async get<T>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> {
+    let url = endpoint;
+    if (options?.params) {
+      // Filter out undefined/null values
+      const cleanParams = Object.entries(options.params)
+        .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+        .reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {});
+      
+      const queryString = new URLSearchParams(cleanParams).toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+    }
+    return this.request<T>(url);
   }
 
   async post<T>(endpoint: string, data: any): Promise<T> {

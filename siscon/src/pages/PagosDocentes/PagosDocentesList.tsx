@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import axios from '../../lib/axios';
 import {
   Table,
@@ -126,6 +127,7 @@ interface PagoDocente {
     apellido_paterno: string;
     apellido_materno: string;
     dni: string;
+    tipo_docente?: string;
   };
   curso?: {
     nombre: string;
@@ -198,7 +200,7 @@ export default function PagosDocentesList() {
         fetchPagos();
       } catch (error) {
         console.error('Error al eliminar:', error);
-        alert('Error al eliminar el registro');
+        toast.error('Error al eliminar el registro');
       }
     }
   };
@@ -211,7 +213,7 @@ export default function PagosDocentesList() {
       setSelectedPago(response.data.data);
     } catch (error) {
       console.error('Error al cargar detalle:', error);
-      alert('Error al cargar los detalles del pago');
+      toast.error('Error al cargar los detalles del pago');
       setIsDetailOpen(false);
     } finally {
       setLoadingDetail(false);
@@ -249,10 +251,10 @@ export default function PagosDocentesList() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      alert('Resolución generada exitosamente');
+      toast.success('Resolución generada exitosamente');
     } catch (error) {
       console.error('Error al generar resolución:', error);
-      alert('Error al generar la resolución');
+      toast.error('Error al generar la resolución');
     } finally {
       setIsGeneratingResolucion(false);
     }
@@ -289,12 +291,52 @@ export default function PagosDocentesList() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      alert('Oficio generado exitosamente');
+      toast.success('Oficio generado exitosamente');
     } catch (error) {
       console.error('Error al generar oficio:', error);
-      alert('Error al generar el oficio');
+      toast.error('Error al generar el oficio');
     } finally {
       setIsGeneratingOficio(false);
+    }
+  };
+
+  // Generar resolución de aceptación (Nueva función)
+  const [isGeneratingResolucionAceptacion, setIsGeneratingResolucionAceptacion] = useState(false);
+  const handleGenerateResolucionAceptacion = async (id: number) => {
+    setIsGeneratingResolucionAceptacion(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-resolucion-aceptacion`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Extraer nombre de archivo del header Content-Disposition
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Resolucion_Aceptacion_${id}.docx`; // Fallback
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Resolución de Aprobación generada exitosamente');
+    } catch (error) {
+      console.error('Error al generar resolución:', error);
+      toast.error('Error al generar la resolución de aprobación');
+    } finally {
+      setIsGeneratingResolucionAceptacion(false);
     }
   };
 
@@ -368,10 +410,9 @@ export default function PagosDocentesList() {
               <TableHead>Docente</TableHead>
               <TableHead>Curso</TableHead>
               <TableHead>Programa</TableHead>
-              <TableHead>Periodo</TableHead>
               <TableHead className="text-right">Importe</TableHead>
               <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
+              <TableHead className="text-center">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -397,11 +438,11 @@ export default function PagosDocentesList() {
                     <div className="font-medium">{pago.docente_nombre}</div>
                     <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente}</div>
                   </TableCell>
-                  <TableCell>{pago.curso_nombre}</TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={pago.programa_nombre}>
+                  <TableCell className="max-w-[200px] truncate" title={pago.curso_nombre}>{pago.curso_nombre}</TableCell>
+                  <TableCell className='max-w-[150px] truncate' title={pago.programa_nombre}>
                     {pago.programa_nombre}
+                    <div className="text-xs text-muted-foreground">Periodo {pago.periodo}</div>
                   </TableCell>
-                  <TableCell>{pago.periodo}</TableCell>
                   <TableCell className="text-right font-medium">
                     S/ {Number(pago.importe_total || 0).toFixed(2)}
                   </TableCell>
@@ -413,34 +454,56 @@ export default function PagosDocentesList() {
                       <Button variant="ghost" size="icon" onClick={() => handleViewDetail(pago.id)} title="Ver detalle">
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleGenerateResolucion(pago.id)}
-                        disabled={isGeneratingResolucion}
-                        title="Generar Resolución"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        {isGeneratingResolucion ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileText className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleGenerateOficio(pago.id)}
-                        disabled={isGeneratingOficio}
-                        title="Generar Oficio de Contabilidad"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                      >
-                        {isGeneratingOficio ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Clipboard className="h-4 w-4" />
-                        )}
-                      </Button>
+                      {pago.tipo_docente === 'externo' && pago.estado === 'pendiente' ? (
+                        /* CASO 1: Externo y Pendiente -> Solo Resolución de Aprobación */
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleGenerateResolucionAceptacion(pago.id)}
+                          disabled={isGeneratingResolucionAceptacion}
+                          title="Generar Resolución de Aprobación"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          {isGeneratingResolucionAceptacion ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </Button>
+                      ) : pago.estado === 'proceso' ? (
+                        /* CASO 2: En proceso (Sea interno o externo) -> Resolución de Pago y Oficio */
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleGenerateResolucion(pago.id)}
+                            disabled={isGeneratingResolucion}
+                            title="Generar Resolución de Pago"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            {isGeneratingResolucion ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <FileText className="h-4 w-4" />
+                            )}
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleGenerateOficio(pago.id)}
+                            disabled={isGeneratingOficio}
+                            title="Generar Oficio de Contabilidad"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            {isGeneratingOficio ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Clipboard className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      ) : null}
                       <Button variant="ghost" size="icon" onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)} title="Editar">
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -453,37 +516,39 @@ export default function PagosDocentesList() {
               ))
             )}
           </TableBody>
-        </Table>
-      </div>
+        </Table >
+      </div >
 
       {/* Paginación */}
-      {pagination && pagination.last_page > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+      {
+        pagination && pagination.last_page > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
+                disabled={page === pagination.last_page}
+              >
+                Siguiente
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-              disabled={page === pagination.last_page}
-            >
-              Siguiente
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Modal de Detalle */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
@@ -504,7 +569,7 @@ export default function PagosDocentesList() {
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Docente</h3>
                   <p>{selectedPago.docente?.titulo_profesional ? selectedPago.docente.titulo_profesional + ' ' : ''}{selectedPago.docente?.nombres} {selectedPago.docente?.apellido_paterno} {selectedPago.docente?.apellido_materno}</p>
-                  <p className="text-sm text-muted-foreground">DNI: {selectedPago.docente?.dni}</p>
+                  <p className="text-sm text-muted-foreground">Docente {selectedPago.docente?.tipo_docente}</p>
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estado</h3>
@@ -557,40 +622,62 @@ export default function PagosDocentesList() {
               <div className="border-b pb-4">
                 <h3 className="font-semibold mb-3">Generar Documentos</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button
-                    onClick={() => selectedPago && handleGenerateResolucion(selectedPago.id)}
-                    disabled={isGeneratingResolucion}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    {isGeneratingResolucion ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generando...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Generar Resolución
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={() => selectedPago && handleGenerateOficio(selectedPago.id)}
-                    disabled={isGeneratingOficio}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    {isGeneratingOficio ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Generando...
-                      </>
-                    ) : (
-                      <>
-                        <Clipboard className="mr-2 h-4 w-4" />
-                        Generar Oficio de Contabilidad
-                      </>
-                    )}
-                  </Button>
+                  {selectedPago && selectedPago.estado === 'pendiente' ? (
+                    <Button
+                      onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
+                      disabled={isGeneratingResolucionAceptacion}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      {isGeneratingResolucionAceptacion ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generando...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Generar Resolución de Aprobación
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => selectedPago && handleGenerateResolucion(selectedPago.id)}
+                        disabled={isGeneratingResolucion}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        {isGeneratingResolucion ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generando...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Generar Resolución de Pago
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => selectedPago && handleGenerateOficio(selectedPago.id)}
+                        disabled={isGeneratingOficio}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        {isGeneratingOficio ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Generando...
+                          </>
+                        ) : (
+                          <>
+                            <Clipboard className="mr-2 h-4 w-4" />
+                            Generar Oficio de Contabilidad
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -624,6 +711,6 @@ export default function PagosDocentesList() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

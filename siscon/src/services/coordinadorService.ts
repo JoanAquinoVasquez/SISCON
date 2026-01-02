@@ -29,7 +29,7 @@ export interface CreateCoordinadorDto {
 export interface UpdateCoordinadorDto extends Partial<CreateCoordinadorDto> {}
 
 export const coordinadorService = {
-  getAll: () => api.get<{ data: Coordinador[] }>('/coordinadores'),
+  getAll: (params?: any) => api.get<any>('/coordinadores', { params }),
   getById: (id: number) => api.get<{ data: Coordinador }>(`/coordinadores/${id}`),
   create: (data: CreateCoordinadorDto) => api.post<{ data: Coordinador }>('/coordinadores', data),
   update: (id: number, data: UpdateCoordinadorDto) => api.put<{ data: Coordinador }>(`/coordinadores/${id}`, data),

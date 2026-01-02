@@ -10,8 +10,8 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('docentes', function (Blueprint $table) {
-            $table->string('dni', 8)->nullable()->change();
+        Schema::table('expedientes', function (Blueprint $table) {
+            $table->renameColumn('fecha_documento', 'fecha_mesa_partes');
         });
     }
 
@@ -20,8 +20,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('docentes', function (Blueprint $table) {
-            $table->string('dni', 8)->nullable(false)->change();
+        Schema::table('expedientes', function (Blueprint $table) {
+            $table->renameColumn('fecha_mesa_partes', 'fecha_documento');
         });
     }
 };

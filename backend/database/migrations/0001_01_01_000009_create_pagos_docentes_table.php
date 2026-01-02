@@ -15,8 +15,9 @@ return new class extends Migration {
 
             // Relaciones
             $table->foreignId('docente_id')->constrained('docentes')->onDelete('cascade');
-            $table->foreignId('programa_id')->constrained('programas')->onDelete('cascade');
+            $table->foreignId('curso_id')->constrained('cursos')->onDelete('cascade');
             $table->string('periodo'); // "2024-II", "2025-I"
+            $table->enum('estado', ['pendiente', 'en_proceso', 'completado'])->nullable()->default('pendiente');
 
             // Datos automáticos del programa
             $table->string('facultad_nombre')->nullable();
@@ -62,12 +63,21 @@ return new class extends Migration {
             $table->string('numero_pedido_servicio')->nullable();
             $table->text('numero_pedido_servicio_url')->nullable();
 
+            // Documento recibido
+            $table->string('numero_oficio_pago_direccion')->nullable();
+            $table->text('numero_oficio_pago_direccion_url')->nullable();
+            $table->string('orden_servicio')->nullable();
+            $table->string('acta_conformidad')->nullable();
+            $table->string('numero_exp_siaf')->nullable();
+            $table->string('nota_pago')->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
             // Índices
             $table->index(['docente_id', 'periodo']);
-            $table->index(['programa_id', 'periodo']);
+            $table->index(['curso_id', 'periodo']);
+            $table->index('estado');
         });
     }
 

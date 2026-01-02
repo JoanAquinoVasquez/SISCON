@@ -2,31 +2,45 @@
 
 /* El contenedor principal ocupa TODA la pantalla */
 .login-container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh; /* Altura mínima del 100% de la ventana */
+  min-height: 100vh;
   width: 100%;
-  /* Un degradado sutil azulado/gris para que se vea financiero/tech */
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  overflow: hidden;
   padding: 20px;
 }
 
-/* La tarjeta blanca */
+/* Fondos animados */
+.login-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* La tarjeta blanca con efecto glassmorphism */
 .login-card {
-  background: white;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   padding: 2.5rem;
   border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* Sombra suave y moderna */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 400px; /* En escritorio no pasará de 400px */
+  max-width: 400px;
   text-align: center;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Efecto hover sutil en la tarjeta */
 .login-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
 }
 
 .logo-icon {
@@ -85,9 +99,9 @@
 /* --- RESPONSIVE DESIGN (Para celulares) --- */
 @media (max-width: 480px) {
   .login-card {
-    padding: 2rem 1.5rem; /* Menos padding en pantallas pequeñas */
-    box-shadow: none; /* Opcional: quitar sombra en móvil para diseño "plano" */
-    background: rgba(255, 255, 255, 0.9); /* Ligeramente transparente */
+    padding: 2rem 1.5rem;
+    box-shadow: none;
+    background: rgba(255, 255, 255, 0.9);
   }
   
   .title {

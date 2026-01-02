@@ -252,6 +252,65 @@ class DocumentGeneratorService
             $template->setValue('NUMERO_PEDIDO_SERVICIO', $pago->numero_pedido_servicio ?? '');
             $template->setValue('RETENCION', $pago->tiene_retencion_8_porciento ? 'Sí' : 'No');
         }
+
+        // Fecha de mesa de partes (para resoluciones de aceptación)
+        $template->setValue('FECHA_MESA_PARTES', $this->formatearFecha($pago->fecha_mesa_partes));
+        $template->setValue('FECHA_RECIBIDA', $this->formatearFecha($pago->fecha_mesa_partes));
+        #El numero de expediente que tiene tipo de asunto = presentacion
+        $template->setValue('N_MESA_DE_PARTES', $pago->expedientes->where('tipo_asunto', 'presentacion')->first()->numero_expediente_mesa_partes ?? '');
+    }
+
+    /**
+     * Genera una resolución de aceptación para docentes externos
+     */
+    public function generateResolucionAceptacion(PagoDocente $pago): string
+    {
+        // Cargar relaciones necesarias
+        $pago->load([
+            'docente',
+            'curso.semestres.programa.grado',
+            'curso.semestres.programa.facultad',
+            'curso.semestres.programa.coordinadores'
+        ]);
+
+        if ($pago->docente->tipo_docente !== 'externo') {
+            throw new \Exception("Esta resolución solo es para docentes externos.");
+        }
+
+        // Determinar plantilla según periodo
+        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Resolución Aceptacion DocExt 2025.docx';
+        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Resolución Aceptacion DocExt 2024.docx';
+        } else {
+            throw new \Exception("No hay plantilla definida para el periodo {$pago->periodo}");
+        }
+
+        $templatePath = storage_path('templates/' . $templateName);
+
+        if (!file_exists($templatePath)) {
+            throw new \Exception("Plantilla no encontrada: {$templateName}");
+        }
+
+        // Crear procesador de plantilla
+        $template = new TemplateProcessor($templatePath);
+
+        // Reemplazar variables
+        $this->replaceVariables($template, $pago);
+
+        // Generar nombre de archivo
+        $fileName = 'RES ACEPTACION ' . $pago->numero_resolucion . '.docx';
+        $outputPath = storage_path('app/temp/' . $fileName);
+
+        // Asegurar que el directorio existe
+        if (!file_exists(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        // Guardar documento
+        $template->saveAs($outputPath);
+
+        return $outputPath;
     }
 
     /**

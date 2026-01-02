@@ -10,17 +10,18 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('cursos', function (Blueprint $table) {
+        Schema::create('facultads', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('semestre_id')->constrained('semestres')->onDelete('cascade');
+
             $table->string('nombre');
             $table->string('codigo')->unique();
-            $table->integer('creditos')->default(0);
-            $table->text('descripcion')->nullable();
+            $table->string('director_nombre')->nullable();
+            $table->enum('director_genero', ['M', 'F'])->nullable();
+
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('semestre_id');
+            $table->index('codigo');
         });
     }
 
@@ -29,6 +30,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('cursos');
+        Schema::dropIfExists('facultads');
     }
 };

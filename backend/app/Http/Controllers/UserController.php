@@ -11,13 +11,31 @@ class UserController extends Controller
     /**
      * Display a listing of users.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::orderBy('created_at', 'desc')->get();
-        
-        return response()->json([
-            'data' => $users
-        ]);
+        $query = User::query();
+
+        // Search across name and email
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by role
+        if ($role = $request->query('role')) {
+            $query->where('role', $role);
+        }
+
+        // Filter by active status
+        if (!is_null($request->query('is_active'))) {
+            $query->where('is_active', $request->boolean('is_active'));
+        }
+
+        $perPage = $request->query('per_page', 10);
+        $users = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        return response()->json($users);
     }
 
     /**

@@ -54,15 +54,18 @@ export function SelectConBusqueda({
           q: debouncedSearchTerm,
           ...additionalParams,
         });
-        
+
+        console.log('SelectConBusqueda fetching with params:', params.toString());
+
         const response = await axios.get(`${searchEndpoint}?${params}`);
+        console.log('SelectConBusqueda response:', response.data);
         setOptions(response.data.data || []);
       } catch (err: any) {
-        const errorMessage = err.response?.status === 401 
+        const errorMessage = err.response?.status === 401
           ? 'No autenticado. Por favor inicia sesión.'
           : err.response?.status === 404
-          ? 'Endpoint no encontrado'
-          : 'Error al buscar';
+            ? 'Endpoint no encontrado'
+            : 'Error al buscar';
         setError(errorMessage);
         console.error('Error fetching options:', err);
         console.error('Error details:', {

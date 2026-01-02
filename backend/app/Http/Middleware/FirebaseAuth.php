@@ -76,11 +76,23 @@ class FirebaseAuth
             auth()->setUser($user);
 
         } catch (FailedToVerifyToken $e) {
+            \Log::error('Firebase token verification failed', [
+                'error' => $e->getMessage(),
+                'credentials_path' => base_path('config/firebase_credentials.json'),
+                'credentials_exists' => file_exists(base_path('config/firebase_credentials.json')),
+            ]);
+
             return response()->json([
                 'error' => 'Invalid token',
-                'message' => 'The provided token is invalid or expired'
+                'message' => 'The provided token is invalid or expired',
+                'debug' => config('app.debug') ? $e->getMessage() : null
             ], 401);
         } catch (\Exception $e) {
+            \Log::error('Firebase authentication error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'error' => 'Authentication failed',
                 'message' => 'Error al autenticar con Firebase: ' . $e->getMessage()

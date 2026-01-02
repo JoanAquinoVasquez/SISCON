@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { Label } from './label';
@@ -25,7 +26,7 @@ export function CalendarioMultiple({
 
   const handleAddRange = () => {
     if (!startDate || !endDate) {
-      alert('Por favor selecciona un rango de fechas');
+      toast.error('Por favor selecciona un rango de fechas');
       return;
     }
 
@@ -62,7 +63,7 @@ export function CalendarioMultiple({
       setDateRange([null, null]);
       setSelectedDays([]);
     } else {
-      alert('No se encontraron fechas en el rango seleccionado');
+      toast.error('No se encontraron fechas en el rango seleccionado');
     }
   };
 

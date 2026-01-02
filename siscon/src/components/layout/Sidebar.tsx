@@ -1,12 +1,8 @@
 // src/components/layout/Sidebar.tsx
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../../assets/logo-epg.webp';
-import { 
-  Users,    
-  GraduationCap, 
-  BookOpen, 
-  Calendar, 
-  Building2,
+import {
+  Users,
   UserCog,
   ClipboardList,
   FileText,
@@ -20,19 +16,16 @@ import { cn } from '../../lib/utils';
 
 const menuItems = [
   { icon: Home, label: 'Dashboard', path: '/dashboard' },
-  { icon: Users, label: 'Usuarios', path: '/users' },
-  { icon: Building2, label: 'Programas', path: '/programas' },
-  { icon: GraduationCap, label: 'Grados', path: '/grados' },
-  { icon: Calendar, label: 'Semestres', path: '/semestres' },
-  { icon: BookOpen, label: 'Cursos', path: '/cursos' },
-  { icon: UserCog, label: 'Docentes', path: '/docentes' },
+  { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
+  { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
+  // Programas, Grados, Semestres, Cursos removed as they are default and not editable
   { icon: ClipboardList, label: 'Coordinadores', path: '/coordinadores' },
   { icon: FileText, label: 'Asignación Docencia', path: '/asignaciones-docencia' },
   { icon: Stethoscope, label: 'Asignación Enfermería', path: '/asignaciones-enfermeria' },
   { icon: DollarSign, label: 'Pagos Coordinador', path: '/pagos-coordinadores' },
-  { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
-  { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
-  { icon: MapPin, label: 'Lugares Procedencia', path: '/lugares-procedencia' },
+  { icon: Users, label: 'Usuarios', path: '/users' },
+  { icon: UserCog, label: 'Docentes', path: '/docentes' },
+  // { icon: MapPin, label: 'Lugares Procedencia', path: '/lugares-procedencia' },
   { icon: FileText, label: 'Oficios', path: '/oficios' },
 ];
 
@@ -57,7 +50,7 @@ export function Sidebar() {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
-          
+
           return (
             <Link
               key={item.path}

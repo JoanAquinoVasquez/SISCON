@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ProgramaSeeder::class,        // Primero crear programas
             CoordinadorSeeder::class,     // Luego crear y asociar coordinadores
             SemestreCursoSeeder::class,
+            CursosSeeder::class,
             DocenteSeeder::class,
         ]);
     }

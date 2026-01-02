@@ -27,7 +27,7 @@ export interface UpdateUserDto {
 }
 
 export const userService = {
-  getAll: () => api.get<{ data: User[] }>('/users'),
+  getAll: (params?: any) => api.get<any>('/users', { params }),
   
   getById: (id: number) => api.get<{ data: User }>(`/users/${id}`),
   

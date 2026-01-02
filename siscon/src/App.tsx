@@ -1,5 +1,6 @@
 // src/App.tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import UsersPage from './pages/Users';
@@ -26,47 +27,73 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<MainLayout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="programas" element={<ProgramasPage />} />
-        <Route path="docentes" element={<DocentesPage />} />
-        <Route path="coordinadores" element={<CoordinadoresPage />} />
-        <Route path="pagos-docentes" element={
-          <ErrorBoundary>
-            <PagosDocentesList />
-          </ErrorBoundary>
-        } />
-        <Route path="pagos-docentes/nuevo" element={
-          <ErrorBoundary>
-            <PagoDocenteForm />
-          </ErrorBoundary>
-        } />
-        <Route path="pagos-docentes/:id/editar" element={
-          <ErrorBoundary>
-            <PagoDocenteForm />
-          </ErrorBoundary>
-        } />
-        <Route path="expedientes" element={
-          <ErrorBoundary>
-            <ExpedientesList />
-          </ErrorBoundary>
-        } />
-        <Route path="expedientes/nuevo" element={
-          <ErrorBoundary>
-            <ExpedienteForm />
-          </ErrorBoundary>
-        } />
-        <Route path="expedientes/:id/editar" element={
-          <ErrorBoundary>
-            <ExpedienteForm />
-          </ErrorBoundary>
-        } />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            duration: 4000,
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      <Routes>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="programas" element={<ProgramasPage />} />
+          <Route path="docentes" element={<DocentesPage />} />
+          <Route path="coordinadores" element={<CoordinadoresPage />} />
+          <Route path="pagos-docentes" element={
+            <ErrorBoundary>
+              <PagosDocentesList />
+            </ErrorBoundary>
+          } />
+          <Route path="pagos-docentes/nuevo" element={
+            <ErrorBoundary>
+              <PagoDocenteForm />
+            </ErrorBoundary>
+          } />
+          <Route path="pagos-docentes/:id/editar" element={
+            <ErrorBoundary>
+              <PagoDocenteForm />
+            </ErrorBoundary>
+          } />
+          <Route path="expedientes" element={
+            <ErrorBoundary>
+              <ExpedientesList />
+            </ErrorBoundary>
+          } />
+          <Route path="expedientes/nuevo" element={
+            <ErrorBoundary>
+              <ExpedienteForm />
+            </ErrorBoundary>
+          } />
+          <Route path="expedientes/:id/editar" element={
+            <ErrorBoundary>
+              <ExpedienteForm />
+            </ErrorBoundary>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 

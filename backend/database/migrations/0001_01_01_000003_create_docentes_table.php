@@ -10,24 +10,36 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('coordinadores', function (Blueprint $table) {
+        Schema::create('docentes', function (Blueprint $table) {
             $table->id();
 
             // Datos personales
             $table->string('nombres');
             $table->string('apellido_paterno');
             $table->string('apellido_materno');
+            $table->string('titulo_profesional', 50)->nullable();
             $table->enum('genero', ['M', 'F', 'Otro'])->nullable();
-            $table->string('dni', 8)->unique();
+            $table->string('dni', 8)->nullable()->unique();
             $table->string('numero_telefono', 20)->nullable();
 
             // Clasificación
-            $table->enum('tipo_coordinador', ['interno', 'externo']);
+            $table->enum('tipo_docente', [
+                'interno',
+                'externo',
+                'interno_enfermeria',
+                'externo_enfermeria'
+            ]);
+
+            // Lugar de procedencia
+            $table->foreignId('lugar_procedencia_id')
+                ->nullable()
+                ->constrained('lugares_procedencia')
+                ->onDelete('set null');
 
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('tipo_coordinador');
+            $table->index('tipo_docente');
             $table->index('dni');
         });
     }
@@ -37,6 +49,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('coordinadores');
+        Schema::dropIfExists('docentes');
     }
 };

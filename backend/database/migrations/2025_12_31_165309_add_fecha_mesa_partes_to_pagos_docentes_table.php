@@ -10,8 +10,8 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('facultads', function (Blueprint $table) {
-            $table->char('director_genero', 1)->nullable()->after('director_nombre');
+        Schema::table('pagos_docentes', function (Blueprint $table) {
+            $table->date('fecha_mesa_partes')->nullable()->after('numero_exp_siaf');
         });
     }
 
@@ -20,8 +20,8 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('facultads', function (Blueprint $table) {
-            $table->dropColumn('director_genero');
+        Schema::table('pagos_docentes', function (Blueprint $table) {
+            $table->dropColumn('fecha_mesa_partes');
         });
     }
 };

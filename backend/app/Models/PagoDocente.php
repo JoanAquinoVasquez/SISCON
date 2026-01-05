@@ -38,7 +38,9 @@ class PagoDocente extends Model
         'numero_oficio_conformidad_coordinador_url',
         'numero_oficio_conformidad_direccion',
         'numero_oficio_conformidad_direccion_url',
-        'numero_resolucion',
+        'numero_resolucion_aprobacion', // New field
+        'fecha_resolucion_aprobacion', // New field
+        'numero_resolucion_pago', // Renamed from numero_resolucion
         'numero_resolucion_url',
         'fecha_resolucion',
         'numero_oficio_contabilidad',
@@ -68,6 +70,7 @@ class PagoDocente extends Model
         'importe_total' => 'decimal:2',
         'fechas_ensenanza' => 'array',
         'tiene_retencion_8_porciento' => 'boolean',
+        'fecha_resolucion_aprobacion' => 'date',
         'fecha_resolucion' => 'date',
         'fecha_recibo_honorario' => 'date',
         'fecha_oficio_contabilidad' => 'date',

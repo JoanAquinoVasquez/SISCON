@@ -35,8 +35,12 @@ Route::get('/', function () {
     ]);
 });
 
-// Protected Routes (Require Firebase Authentication)
-Route::middleware('firebase.auth')->group(function () {
+// Authentication Routes
+Route::get('auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
+Route::get('auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+
+// Protected Routes (Require Sanctum Authentication)
+Route::middleware('auth:sanctum')->group(function () {
 
     // Auth Management
     Route::get('auth/me', [AuthController::class, 'me']);

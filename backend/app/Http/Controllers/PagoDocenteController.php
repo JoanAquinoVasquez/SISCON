@@ -75,6 +75,15 @@ class PagoDocenteController extends Controller
                 'importe_total' => $pago->importe_total,
                 'estado' => $pago->estado,
                 'importe_letras' => $pago->importe_letras,
+                'numero_oficio_presentacion_facultad' => $pago->numero_oficio_presentacion_facultad,
+                'numero_oficio_presentacion_coordinador' => $pago->numero_oficio_presentacion_coordinador,
+                'numero_oficio_conformidad_facultad' => $pago->numero_oficio_conformidad_facultad,
+                'numero_oficio_conformidad_coordinador' => $pago->numero_oficio_conformidad_coordinador,
+                'numero_oficio_conformidad_direccion' => $pago->numero_oficio_conformidad_direccion,
+                'numero_resolucion_aprobacion' => $pago->numero_resolucion_aprobacion,
+                'fecha_resolucion_aprobacion' => $pago->fecha_resolucion_aprobacion,
+                'numero_resolucion_pago' => $pago->numero_resolucion_pago,
+                'numero_oficio_contabilidad' => $pago->numero_oficio_contabilidad,
                 'created_at' => $pago->created_at,
                 'updated_at' => $pago->updated_at,
             ];
@@ -99,6 +108,7 @@ class PagoDocenteController extends Controller
             'fechas_ensenanza' => 'required|array',
             'numero_informe_final' => 'nullable|string',
             'numero_informe_final_url' => 'nullable|url',
+            'fecha_resolucion_aprobacion' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -148,6 +158,7 @@ class PagoDocenteController extends Controller
             'numero_horas' => 'sometimes|numeric|min:0',
             'costo_por_hora' => 'sometimes|numeric|min:0',
             'importe_total' => 'sometimes|numeric|min:0',
+            'fecha_resolucion_aprobacion' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {

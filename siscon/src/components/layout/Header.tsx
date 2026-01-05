@@ -14,10 +14,10 @@ export function Header() {
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-xl border border-slate-200">
-          {user?.photoURL ? (
-            <img 
-              src={user.photoURL} 
-              alt={user.displayName || 'Usuario'} 
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={user.name || 'Usuario'}
               className="w-8 h-8 rounded-full"
               referrerPolicy="no-referrer"
             />
@@ -27,14 +27,14 @@ export function Header() {
             </div>
           )}
           <div className="text-sm">
-            <p className="font-medium text-slate-800">{user?.displayName || 'Usuario'}</p>
+            <p className="font-medium text-slate-800">{user?.name || 'Usuario'}</p>
             <p className="text-xs text-slate-500">{user?.email}</p>
           </div>
         </div>
-        
-        <Button 
-          variant="outline" 
-          size="sm" 
+
+        <Button
+          variant="outline"
+          size="sm"
           onClick={logout}
           className="gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
         >

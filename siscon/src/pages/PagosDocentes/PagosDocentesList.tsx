@@ -121,6 +121,15 @@ interface PagoDocente {
   numero_informe_final_url?: string;
   numero_recibo_honorario?: string;
   numero_recibo_honorario_url?: string;
+  numero_oficio_presentacion_facultad?: string;
+  numero_oficio_presentacion_coordinador?: string;
+  numero_oficio_conformidad_facultad?: string;
+  numero_oficio_conformidad_coordinador?: string;
+  numero_oficio_conformidad_direccion?: string;
+  numero_resolucion_aprobacion?: string;
+  fecha_resolucion_aprobacion?: string;
+  numero_resolucion_pago?: string;
+  numero_oficio_contabilidad?: string;
   docente?: {
     titulo_profesional?: string;
     nombres: string;
@@ -382,7 +391,7 @@ export default function PagosDocentesList() {
           />
         </div>
         <Input
-          placeholder="Periodo (ej. 2024-1)"
+          placeholder="Periodo (ej. 2024-I)"
           className="w-full md:w-40"
           value={filters.periodo}
           onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
@@ -407,9 +416,13 @@ export default function PagosDocentesList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Docente</TableHead>
-              <TableHead>Curso</TableHead>
-              <TableHead>Programa</TableHead>
+              <TableHead>ID</TableHead>
+              <TableHead className="text-center">Docente</TableHead>
+              <TableHead className="text-center">Curso</TableHead>
+              <TableHead className="text-center">Presentación</TableHead>
+              <TableHead className="text-center">Aprobación</TableHead>
+              <TableHead className="text-center">Conformidad</TableHead>
+              <TableHead className="text-center">Documentos Generados</TableHead>
               <TableHead className="text-right">Importe</TableHead>
               <TableHead className="text-center">Estado</TableHead>
               <TableHead className="text-center">Acciones</TableHead>
@@ -418,7 +431,7 @@ export default function PagosDocentesList() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={10} className="text-center py-8">
                   <div className="flex justify-center items-center">
                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
                     Cargando datos...
@@ -427,21 +440,46 @@ export default function PagosDocentesList() {
               </TableRow>
             ) : pagos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   No se encontraron registros
                 </TableCell>
               </TableRow>
             ) : (
               pagos.map((pago) => (
                 <TableRow key={pago.id}>
+                  <TableCell>{pago.id}</TableCell>
                   <TableCell>
                     <div className="font-medium">{pago.docente_nombre}</div>
                     <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente}</div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={pago.curso_nombre}>{pago.curso_nombre}</TableCell>
-                  <TableCell className='max-w-[150px] truncate' title={pago.programa_nombre}>
-                    {pago.programa_nombre}
-                    <div className="text-xs text-muted-foreground">Periodo {pago.periodo}</div>
+                  <TableCell className="max-w-[200px] truncate" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.curso_nombre}
+                    <div className="text-xs text-muted-foreground">{pago.programa_nombre} {pago.periodo}</div></TableCell>
+                  <TableCell className='text-center'>Fac. Ofic.  {' '}
+                    {pago.numero_oficio_presentacion_facultad ? `N° ${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
+                    <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
+                      {pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}</div>
+                  </TableCell>
+                  <TableCell className='text-center'>
+                    Res.{' '}
+                    {pago.numero_resolucion_aprobacion ? `N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'}
+                    {pago.fecha_resolucion_aprobacion && (
+                      <div className="text-xs text-muted-foreground">{pago.fecha_resolucion_aprobacion}</div>
+                    )}
+                  </TableCell>
+                  <TableCell className='text-center'>Fac. Ofic.{' '}
+                    {pago.numero_oficio_conformidad_facultad ? `N° ${pago.numero_oficio_conformidad_facultad}` : 'Pendiente'}
+                    <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
+                      {pago.numero_oficio_conformidad_coordinador ? `N° ${pago.numero_oficio_conformidad_coordinador}` : 'Pendiente'}</div>
+                    <div className="text-xs text-muted-foreground">Dir. Ofic.{' '}
+                      {pago.numero_oficio_conformidad_direccion ? `N° ${pago.numero_oficio_conformidad_direccion}` : 'Pendiente'}</div>
+                  </TableCell>
+                  <TableCell className='text-center'> Resol. Pago {' '}
+                    {pago.numero_resolucion_pago ? `N° ${pago.numero_resolucion_pago}` : 'Pendiente'}
+                    <div className="text-xs text-muted-foreground"> Ofic. {' '}
+                      {pago.numero_oficio_contabilidad
+                        ? `N° ${pago.numero_oficio_contabilidad}`
+                        : 'Pendiente'}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     S/ {Number(pago.importe_total || 0).toFixed(2)}
@@ -516,39 +554,37 @@ export default function PagosDocentesList() {
               ))
             )}
           </TableBody>
-        </Table >
-      </div >
+        </Table>
+      </div>
 
       {/* Paginación */}
-      {
-        pagination && pagination.last_page > 1 && (
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-                disabled={page === pagination.last_page}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+      {pagination && pagination.last_page > 1 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
           </div>
-        )
-      }
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
+              disabled={page === pagination.last_page}
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Detalle */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
@@ -711,6 +747,6 @@ export default function PagosDocentesList() {
           )}
         </DialogContent>
       </Dialog>
-    </div >
+    </div>
   );
 }

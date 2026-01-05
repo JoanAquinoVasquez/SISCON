@@ -14,16 +14,13 @@ import ExpedienteForm from './pages/Expedientes/ExpedienteForm';
 import { MainLayout } from './components/layout/MainLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
+import { AuthCallback } from './pages/AuthCallback';
 
 function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
-  }
-
-  if (!user) {
-    return <Login />;
   }
 
   return (
@@ -53,7 +50,10 @@ function App() {
         }}
       />
       <Routes>
-        <Route path="/" element={<MainLayout />}>
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+
+        <Route path="/" element={user ? <MainLayout /> : <Navigate to="/login" replace />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<UsersPage />} />

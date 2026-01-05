@@ -9,9 +9,9 @@ export class ApiService {
   }
 
   private async getAuthToken(): Promise<string> {
-    const user = (await import('firebase/auth')).getAuth().currentUser;
-    if (!user) throw new Error('No authenticated user');
-    return user.getIdToken();
+    const token = localStorage.getItem('auth_token');
+    if (!token) throw new Error('No authenticated user');
+    return token;
   }
 
   private async request<T>(

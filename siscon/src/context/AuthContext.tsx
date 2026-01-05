@@ -1,15 +1,23 @@
 // src/context/AuthContext.tsx
-import { onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import type { User } from "firebase/auth"; 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { auth } from "../firebase";
 import { useToast } from "./ToastContext";
+import axios from "../lib/axios";
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: string;
+  google_id?: string;
+}
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   logout: () => void;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => void;
+  loginWithToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -19,73 +27,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
-  // Validar usuario con backend
-  const validateUser = async (firebaseUser: User): Promise<boolean> => {
+  const fetchUser = async (token: string) => {
     try {
-      const token = await firebaseUser.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Set default header for all axios requests
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      if (response.ok) {
-        return true;
+      const response = await axios.get('/auth/me');
+      setUser(response.data.user);
+    } catch (error: any) {
+      console.error("Error fetching user", error);
+      if (error.response?.status === 401) {
+        logout();
       }
-
-      if (response.status === 403) {
-        const data = await response.json();
-        showToast(data.message || 'Email no autorizado', 'error');
-      }
-      return false;
-    } catch (error) {
-      showToast('Error de conexión', 'error');
-      return false;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Escuchar cambios de autenticación
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        const isValid = await validateUser(currentUser);
-        if (isValid) {
-          setUser(currentUser);
-        } else {
-          await signOut(auth);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      fetchUser(token);
+    } else {
       setLoading(false);
-    });
-
-    return () => unsubscribe();
+    }
   }, []);
 
+  const loginWithToken = (token: string) => {
+    localStorage.setItem('auth_token', token);
+    fetchUser(token);
+  };
+
   const logout = () => {
-    signOut(auth);
+    localStorage.removeItem('auth_token');
+    delete axios.defaults.headers.common['Authorization'];
+    setUser(null);
     showToast('Sesión cerrada', 'success');
   };
-  
-  const signInWithGoogle = async () => {
-    try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged se encargará de validar
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        showToast('Login cancelado', 'warning');
-      } else {
-        showToast('Error al iniciar sesión', 'error');
-      }
-    }
+
+  const signInWithGoogle = () => {
+    // Redirect to backend auth endpoint
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google/redirect`;
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, loading, logout, signInWithGoogle, loginWithToken }}>
       {!loading && children}
     </AuthContext.Provider>
   );

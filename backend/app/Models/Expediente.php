@@ -131,7 +131,7 @@ class Expediente extends Model
 
         $periodo = $semestre->programa->periodo;
         $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
-        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null; 
+        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
 
         // Obtener coordinador (asumiendo el primero activo o el más reciente)
         $coordinador = $semestre->programa->coordinadores->first();
@@ -307,7 +307,7 @@ class Expediente extends Model
         if ($pago) {
             // Actualizar con documento de resolución
             $pago->update([
-                'numero_resolucion' => $this->numero_documento,
+                'numero_resolucion_pago' => $this->numero_documento,
                 'fecha_resolucion' => $this->fecha_mesa_partes,
                 'estado' => 'completado',
             ]);

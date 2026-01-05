@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { useNumeroALetras } from '../../hooks/useNumeroALetras';
 import axios from '../../lib/axios';
+import { useToast } from '@/context/ToastContext';
 
 interface Docente {
   id: number;
@@ -92,6 +93,8 @@ const formatDateForInput = (dateValue: any): string => {
 
 export default function PagoDocenteForm() {
   const { id } = useParams();
+  const {showToast} = useToast();
+  
   const navigate = useNavigate();
   const { numeroALetras } = useNumeroALetras();
   const [activeTab, setActiveTab] = useState('general');
@@ -145,7 +148,9 @@ export default function PagoDocenteForm() {
     numero_oficio_conformidad_coordinador_url: '',
     numero_oficio_conformidad_direccion: '',
     numero_oficio_conformidad_direccion_url: '',
-    numero_resolucion: '',
+    numero_resolucion_aprobacion: '',
+    fecha_resolucion_aprobacion: '',
+    numero_resolucion_pago: '',
     numero_resolucion_url: '',
     fecha_resolucion: '',
     numero_oficio_contabilidad: '',
@@ -173,7 +178,9 @@ export default function PagoDocenteForm() {
     numero_oficio_conformidad_coordinador_url: '',
     numero_oficio_conformidad_direccion: '',
     numero_oficio_conformidad_direccion_url: '',
-    numero_resolucion: '',
+    numero_resolucion_aprobacion: '',
+    fecha_resolucion_aprobacion: '',
+    numero_resolucion_pago: '',
     numero_resolucion_url: '',
     fecha_resolucion: '',
     numero_oficio_contabilidad: '',
@@ -193,14 +200,14 @@ export default function PagoDocenteForm() {
           // Verificar que existan las relaciones
           if (!data.docente) {
             console.error('Datos de docente no encontrados');
-            alert('Error: Datos de docente no encontrados');
+            showToast('Error: Datos de docente no encontrados', 'error');
             navigate('/pagos-docentes');
             return;
           }
 
           if (!data.curso) {
             console.error('Datos de curso no encontrados');
-            alert('Error: Datos de curso no encontrados');
+            showToast('Error: Datos de curso no encontrados', 'error');
             navigate('/pagos-docentes');
             return;
           }
@@ -248,7 +255,9 @@ export default function PagoDocenteForm() {
             numero_oficio_conformidad_coordinador_url: data.numero_oficio_conformidad_coordinador_url || '',
             numero_oficio_conformidad_direccion: data.numero_oficio_conformidad_direccion || '',
             numero_oficio_conformidad_direccion_url: data.numero_oficio_conformidad_direccion_url || '',
-            numero_resolucion: data.numero_resolucion || '',
+            numero_resolucion_aprobacion: data.numero_resolucion_aprobacion || '',
+            fecha_resolucion_aprobacion: formatDateForInput(data.fecha_resolucion_aprobacion),
+            numero_resolucion_pago: data.numero_resolucion_pago || '',
             numero_resolucion_url: data.numero_resolucion_url || '',
             fecha_resolucion: formatDateForInput(data.fecha_resolucion),
             numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
@@ -276,7 +285,9 @@ export default function PagoDocenteForm() {
               numero_oficio_conformidad_coordinador_url: data.numero_oficio_conformidad_coordinador_url || '',
               numero_oficio_conformidad_direccion: data.numero_oficio_conformidad_direccion || '',
               numero_oficio_conformidad_direccion_url: data.numero_oficio_conformidad_direccion_url || '',
-              numero_resolucion: data.numero_resolucion || '',
+              numero_resolucion_aprobacion: data.numero_resolucion_aprobacion || '',
+              fecha_resolucion_aprobacion: formatDateForInput(data.fecha_resolucion_aprobacion),
+              numero_resolucion_pago: data.numero_resolucion_pago || '',
               numero_resolucion_url: data.numero_resolucion_url || '',
               fecha_resolucion: formatDateForInput(data.fecha_resolucion),
               numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
@@ -296,7 +307,7 @@ export default function PagoDocenteForm() {
 
         } catch (error) {
           console.error('Error al cargar pago:', error);
-          alert('Error al cargar los datos del pago');
+          showToast('Error al cargar los datos del pago', 'error');
           navigate('/pagos-docentes');
         } finally {
           setLoadingData(false);
@@ -335,7 +346,7 @@ export default function PagoDocenteForm() {
     e.preventDefault();
 
     if (!docente || !curso || !periodo || fechasEnsenanza.length === 0) {
-      alert('Por favor complete todos los campos requeridos');
+      showToast('Por favor complete todos los campos requeridos', 'warning');
       return;
     }
 
@@ -363,21 +374,31 @@ export default function PagoDocenteForm() {
         acta_conformidad: actaConformidad,
         numero_exp_siaf: numeroExpSiaf,
         nota_pago: notaPago,
-        ...(docente.tipo_docente === 'interno' ? docInterno : {}),
-        ...(docente.tipo_docente === 'externo' ? docExterno : {}),
+        ...(docente.tipo_docente === 'interno' ? {
+          ...docInterno,
+          numero_resolucion_pago: docInterno.numero_resolucion_pago,
+          numero_resolucion_aprobacion: docInterno.numero_resolucion_aprobacion,
+          fecha_resolucion_aprobacion: docInterno.fecha_resolucion_aprobacion
+        } : {}),
+        ...(docente.tipo_docente === 'externo' ? {
+          ...docExterno,
+          numero_resolucion_pago: docExterno.numero_resolucion_pago,
+          numero_resolucion_aprobacion: docExterno.numero_resolucion_aprobacion,
+          fecha_resolucion_aprobacion: docExterno.fecha_resolucion_aprobacion
+        } : {}),
       };
 
       if (id) {
         await axios.put(`/pagos-docentes/${id}`, payload);
-        alert('Pago actualizado exitosamente');
+        showToast('Pago actualizado exitosamente', 'success');
       } else {
         await axios.post('/pagos-docentes', payload);
-        alert('Pago registrado exitosamente');
+        showToast('Pago registrado exitosamente', 'success');
       }
       navigate('/pagos-docentes');
     } catch (error) {
       console.error('Error al guardar:', error);
-      alert('Error al guardar el pago');
+      showToast('Error al guardar el pago', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -600,9 +621,29 @@ export default function PagoDocenteForm() {
                   onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
                 />
                 <DocumentField
-                  label="Resolución"
-                  value={docInterno.numero_resolucion}
-                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion: v })}
+                  label="Resolución de Aprobación"
+                  value={docInterno.numero_resolucion_aprobacion}
+                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_aprobacion: v })}
+                  // Assuming no URL for approval resolution for now, or reuse existing if needed. 
+                  // If we need a URL field for approval, we should have added it to state. 
+                  // For now, I will leave URL empty or not show it if not in state.
+                  // But wait, I need to pass something to DocumentField.
+                  // I'll pass empty string and a dummy handler if I don't have a URL field for it.
+                  urlValue=""
+                  onUrlChange={() => { }}
+                />
+                <div>
+                  <Label>Fecha Resolución Aprobación</Label>
+                  <Input
+                    type="date"
+                    value={docInterno.fecha_resolucion_aprobacion}
+                    onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion_aprobacion: e.target.value })}
+                  />
+                </div>
+                <DocumentField
+                  label="Resolución de Pago"
+                  value={docInterno.numero_resolucion_pago}
+                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_pago: v })}
                   urlValue={docInterno.numero_resolucion_url}
                   onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_url: v })}
                 />

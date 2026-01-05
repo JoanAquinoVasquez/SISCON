@@ -44,7 +44,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'RES ' . $pago->numero_resolucion . '.docx';
+        $fileName = 'RES ' . $pago->numero_resolucion_pago . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe
@@ -214,8 +214,8 @@ class DocumentGeneratorService
         $template->setValue('Art_Coordinador', $artCoordinador);
 
         // Variables de resolución
-        $template->setValue('RESOLUCION', $pago->numero_resolucion ?? '');
-        $template->setValue('NUMERO_RESOLUCION', $pago->numero_resolucion ?? '');
+        $template->setValue('RESOLUCION', $pago->numero_resolucion_pago ?? '');
+        $template->setValue('NUMERO_RESOLUCION', $pago->numero_resolucion_pago ?? '');
         $template->setValue('FECHA_DE_RESOLUCION', $this->formatearFecha($pago->fecha_resolucion));
 
         // Variables de oficios - Usando nombres exactos de la plantilla
@@ -299,7 +299,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'RES ACEPTACION ' . $pago->numero_resolucion . '.docx';
+        $fileName = 'RES ACEPTACION ' . $pago->numero_resolucion_pago . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe

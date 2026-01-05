@@ -18,7 +18,7 @@ class ExpedienteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Expediente::with(['docente', 'curso', 'pagoDocente']);
+        $query = Expediente::with(['docente', 'curso', 'pagoDocente', 'semestre.programa.grado']);
 
         // Search by numero_documento, remitente
         if ($request->has('search') && $request->search) {
@@ -54,6 +54,8 @@ class ExpedienteController extends Controller
 
         // Format response
         $expedientes->getCollection()->transform(function ($expediente) {
+            $programa = $expediente->programa ?? ($expediente->semestre->programa ?? null);
+
             return [
                 'id' => $expediente->id,
                 'numero_expediente_mesa_partes' => $expediente->numero_expediente_mesa_partes,
@@ -68,13 +70,13 @@ class ExpedienteController extends Controller
                     : null,
                 'docente_titulo_profesional' => $expediente->docente->titulo_profesional ?? null,
                 'curso_nombre' => $expediente->curso->nombre ?? null,
-                'periodo' => $expediente->periodo,
+                'programa_nombre' => $programa->nombre ?? null,
+                'grado_nombre' => $programa->grado->nombre ?? null,
+                'periodo' => $programa->periodo ?? null,
                 'estado_pago' => $expediente->pagoDocente->estado ?? null,
                 'pago_docente_id' => $expediente->pago_docente_id,
                 'created_at' => $expediente->created_at,
                 'updated_at' => $expediente->updated_at,
-                // 'programa_nombre' => $expediente->curso->semestre->programa->nombre ?? null,
-                // 'grado_nombre' => $expediente->curso->semestre->programa->grado->nombre ?? null,
             ];
         });
 

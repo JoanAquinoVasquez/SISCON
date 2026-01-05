@@ -11,8 +11,10 @@ import { ComboboxEditable } from '@/components/ui/combobox-editable';
 import { CalendarioMultiple } from '@/components/ui/calendario-multiple';
 import { ArrowLeft, Plus } from 'lucide-react';
 import DocenteCursoBlock from './DocenteCursoBlock';
+import { useToast } from '@/context/ToastContext';
 
 export default function ExpedienteForm() {
+  const { showToast } = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,7 +26,10 @@ export default function ExpedienteForm() {
   const [numeroExpedienteMP, setNumeroExpedienteMP] = useState('');
   const [numeroDocumento, setNumeroDocumento] = useState('');
   const [fechaMesaPartes, setFechaMesaPartes] = useState('');
-  const [fechaRecepcion, setFechaRecepcion] = useState('');
+  const [fechaRecepcion, setFechaRecepcion] = useState(() => {
+    const date = new Date();
+    return date.toLocaleDateString('en-CA');
+  });
   const [remitente, setRemitente] = useState<any>(null);
 
   // Asunto fields
@@ -182,8 +187,14 @@ export default function ExpedienteForm() {
       setNumeroDocumento(data.numero_documento);
 
       // Formatear fechas para inputs type="date" (solo YYYY-MM-DD)
-      setFechaMesaPartes(data.fecha_mesa_partes ? data.fecha_mesa_partes.split(' ')[0] : '');
-      setFechaRecepcion(data.fecha_recepcion_contabilidad ? data.fecha_recepcion_contabilidad.split(' ')[0] : '');
+      // Manejar tanto formato ISO (T) como SQL (espacio)
+      const formatDate = (dateStr: string) => {
+        if (!dateStr) return '';
+        return dateStr.split('T')[0].split(' ')[0];
+      };
+
+      setFechaMesaPartes(formatDate(data.fecha_mesa_partes));
+      setFechaRecepcion(formatDate(data.fecha_recepcion_contabilidad));
 
       // Parse remitente as object for SelectConBusqueda
       if (data.remitente) {
@@ -229,7 +240,7 @@ export default function ExpedienteForm() {
       setNumeroVoucher(data.numero_voucher || '');
     } catch (error) {
       console.error('Error al cargar expediente:', error);
-      alert('Error al cargar el expediente');
+      showToast('Error al cargar el expediente', 'error');
     }
   };
 
@@ -296,12 +307,12 @@ export default function ExpedienteForm() {
     e.preventDefault();
 
     if (!numeroDocumento || !fechaMesaPartes || !fechaRecepcion || !remitente) {
-      alert('Por favor complete todos los campos requeridos');
+      showToast('Por favor complete todos los campos requeridos', 'warning');
       return;
     }
 
     if (tipoAsunto === 'descripcion' && !descripcionAsunto) {
-      alert('Por favor ingrese la descripción del asunto');
+      showToast('Por favor ingrese la descripción del asunto', 'warning');
       return;
     }
 
@@ -310,20 +321,20 @@ export default function ExpedienteForm() {
       if (usarMultiple) {
         // Validar que haya al menos un docente-curso completo
         if (docentesCursos.length === 0 || !docentesCursos.every(dc => dc.docente && dc.curso)) {
-          alert('Por favor complete al menos un docente y curso');
+          showToast('Por favor complete al menos un docente y curso', 'warning');
           return;
         }
       } else {
         // Validación normal
         if (!docente || !curso) {
-          alert('Por favor complete los datos del docente y curso');
+          showToast('Por favor complete los datos del docente y curso','warning');
           return;
         }
       }
     }
 
     if (tipoAsunto === 'devolucion' && (!personaDevolucion || !dniDevolucion || !programaDevolucion || !tipoDevolucion || !importeDevolucion || !numeroVoucher)) {
-      alert('Por favor complete todos los campos de devolución');
+      showToast('Por favor complete todos los campos de devolución','warning');
       return;
     }
 
@@ -394,19 +405,19 @@ export default function ExpedienteForm() {
 
       if (id) {
         await axios.put(`/expedientes/${id}`, payload);
-        alert('Expediente actualizado exitosamente');
+        showToast('Expediente actualizado exitosamente','success');
       } else {
         const response = await axios.post('/expedientes', payload);
         if (response.data.multiple) {
-          alert(`${response.data.data.length} expedientes registrados exitosamente`);
+          showToast(`${response.data.data.length} expedientes registrados exitosamente`,'success');
         } else {
-          alert('Expediente registrado exitosamente');
+          showToast('Expediente registrado exitosamente','success');
         }
       }
       navigate('/expedientes');
     } catch (error: any) {
       console.error('Error al guardar:', error);
-      alert(error.response?.data?.message || 'Error al guardar el expediente');
+      showToast(error.response?.data?.message || 'Error al guardar el expediente','error');
     } finally {
       setIsSubmitting(false);
     }
@@ -447,7 +458,7 @@ export default function ExpedienteForm() {
                   <Input
                     value={numeroExpedienteMP}
                     onChange={(e) => setNumeroExpedienteMP(e.target.value)}
-                    placeholder="Ej: EXP-2025-001"
+                    placeholder="Ej: 001-2026-EPG-VIRTUAL"
                   />
                 </div>
                 <div>
@@ -464,7 +475,7 @@ export default function ExpedienteForm() {
                   <Input
                     value={numeroDocumento}
                     onChange={(e) => setNumeroDocumento(e.target.value)}
-                    placeholder="Ej: OF-001-2025"
+                    placeholder="Ej: OFICIO N° 001-D-2026-EPG"
                     required
                   />
                 </div>
@@ -620,7 +631,7 @@ export default function ExpedienteForm() {
                             <Input
                               value={numeroOficioPresentacionCoordinador}
                               onChange={(e) => setNumeroOficioPresentacionCoordinador(e.target.value)}
-                              placeholder="Ej: OF-COORD-001-2025"
+                              placeholder="Ej: 001-VIRTUAL-2026-DUPG-FICSA"
                             />
                           </div>
                         )}
@@ -631,7 +642,7 @@ export default function ExpedienteForm() {
                             <Input
                               value={numeroOficioConformidadCoordinador}
                               onChange={(e) => setNumeroOficioConformidadCoordinador(e.target.value)}
-                              placeholder="Ej: OF-CONF-COORD-001-2025"
+                              placeholder="Ej: 001-2026-JEAV"
                               required={false}
                             />
                           </div>

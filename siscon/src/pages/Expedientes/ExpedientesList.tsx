@@ -183,9 +183,9 @@ export default function ExpedientesList() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Expediente MP</TableHead>
                 <TableHead>Documento Recibido</TableHead>
-                <TableHead>Fecha Recep.</TableHead>
                 <TableHead>Tipo Asunto</TableHead>
                 <TableHead>Docente</TableHead>
                 <TableHead>Curso</TableHead>
@@ -209,14 +209,14 @@ export default function ExpedientesList() {
               ) : (
                 expedientes.map((exp) => (
                   <TableRow key={exp.id}>
+                    <TableCell>{exp.id}</TableCell>
                     <TableCell>
                       <div className="font-medium">N° {exp.numero_expediente_mesa_partes}</div>
-                      <div className="text-xs text-muted-foreground">{formatDate(exp.fecha_mesa_partes)}</div></TableCell>
+                      <div className="text-xs text-muted-foreground">Recib. el {formatDate(exp.fecha_mesa_partes)}</div></TableCell>
                     <TableCell className="font-medium">
                       {exp.numero_documento}
                       <div className="text-xs text-muted-foreground">{exp.remitente}</div>
                     </TableCell>
-                    <TableCell>{formatDate(exp.fecha_recepcion_contabilidad)}</TableCell>
                     <TableCell>{getTipoAsuntoBadge(exp.tipo_asunto)}</TableCell>
                     <TableCell>
                       {exp.docente_nombre ? (
@@ -231,8 +231,8 @@ export default function ExpedientesList() {
                     </TableCell>
                     <TableCell>
                       {exp.curso_nombre}
-                      <div className="text-xs text-muted-foreground">{exp.grado_nombre} en {exp.programa_nombre}</div>
-                      </TableCell>
+                      <div className="text-xs text-muted-foreground">{exp.grado_nombre} en {exp.programa_nombre} {exp.periodo}</div>
+                    </TableCell>
                     <TableCell>{getEstadoPagoBadge(exp.estado_pago)}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">

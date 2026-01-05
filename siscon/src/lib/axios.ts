@@ -1,7 +1,6 @@
 // src/lib/axios.ts
 import axios from 'axios';
 import { API_URL } from '../config/api';
-import { getAuth, signOut } from 'firebase/auth';
 
 const axiosInstance = axios.create({
   baseURL: API_URL,
@@ -10,12 +9,11 @@ const axiosInstance = axios.create({
   },
 });
 
-// Interceptor para agregar el token de Firebase
+// Interceptor para agregar el token
 axiosInstance.interceptors.request.use(
   async (config) => {
-    const user = getAuth().currentUser;
-    if (user) {
-      const token = await user.getIdToken();
+    const token = localStorage.getItem('auth_token');
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -31,27 +29,13 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     // Si el token fue revocado o es inválido, cerrar sesión automáticamente
     if (error.response?.status === 401) {
-      const errorMessage = error.response?.data?.message || '';
+      console.warn('Token revocado o inválido. Cerrando sesión...');
       
-      // Detectar si el token fue revocado o es inválido
-      if (
-        errorMessage.includes('revoked') || 
-        errorMessage.includes('Invalid token') ||
-        errorMessage.includes('expired')
-      ) {
-        console.warn('Token revocado o inválido. Cerrando sesión...');
-        
-        // Cerrar sesión en Firebase
-        const auth = getAuth();
-        await signOut(auth);
-        
-        // Limpiar almacenamiento local
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Recargar la página para ir al login
-        window.location.href = '/';
-      }
+      // Limpiar almacenamiento local
+      localStorage.removeItem('auth_token');
+      
+      // Recargar la página para ir al login
+      window.location.href = '/siscon/login';
     }
     
     return Promise.reject(error);

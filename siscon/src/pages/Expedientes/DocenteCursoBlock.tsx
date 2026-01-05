@@ -80,7 +80,7 @@ export default function DocenteCursoBlock({
           <Input
             value={numeroOficioCoordinador}
             onChange={(e) => onOficioChange(e.target.value)}
-            placeholder={tipoAsunto === 'presentacion' ? 'Ej: OF-COORD-001-2025' : 'Ej: OF-CONF-COORD-001-2025'}
+            placeholder={tipoAsunto === 'presentacion' ? 'Ej: 001-VIRTUAL-2026-DUPG-FICSA' : 'Ej: 001-VIRTUAL-2026-DUPG-FICSA'}
           />
         </div>
         

@@ -39,6 +39,7 @@ export default function ExpedienteForm() {
   // Coordinator document fields
   const [numeroOficioPresentacionCoordinador, setNumeroOficioPresentacionCoordinador] = useState('');
   const [numeroOficioConformidadCoordinador, setNumeroOficioConformidadCoordinador] = useState('');
+  const [numeroOficioConformidadFacultad, setNumeroOficioConformidadFacultad] = useState('');
 
   // Docente/Curso fields (for presentacion/conformidad)
   const [docente, setDocente] = useState<any>(null);
@@ -159,7 +160,7 @@ export default function ExpedienteForm() {
           const match = regex.test(numeroDocumento);
 
           if (match) {
-            console.log('Found matching faculty code:', director.codigo);
+
             setFacultadCodigo(director.codigo);
             return true;
           }
@@ -170,7 +171,7 @@ export default function ExpedienteForm() {
       if (matchedDirector && !remitente) {
         setRemitente(matchedDirector);
       } else if (!matchedDirector) {
-        console.log('No matching faculty code found, resetting.');
+
         setFacultadCodigo('');
       }
     } catch (error) {
@@ -225,6 +226,7 @@ export default function ExpedienteForm() {
       setFechasEnsenanza(data.fechas_ensenanza || []);
       setNumeroOficioPresentacionCoordinador(data.numero_oficio_presentacion_coordinador || '');
       setNumeroOficioConformidadCoordinador(data.numero_oficio_conformidad_coordinador || '');
+      setNumeroOficioConformidadFacultad(data.numero_oficio_conformidad_facultad || '');
 
       // Devolucion fields
       setPersonaDevolucion(data.persona_devolucion || '');
@@ -327,14 +329,14 @@ export default function ExpedienteForm() {
       } else {
         // Validación normal
         if (!docente || !curso) {
-          showToast('Por favor complete los datos del docente y curso','warning');
+          showToast('Por favor complete los datos del docente y curso', 'warning');
           return;
         }
       }
     }
 
     if (tipoAsunto === 'devolucion' && (!personaDevolucion || !dniDevolucion || !programaDevolucion || !tipoDevolucion || !importeDevolucion || !numeroVoucher)) {
-      showToast('Por favor complete todos los campos de devolución','warning');
+      showToast('Por favor complete todos los campos de devolución', 'warning');
       return;
     }
 
@@ -364,13 +366,20 @@ export default function ExpedienteForm() {
             semestreId = parts[1];
           }
 
-          return {
+          const item: any = {
             docente_id: dc.docente?.id,
             curso_id: cursoId,
             semestre_id: semestreId,
             fechas_ensenanza: dc.fechas_ensenanza || [],
-            numero_oficio_coordinador: dc.numero_oficio_coordinador || null,
           };
+
+          if (tipoAsunto === 'presentacion') {
+            item.numero_oficio_presentacion_coordinador = dc.numero_oficio_coordinador || null;
+          } else if (tipoAsunto === 'conformidad') {
+            item.numero_oficio_conformidad_coordinador = dc.numero_oficio_coordinador || null;
+          }
+
+          return item;
         });
       } else if (tipoAsunto === 'presentacion' || tipoAsunto === 'conformidad') {
         // Flujo normal (un solo docente-curso)
@@ -390,6 +399,7 @@ export default function ExpedienteForm() {
         payload.fechas_ensenanza = fechasEnsenanza;
         payload.numero_oficio_presentacion_coordinador = tipoAsunto === 'presentacion' ? numeroOficioPresentacionCoordinador : null;
         payload.numero_oficio_conformidad_coordinador = tipoAsunto === 'conformidad' ? numeroOficioConformidadCoordinador : null;
+        payload.numero_oficio_conformidad_facultad = tipoAsunto === 'conformidad' ? numeroOficioConformidadFacultad : null;
       }
 
       // Devolucion fields
@@ -405,19 +415,19 @@ export default function ExpedienteForm() {
 
       if (id) {
         await axios.put(`/expedientes/${id}`, payload);
-        showToast('Expediente actualizado exitosamente','success');
+        showToast('Expediente actualizado exitosamente', 'success');
       } else {
         const response = await axios.post('/expedientes', payload);
         if (response.data.multiple) {
-          showToast(`${response.data.data.length} expedientes registrados exitosamente`,'success');
+          showToast(`${response.data.data.length} expedientes registrados exitosamente`, 'success');
         } else {
-          showToast('Expediente registrado exitosamente','success');
+          showToast('Expediente registrado exitosamente', 'success');
         }
       }
       navigate('/expedientes');
     } catch (error: any) {
       console.error('Error al guardar:', error);
-      showToast(error.response?.data?.message || 'Error al guardar el expediente','error');
+      showToast(error.response?.data?.message || 'Error al guardar el expediente', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -637,15 +647,26 @@ export default function ExpedienteForm() {
                         )}
 
                         {tipoAsunto === 'conformidad' && (
-                          <div>
-                            <Label>N° Oficio Conformidad Coordinador (Opcional)</Label>
-                            <Input
-                              value={numeroOficioConformidadCoordinador}
-                              onChange={(e) => setNumeroOficioConformidadCoordinador(e.target.value)}
-                              placeholder="Ej: 001-2026-JEAV"
-                              required={false}
-                            />
-                          </div>
+                          <>
+                            <div>
+                              <Label>N° Oficio Conformidad Facultad (Opcional)</Label>
+                              <Input
+                                value={numeroOficioConformidadFacultad}
+                                onChange={(e) => setNumeroOficioConformidadFacultad(e.target.value)}
+                                placeholder="Ej: 001-2026-D-FICSA"
+                                required={false}
+                              />
+                            </div>
+                            <div>
+                              <Label>N° Oficio Conformidad Coordinador (Opcional)</Label>
+                              <Input
+                                value={numeroOficioConformidadCoordinador}
+                                onChange={(e) => setNumeroOficioConformidadCoordinador(e.target.value)}
+                                placeholder="Ej: 001-2026-JEAV"
+                                required={false}
+                              />
+                            </div>
+                          </>
                         )}
 
                         <div className="md:col-span-2">

@@ -67,7 +67,6 @@ class AuthController extends Controller
         return response()->json([
             'user' => [
                 'id' => $user->id,
-                'firebase_uid' => $user->firebase_uid,
                 'google_id' => $user->google_id,
                 'name' => $user->name,
                 'email' => $user->email,

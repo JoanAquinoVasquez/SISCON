@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Plus, Search, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, FileText, Loader2 } from 'lucide-react';
 
 interface Expediente {
   id: number;
@@ -50,7 +50,7 @@ export default function ExpedientesList() {
       if (estadoPago) params.estado_pago = estadoPago;
 
       const response = await axios.get('/expedientes', { params });
-      console.log(response.data);
+
       setExpedientes(response.data.data);
       setTotalPages(response.data.last_page);
     } catch (error) {
@@ -197,7 +197,10 @@ export default function ExpedientesList() {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8">
-                    Cargando...
+                    <div className="flex justify-center items-center">
+                      <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                      Cargando datos...
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : expedientes.length === 0 ? (

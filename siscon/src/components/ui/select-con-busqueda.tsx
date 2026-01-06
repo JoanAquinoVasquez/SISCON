@@ -55,10 +55,10 @@ export function SelectConBusqueda({
           ...additionalParams,
         });
 
-        console.log('SelectConBusqueda fetching with params:', params.toString());
+      
 
         const response = await axios.get(`${searchEndpoint}?${params}`);
-        console.log('SelectConBusqueda response:', response.data);
+       
         setOptions(response.data.data || []);
       } catch (err: any) {
         const errorMessage = err.response?.status === 401

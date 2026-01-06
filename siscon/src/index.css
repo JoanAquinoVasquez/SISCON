@@ -6,7 +6,7 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
   }
@@ -14,16 +14,20 @@
 
 @layer utilities {
   .gradient-text {
-    background: linear-gradient(135deg, rgb(59 130 246) 0%, rgb(147 51 234) 100%);
+    background: linear-gradient(
+      135deg,
+      rgb(59 130 246) 0%,
+      rgb(147 51 234) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .hover-lift {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  
+
   .hover-lift:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);

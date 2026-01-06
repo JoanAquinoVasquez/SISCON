@@ -353,8 +353,8 @@ export default function PagosDocentesList() {
     switch (estado) {
       case 'pendiente':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pendiente</Badge>;
-      case 'procesando':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">Procesando</Badge>;
+      case 'en_proceso':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">En Proceso</Badge>;
       case 'observado':
         return <Badge variant="destructive">Observado</Badge>;
       case 'finalizado':
@@ -454,20 +454,23 @@ export default function PagosDocentesList() {
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.curso_nombre}
                     <div className="text-xs text-muted-foreground">{pago.programa_nombre} {pago.periodo}</div></TableCell>
-                  <TableCell className='text-center'>Fac. Ofic.  {' '}
-                    {pago.numero_oficio_presentacion_facultad ? `N° ${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
+                  <TableCell className='text-center'>
+                    {pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
                     <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
                       {pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}</div>
                   </TableCell>
                   <TableCell className='text-center'>
-                    Res.{' '}
-                    {pago.numero_resolucion_aprobacion ? `N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'}
-                    {pago.fecha_resolucion_aprobacion && (
-                      <div className="text-xs text-muted-foreground">{pago.fecha_resolucion_aprobacion}</div>
-                    )}
+                    {/* Si el docente es externo, que muestre la resolucion de aprobacion si es que hay, y si no hay, salga pendiente, pero si es docente interno, me salga no acto */}
+                    {
+                      pago.docente?.tipo_docente === "externo" ? (
+                        pago.numero_resolucion_aprobacion ? `N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'
+                      ) : (
+                        "-"
+                      )
+                    }
                   </TableCell>
-                  <TableCell className='text-center'>Fac. Ofic.{' '}
-                    {pago.numero_oficio_conformidad_facultad ? `N° ${pago.numero_oficio_conformidad_facultad}` : 'Pendiente'}
+                  <TableCell className='text-center'>
+                    {pago.numero_oficio_conformidad_facultad ? `${pago.numero_oficio_conformidad_facultad}` : 'Pendiente'}
                     <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
                       {pago.numero_oficio_conformidad_coordinador ? `N° ${pago.numero_oficio_conformidad_coordinador}` : 'Pendiente'}</div>
                     <div className="text-xs text-muted-foreground">Dir. Ofic.{' '}
@@ -623,34 +626,43 @@ export default function PagosDocentesList() {
               </div>
 
               {/* Fechas de Enseñanza */}
-              {selectedPago.fechas_ensenanza && selectedPago.fechas_ensenanza.length > 0 && (
-                <div className="border-b pb-4">
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Fechas de Enseñanza</h3>
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-900">
-                      📅 {formatearFechasLegibles(selectedPago.fechas_ensenanza)}
-                    </p>
-                  </div>
-                </div>
-              )}
+
 
               {/* Detalles Financieros */}
-              <div className="grid grid-cols-3 gap-4 border-b pb-4">
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Horas</h3>
-                  <p>{selectedPago.numero_horas}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Costo/Hora</h3>
-                  <p>S/ {selectedPago.costo_por_hora}</p>
-                </div>
-                <div>
+              <div className="grid grid-cols-3 gap-5 border-b pb-5">
+                {selectedPago.fechas_ensenanza && selectedPago.fechas_ensenanza.length > 0 && (
+                  <div className="col-span-2">
+                    <h3 className="font-semibold text-sm text-muted-foreground mb-1">Fechas de Enseñanza</h3>
+                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm font-medium text-blue-900">
+                        📅 {formatearFechasLegibles(selectedPago.fechas_ensenanza)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                <div className="col-span-1">
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Total</h3>
                   <p className="font-bold text-lg">S/ {selectedPago.importe_total}</p>
                 </div>
-                <div className="col-span-3">
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Importe en Letras</h3>
-                  <p className="italic">{selectedPago.importe_letras}</p>
+              </div>
+
+              {/* Documentos */}
+              <div>
+                <h3 className="font-semibold mb-3">Documentos Relacionados</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Número de presentacion facultad, número de conformidad de facultad, número aprobacion (opcional), número de resolucion y oficio de conta */}
+                  {selectedPago.numero_oficio_presentacion_facultad && (
+                    <p className="text-sm text-muted-foreground">Número de presentación facultad: {selectedPago.numero_oficio_presentacion_facultad}</p>
+                  )}
+                  {selectedPago.numero_oficio_conformidad_facultad && (
+                    <p className="text-sm text-muted-foreground">Número de conformidad facultad: {selectedPago.numero_oficio_conformidad_facultad}</p>
+                  )}
+                  {selectedPago.numero_resolucion_aprobacion && (
+                    <p className="text-sm text-muted-foreground">Número de resolución: {selectedPago.numero_resolucion_aprobacion}</p>
+                  )}
+                  {selectedPago.numero_resolucion_pago && (
+                    <p className="text-sm text-muted-foreground">Número de resolución de pago: {selectedPago.numero_resolucion_pago}</p>
+                  )}
                 </div>
               </div>
 
@@ -717,28 +729,7 @@ export default function PagosDocentesList() {
                 </div>
               </div>
 
-              {/* Documentos */}
-              <div>
-                <h3 className="font-semibold mb-3">Documentos Adjuntos</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedPago.numero_informe_final_url && (
-                    <a href={selectedPago.numero_informe_final_url} target="_blank" rel="noopener noreferrer" className="flex items-center p-2 border rounded hover:bg-slate-50">
-                      <FileText className="h-4 w-4 mr-2 text-blue-500" />
-                      <span className="text-sm truncate">Informe Final ({selectedPago.numero_informe_final})</span>
-                    </a>
-                  )}
-                  {selectedPago.numero_recibo_honorario_url && (
-                    <a href={selectedPago.numero_recibo_honorario_url} target="_blank" rel="noopener noreferrer" className="flex items-center p-2 border rounded hover:bg-slate-50">
-                      <FileText className="h-4 w-4 mr-2 text-green-500" />
-                      <span className="text-sm truncate">Recibo Honorarios ({selectedPago.numero_recibo_honorario})</span>
-                    </a>
-                  )}
-                  {/* Si no hay documentos */}
-                  {!selectedPago.numero_informe_final_url && !selectedPago.numero_recibo_honorario_url && (
-                    <p className="text-sm text-muted-foreground italic">No hay documentos adjuntos</p>
-                  )}
-                </div>
-              </div>
+
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">

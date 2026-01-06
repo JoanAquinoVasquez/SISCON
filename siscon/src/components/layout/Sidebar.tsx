@@ -20,9 +20,9 @@ const menuItems = [
   { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
   // Programas, Grados, Semestres, Cursos removed as they are default and not editable
   { icon: ClipboardList, label: 'Coordinadores', path: '/coordinadores' },
-  { icon: FileText, label: 'Asignación Docencia', path: '/asignaciones-docencia' },
-  { icon: Stethoscope, label: 'Asignación Enfermería', path: '/asignaciones-enfermeria' },
-  { icon: DollarSign, label: 'Pagos Coordinador', path: '/pagos-coordinadores' },
+  // { icon: FileText, label: 'Asignación Docencia', path: '/asignaciones-docencia' },
+  // { icon: Stethoscope, label: 'Asignación Enfermería', path: '/asignaciones-enfermeria' },
+  // { icon: DollarSign, label: 'Pagos Coordinador', path: '/pagos-coordinadores' },
   { icon: Users, label: 'Usuarios', path: '/users' },
   { icon: UserCog, label: 'Docentes', path: '/docentes' },
   // { icon: MapPin, label: 'Lugares Procedencia', path: '/lugares-procedencia' },

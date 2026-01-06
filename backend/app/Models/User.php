@@ -14,7 +14,6 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'firebase_uid',
         'google_id',
         'avatar',
         'name',
@@ -35,27 +34,10 @@ class User extends Authenticatable
         ];
     }
 
-    // Scopes
-    public function scopeByFirebaseUid($query, string $uid)
-    {
-        return $query->where('firebase_uid', $uid);
-    }
-
     // Check if user is admin
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }
 
-    // Create user from Firebase data
-    public static function createFromFirebase(array $firebaseUser): self
-    {
-        return self::create([
-            'firebase_uid' => $firebaseUser['uid'],
-            'name' => $firebaseUser['name'] ?? 'User',
-            'email' => $firebaseUser['email'],
-            'role' => 'user',
-            'is_active' => true,
-        ]);
-    }
 }

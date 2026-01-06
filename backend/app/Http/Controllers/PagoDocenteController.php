@@ -212,7 +212,7 @@ class PagoDocenteController extends Controller
                     "{$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}";
                 return [
                     'id' => $docente->id,
-                    'label' => "{$nombreCompleto} - DNI: {$docente->dni}",
+                    'label' => "{$nombreCompleto} - Docente {$docente->tipo_docente}",
                     'tipo_docente' => $docente->tipo_docente,
                 ];
             });

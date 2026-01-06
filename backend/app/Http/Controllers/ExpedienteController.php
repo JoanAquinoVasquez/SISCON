@@ -107,7 +107,9 @@ class ExpedienteController extends Controller
             'docentes_cursos.*.curso_id' => 'required_with:docentes_cursos|exists:cursos,id',
             'docentes_cursos.*.semestre_id' => 'required_with:docentes_cursos|exists:semestres,id',
             'docentes_cursos.*.fechas_ensenanza' => 'required_with:docentes_cursos|array',
-            'docentes_cursos.*.numero_oficio_coordinador' => 'nullable|string',
+            'docentes_cursos.*.numero_oficio_presentacion_coordinador' => 'nullable|string',
+            'docentes_cursos.*.numero_oficio_conformidad_coordinador' => 'nullable|string',
+            'numero_oficio_conformidad_facultad' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -138,10 +140,17 @@ class ExpedienteController extends Controller
                     ];
 
                     // Agregar campos específicos según tipo
+                    // Extraer datos que no van en la tabla expedientes
+                    $oficioPresentacionCoordinador = null;
+                    $oficioConformidadCoordinador = null;
+                    $oficioConformidadFacultad = null;
+
                     if ($request->tipo_asunto === 'presentacion') {
-                        $expedienteData['numero_oficio_presentacion_coordinador'] = $dc['numero_oficio_coordinador'] ?? null;
+                        Log::info($dc['numero_oficio_presentacion_coordinador']);
+                        $oficioPresentacionCoordinador = $dc['numero_oficio_presentacion_coordinador'] ?? null;
                     } elseif ($request->tipo_asunto === 'conformidad') {
-                        $expedienteData['numero_oficio_conformidad_coordinador'] = $dc['numero_oficio_coordinador'] ?? null;
+                        $oficioConformidadCoordinador = $dc['numero_oficio_conformidad_coordinador'] ?? null;
+                        $oficioConformidadFacultad = $request->numero_oficio_conformidad_facultad;
                     }
 
                     $expediente = Expediente::create($expedienteData);
@@ -149,10 +158,10 @@ class ExpedienteController extends Controller
                     // Procesar auto-linking según tipo de asunto
                     switch ($expediente->tipo_asunto) {
                         case 'presentacion':
-                            $expediente->procesarPresentacion();
+                            $expediente->procesarPresentacion($oficioPresentacionCoordinador);
                             break;
                         case 'conformidad':
-                            $expediente->procesarConformidad();
+                            $expediente->procesarConformidad($oficioConformidadCoordinador, $oficioConformidadFacultad);
                             break;
                     }
 
@@ -169,15 +178,26 @@ class ExpedienteController extends Controller
 
             } else {
                 // Flujo normal: un solo expediente
-                $expediente = Expediente::create($request->all());
+                // Filtrar datos que no son del modelo Expediente
+                $data = $request->except([
+                    'numero_oficio_presentacion_coordinador',
+                    'numero_oficio_conformidad_coordinador',
+                    'numero_oficio_conformidad_facultad',
+                    'docentes_cursos'
+                ]);
+
+                $expediente = Expediente::create($data);
 
                 // Procesar auto-linking según tipo de asunto
                 switch ($expediente->tipo_asunto) {
                     case 'presentacion':
-                        $expediente->procesarPresentacion();
+                        $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                         break;
                     case 'conformidad':
-                        $expediente->procesarConformidad();
+                        $expediente->procesarConformidad(
+                            $request->numero_oficio_conformidad_coordinador,
+                            $request->numero_oficio_conformidad_facultad
+                        );
                         break;
                     case 'resolucion':
                         $expediente->procesarResolucion();
@@ -237,6 +257,10 @@ class ExpedienteController extends Controller
             'curso_id' => 'sometimes|nullable|exists:cursos,id',
             'semestre_id' => 'sometimes|nullable|exists:semestres,id',
             'fechas_ensenanza' => 'sometimes|nullable|array',
+            'numero_oficio_presentacion_coordinador' => 'sometimes|nullable|string',
+            'numero_oficio_presentacion_facultad' => 'sometimes|nullable|string',
+            'numero_oficio_conformidad_coordinador' => 'sometimes|nullable|string',
+            'numero_oficio_conformidad_facultad' => 'sometimes|nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -248,7 +272,15 @@ class ExpedienteController extends Controller
             // Guardar datos anteriores para detectar cambios
             $pagoAnterior = $expediente->pago_docente_id;
 
-            $expediente->update($request->all());
+            // Filtrar datos que no son del modelo Expediente
+            $data = $request->except([
+                'numero_oficio_presentacion_coordinador',
+                'numero_oficio_presentacion_facultad',
+                'numero_oficio_conformidad_coordinador',
+                'numero_oficio_conformidad_facultad',
+            ]);
+
+            $expediente->update($data);
 
             // Re-procesar si es presentación o conformidad (incluso si no tiene pago vinculado)
             if (in_array($expediente->tipo_asunto, ['presentacion', 'conformidad'])) {
@@ -268,18 +300,18 @@ class ExpedienteController extends Controller
                                     'periodo' => $semestre->programa->periodo,
                                     'fechas_ensenanza' => $expediente->fechas_ensenanza,
                                     'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
-                                    'numero_oficio_presentacion_coordinador' => $expediente->numero_oficio_presentacion_coordinador,
+                                    'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
                                 ]);
                             }
                         } else {
                             // Pago fue eliminado → Crear nuevo y actualizar referencia
                             $expediente->pago_docente_id = null;
                             $expediente->save();
-                            $expediente->procesarPresentacion();
+                            $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                         }
                     } else {
                         // No tenía pago vinculado → Crear nuevo
-                        $expediente->procesarPresentacion();
+                        $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                     }
                 } elseif ($expediente->tipo_asunto === 'conformidad') {
                     // Re-evaluar vinculación basada en fechas
@@ -328,7 +360,8 @@ class ExpedienteController extends Controller
                                     // Vincular al nuevo pago
                                     $pagoCoincidente->update([
                                         'numero_oficio_conformidad_direccion' => $expediente->numero_documento,
-                                        'numero_oficio_conformidad_coordinador' => $expediente->numero_oficio_conformidad_coordinador,
+                                        'numero_oficio_conformidad_coordinador' => $request->numero_oficio_conformidad_coordinador,
+                                        'numero_oficio_conformidad_facultad' => $request->numero_oficio_conformidad_facultad,
                                         'estado' => 'en_proceso',
                                     ]);
 
@@ -352,11 +385,17 @@ class ExpedienteController extends Controller
                             // Pago anterior fue eliminado → Limpiar referencia y re-procesar
                             $expediente->pago_docente_id = null;
                             $expediente->save();
-                            $expediente->procesarConformidad();
+                            $expediente->procesarConformidad(
+                                $request->numero_oficio_conformidad_coordinador,
+                                $request->numero_oficio_conformidad_facultad
+                            );
                         }
                     } else {
                         // No tenía pago vinculado → Procesar conformidad
-                        $expediente->procesarConformidad();
+                        $expediente->procesarConformidad(
+                            $request->numero_oficio_conformidad_coordinador,
+                            $request->numero_oficio_conformidad_facultad
+                        );
                     }
                 }
             }
@@ -442,7 +481,7 @@ class ExpedienteController extends Controller
             ->map(function ($docente) {
                 return [
                     'id' => $docente->id,
-                    'label' => "{$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno} - DNI: {$docente->dni}",
+                    'label' => "{$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno} - Docente {$docente->tipo_docente}",
                     'tipo_docente' => $docente->tipo_docente,
                 ];
             });

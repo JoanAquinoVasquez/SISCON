@@ -27,8 +27,10 @@ class Expediente extends Model
         'fechas_ensenanza',
         'pago_docente_id',
         // Coordinator documents
-        'numero_oficio_presentacion_coordinador',
-        'numero_oficio_conformidad_coordinador',
+        // Coordinator documents - REMOVED as they belong to PagoDocente
+        // 'numero_oficio_presentacion_coordinador',
+        // 'numero_oficio_conformidad_coordinador',
+        // 'numero_oficio_conformidad_facultad',
         // Devolucion fields
         'persona_devolucion',
         'dni_devolucion',
@@ -113,8 +115,9 @@ class Expediente extends Model
      * Procesar expediente de tipo presentación
      * Crea un nuevo pago docente en estado pendiente
      */
-    public function procesarPresentacion()
+    public function procesarPresentacion($oficioPresentacionCoordinador = null)
     {
+        Log::info($oficioPresentacionCoordinador);
         if ($this->tipo_asunto !== 'presentacion') {
             return null;
         }
@@ -153,7 +156,7 @@ class Expediente extends Model
             'importe_letras' => '',
             // Documentos de presentación (se llenarán desde el expediente)
             'numero_oficio_presentacion_facultad' => $this->numero_documento,
-            'numero_oficio_presentacion_coordinador' => $this->numero_oficio_presentacion_coordinador,
+            'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
             'fecha_mesa_partes' => $this->fecha_mesa_partes,
         ]);
 
@@ -168,7 +171,7 @@ class Expediente extends Model
      * Procesar expediente de tipo conformidad
      * Busca y actualiza el pago docente correspondiente
      */
-    public function procesarConformidad()
+    public function procesarConformidad($oficioConformidadCoordinador = null, $oficioConformidadFacultad = null)
     {
         if ($this->tipo_asunto !== 'conformidad') {
             return null;
@@ -197,7 +200,8 @@ class Expediente extends Model
             if ($pago) {
                 $pago->update([
                     'numero_oficio_conformidad_direccion' => $this->numero_documento,
-                    'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
+                    'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
+                    'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
                     'estado' => 'en_proceso',
                     // Actualizar nombres por si cambiaron
                     'facultad_nombre' => $facultadNombre,
@@ -234,7 +238,8 @@ class Expediente extends Model
             // Encontró un pago pendiente con mismo docente, curso, periodo y fechas → Vincular
             $pago->update([
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
-                'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
+                'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
+                'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
                 'estado' => 'en_proceso',
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,

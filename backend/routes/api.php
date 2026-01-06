@@ -21,7 +21,7 @@ use App\Http\Controllers\OficioController;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes - Firebase Authentication
+| API Routes 
 |--------------------------------------------------------------------------
 */
 
@@ -30,7 +30,7 @@ Route::get('/', function () {
     return response()->json([
         'message' => 'Bienvenido a la API del Sistema de Contabilidad (SISCON)',
         'version' => '1.0.0',
-        'auth' => 'Firebase Authentication',
+        'auth' => 'Google Authentication',
         'status' => 'active'
     ]);
 });

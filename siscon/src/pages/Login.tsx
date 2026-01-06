@@ -3,20 +3,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
 import "./Login.css"; // <--- IMPORTANTE: Importamos los estilos aquí
+import fondo01 from "../assets/fondo01.webp";
+import fondo02 from "../assets/fondo02.webp";
 
 export const Login = () => {
   const { signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const [currentBg, setCurrentBg] = useState(0);
 
-  // Array de fondos (gradientes y colores)
-  const backgrounds = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  ];
+  // Array de fondos (imágenes)
+  const backgrounds = [fondo01, fondo02];
 
   useEffect(() => {
     if (user) navigate("/dashboard");
@@ -47,24 +43,28 @@ export const Login = () => {
           key={index}
           className="login-background"
           style={{
-            background: bg,
+            backgroundImage: `url(${bg})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 15%', // Encuadre más abajo
+            filter: 'blur(3px)', // Siempre difuminado
+            transform: 'scale(1.1)', // Escala ligera para evitar bordes blancos
             opacity: currentBg === index ? 1 : 0,
             transition: 'opacity 1.5s ease-in-out',
           }}
         />
       ))}
-      
+
       <div className="login-card">
-        
+
         <span className="logo-icon">📊</span>
-        
+
         <h2 className="title">SisCon</h2>
         <p className="subtitle">Tu contabilidad, simplificada.</p>
-        
+
         <button onClick={handleLogin} className="google-btn">
-          <img 
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-            alt="Google logo" 
+          <img
+            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+            alt="Google logo"
             width="20"
             height="20"
           />

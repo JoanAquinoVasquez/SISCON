@@ -45,11 +45,11 @@ export default function DocenteCursoBlock({
           <X className="w-5 h-5" />
         </button>
       )}
-      
+
       <h4 className="text-lg font-semibold text-gray-700 mb-4">
         Docente y Curso {index > 0 ? `#${index + 1}` : ''}
       </h4>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <Label>Docente *</Label>
@@ -61,7 +61,7 @@ export default function DocenteCursoBlock({
             placeholder="Buscar docente..."
           />
         </div>
-        
+
         <div>
           <Label>Curso *</Label>
           <SelectConBusqueda
@@ -72,7 +72,7 @@ export default function DocenteCursoBlock({
             placeholder="Buscar curso..."
           />
         </div>
-        
+
         <div>
           <Label>
             N° Oficio {tipoAsunto === 'presentacion' ? 'Presentación' : 'Conformidad'} Coordinador (Opcional)
@@ -83,7 +83,7 @@ export default function DocenteCursoBlock({
             placeholder={tipoAsunto === 'presentacion' ? 'Ej: 001-VIRTUAL-2026-DUPG-FICSA' : 'Ej: 001-VIRTUAL-2026-DUPG-FICSA'}
           />
         </div>
-        
+
         <div className="md:col-span-2">
           <CalendarioMultiple
             label="Fechas de Enseñanza"

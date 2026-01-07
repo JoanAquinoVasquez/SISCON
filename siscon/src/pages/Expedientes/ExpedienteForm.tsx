@@ -183,7 +183,7 @@ export default function ExpedienteForm() {
     try {
       const response = await axios.get(`/expedientes/${id}`);
       const data = response.data.data;
-
+      console.log(data);
       setNumeroExpedienteMP(data.numero_expediente_mesa_partes || '');
       setNumeroDocumento(data.numero_documento);
 
@@ -212,21 +212,21 @@ export default function ExpedienteForm() {
       if (data.docente) {
         setDocente({
           id: data.docente.id,
-          label: `${data.docente.nombres} ${data.docente.apellido_paterno} ${data.docente.apellido_materno}`,
+          label: `${data.docente.titulo_profesional} ${data.docente.nombres} ${data.docente.apellido_paterno} ${data.docente.apellido_materno} - Docente ${data.docente.tipo_docente}`,
         });
       }
 
       if (data.curso) {
         setCurso({
           id: data.curso.id,
-          label: data.curso.nombre,
+          label: `${data.curso.nombre} (${data.semestre.programa.grado.nombre} en ${data.semestre.programa.nombre} ${data.pago_docente.periodo}) `,
         });
       }
 
       setFechasEnsenanza(data.fechas_ensenanza || []);
-      setNumeroOficioPresentacionCoordinador(data.numero_oficio_presentacion_coordinador || '');
-      setNumeroOficioConformidadCoordinador(data.numero_oficio_conformidad_coordinador || '');
-      setNumeroOficioConformidadFacultad(data.numero_oficio_conformidad_facultad || '');
+      setNumeroOficioPresentacionCoordinador(data.pago_docente.numero_oficio_presentacion_coordinador || '');
+      setNumeroOficioConformidadCoordinador(data.pago_docente.numero_oficio_conformidad_coordinador || '');
+      setNumeroOficioConformidadFacultad(data.pago_docente.numero_oficio_conformidad_facultad || '');
 
       // Devolucion fields
       setPersonaDevolucion(data.persona_devolucion || '');
@@ -653,7 +653,7 @@ export default function ExpedienteForm() {
                               <Input
                                 value={numeroOficioConformidadFacultad}
                                 onChange={(e) => setNumeroOficioConformidadFacultad(e.target.value)}
-                                placeholder="Ej: 001-2026-D-FICSA"
+                                placeholder="Ej: 002-VIRTUAL-2025-DUPG-FICSA"
                                 required={false}
                               />
                             </div>
@@ -662,7 +662,7 @@ export default function ExpedienteForm() {
                               <Input
                                 value={numeroOficioConformidadCoordinador}
                                 onChange={(e) => setNumeroOficioConformidadCoordinador(e.target.value)}
-                                placeholder="Ej: 001-2026-JEAV"
+                                placeholder="Ej: 002-JEAV"
                                 required={false}
                               />
                             </div>

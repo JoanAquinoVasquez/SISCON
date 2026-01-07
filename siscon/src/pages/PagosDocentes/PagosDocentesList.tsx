@@ -452,11 +452,11 @@ export default function PagosDocentesList() {
                     <div className="font-medium">{pago.docente_nombre}</div>
                     <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente}</div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.curso_nombre}
-                    <div className="text-xs text-muted-foreground">{pago.programa_nombre} {pago.periodo}</div></TableCell>
-                  <TableCell className='text-center'>
+                  <TableCell className="max-w-[200px] truncate" title={pago.curso_nombre}>{pago.curso_nombre}
+                    <div className="text-xs text-muted-foreground" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.programa_nombre} {pago.periodo}</div></TableCell>
+                  <TableCell className='text-center' title={pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}>
                     {pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
-                    <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
+                    <div className="text-xs text-muted-foreground" title={pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}>Cord. Ofic.{' '}
                       {pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}</div>
                   </TableCell>
                   <TableCell className='text-center'>
@@ -667,67 +667,67 @@ export default function PagosDocentesList() {
               </div>
 
               {/* Generar Documentos */}
-              <div className="border-b pb-4">
-                <h3 className="font-semibold mb-3">Generar Documentos</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedPago && selectedPago.estado === 'pendiente' ? (
-                    <Button
-                      onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
-                      disabled={isGeneratingResolucionAceptacion}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      {isGeneratingResolucionAceptacion ? (
+
+              {/* Solo renderiza la sección completa si hay algo que mostrar */}
+              {selectedPago && (
+                // Condición lógica: 
+                // 1. Si es interno y pendiente (Muestra Res. Aprobación)
+                // 2. O si el estado es 'proceso' (Muestra los otros dos botones)
+                ((selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo') ||
+                  selectedPago.estado === 'proceso') && (
+
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold mb-3">Generar Documentos</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                      {/* CASO: EXTERNO + PENDIENTE */}
+                      {selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo' && (
+                        <Button
+                          onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
+                          disabled={isGeneratingResolucionAceptacion}
+                          className="w-full bg-blue-600 hover:bg-blue-700"
+                        >
+                          {isGeneratingResolucionAceptacion ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                          ) : (
+                            <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Aprobación</>
+                          )}
+                        </Button>
+                      )}
+
+                      {/* CASO: ESTADO EN PROCESO */}
+                      {selectedPago.estado === 'proceso' && (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generando...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="mr-2 h-4 w-4" />
-                          Generar Resolución de Aprobación
+                          <Button
+                            onClick={() => handleGenerateResolucion(selectedPago.id)}
+                            disabled={isGeneratingResolucion}
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                          >
+                            {isGeneratingResolucion ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                            ) : (
+                              <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Pago</>
+                            )}
+                          </Button>
+
+                          <Button
+                            onClick={() => handleGenerateOficio(selectedPago.id)}
+                            disabled={isGeneratingOficio}
+                            className="w-full bg-green-600 hover:bg-green-700"
+                          >
+                            {isGeneratingOficio ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                            ) : (
+                              <><Clipboard className="mr-2 h-4 w-4" /> Generar Oficio de Contabilidad</>
+                            )}
+                          </Button>
                         </>
                       )}
-                    </Button>
-                  ) : (
-                    <>
-                      <Button
-                        onClick={() => selectedPago && handleGenerateResolucion(selectedPago.id)}
-                        disabled={isGeneratingResolucion}
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                      >
-                        {isGeneratingResolucion ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generando...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Generar Resolución de Pago
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => selectedPago && handleGenerateOficio(selectedPago.id)}
-                        disabled={isGeneratingOficio}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        {isGeneratingOficio ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generando...
-                          </>
-                        ) : (
-                          <>
-                            <Clipboard className="mr-2 h-4 w-4" />
-                            Generar Oficio de Contabilidad
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                )
+              )}
+
 
 
             </div>

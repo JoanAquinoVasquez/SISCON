@@ -20,7 +20,7 @@ class FacultadSeeder extends Seeder
             ['nombre' => 'Facultad de Ingeniería Mecánica y Eléctrica', 'codigo' => 'FIME', 'director_nombre' => 'Dr. James Skinner Celada Padilla', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Derecho y Ciencias Políticas', 'codigo' => 'FDCP', 'director_nombre' => 'Dr. Victor Ruperto Anacleto Guerrero', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Ingeniería Agrícola', 'codigo' => 'FIA', 'director_nombre' => 'Dr. Juan Manuel Saavedra Tineo', 'director_genero' => 'M'],
-            ['nombre' => 'Facultad de Ciencias Histórico Sociales y Educación', 'codigo' => 'FASCHE', 'director_nombre' => 'Dra. Gloria Betzabet Puicon Cruzalegui', 'director_genero' => 'F'],
+            ['nombre' => 'Facultad de Ciencias Histórico Sociales y Educación', 'codigo' => 'FACHSE', 'director_nombre' => 'Dra. Gloria Betzabet Puicon Cruzalegui', 'director_genero' => 'F'],
             ['nombre' => 'Facultad de Ciencias Biológicas', 'codigo' => 'FCCBB', 'director_nombre' => 'Dr. José Reupo Periche', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Medicina Veterinaria', 'codigo' => 'FMV', 'director_nombre' => null, 'director_genero' => null], // No hay director en el archivo
         ];

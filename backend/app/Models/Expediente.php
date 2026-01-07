@@ -117,7 +117,6 @@ class Expediente extends Model
      */
     public function procesarPresentacion($oficioPresentacionCoordinador = null)
     {
-        Log::info($oficioPresentacionCoordinador);
         if ($this->tipo_asunto !== 'presentacion') {
             return null;
         }

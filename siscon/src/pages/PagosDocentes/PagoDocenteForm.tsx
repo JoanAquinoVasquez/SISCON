@@ -35,7 +35,7 @@ interface DatosCurso {
 }
 
 // Componente DocumentField fuera del componente principal para evitar pérdida de foco
-const DocumentField = ({ label, value, onChange, urlValue, onUrlChange, showUpload = false }: any) => (
+const DocumentField = ({ label, value, onChange, urlValue, onUrlChange, placeholder, showUpload = false }: any) => (
   <div className="space-y-3">
     <div className={showUpload ? "grid grid-cols-2 gap-3" : ""}>
       <div>
@@ -44,7 +44,7 @@ const DocumentField = ({ label, value, onChange, urlValue, onUrlChange, showUplo
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="h-9"
-          placeholder="Número"
+          placeholder={placeholder}
         />
       </div>
       {showUpload && (
@@ -93,8 +93,8 @@ const formatDateForInput = (dateValue: any): string => {
 
 export default function PagoDocenteForm() {
   const { id } = useParams();
-  const {showToast} = useToast();
-  
+  const { showToast } = useToast();
+
   const navigate = useNavigate();
   const { numeroALetras } = useNumeroALetras();
   const [activeTab, setActiveTab] = useState('general');
@@ -548,19 +548,15 @@ export default function PagoDocenteForm() {
 
           <TabPanel id="documentos" activeTab={activeTab}>
             <div className="space-y-6">
-              {/* Documentos Generales (para ambos tipos) */}
-              <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">📄 Documentos Generales</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DocumentField
-                    label="Informe Final"
-                    value={numeroInformeFinal}
-                    onChange={setNumeroInformeFinal}
-                    urlValue={numeroInformeFinalUrl}
-                    onUrlChange={setNumeroInformeFinalUrl}
-                  />
+              {/* GRUPO 1: PRESENTACIÓN */}
+              <section>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4">
+                  📂 Documentos de Presentación
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <DocumentField
                     label="Oficio Presentación Facultad"
+                    placeholder="001-VIRTUAL-2026-DUPG-FICSA"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_facultad : docExterno.numero_oficio_presentacion_facultad}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
                       ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad: v })
@@ -572,6 +568,7 @@ export default function PagoDocenteForm() {
                   />
                   <DocumentField
                     label="Oficio Presentación Coordinador"
+                    placeholder="001-JEAV"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_coordinador : docExterno.numero_oficio_presentacion_coordinador}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
                       ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador: v })
@@ -581,8 +578,30 @@ export default function PagoDocenteForm() {
                       ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador_url: v })}
                   />
+                </div>
+              </section>
+              <hr className="border-gray-200" />
+              {/* GRUPO 2: CONFORMIDAD */}
+              <section>
+                <h3 className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-4">
+                  ✅ Documentos de Conformidad e Informe
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* El Informe Final ahora encabeza este grupo */}
+                  <div className="md:col-span-2">
+                    <DocumentField
+                      label="Informe Final"
+                      placeholder="001-JEAV"
+                      value={numeroInformeFinal}
+                      onChange={setNumeroInformeFinal}
+                      urlValue={numeroInformeFinalUrl}
+                      onUrlChange={setNumeroInformeFinalUrl}
+                    />
+                  </div>
+
                   <DocumentField
                     label="Oficio Conformidad Facultad"
+                    placeholder="002-VIRTUAL-2025-DUPG-FICSA"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_facultad : docExterno.numero_oficio_conformidad_facultad}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
                       ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad: v })
@@ -594,6 +613,7 @@ export default function PagoDocenteForm() {
                   />
                   <DocumentField
                     label="Oficio Conformidad Coordinador"
+                    placeholder="002-JEAV"
                     value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_coordinador : docExterno.numero_oficio_conformidad_coordinador}
                     onChange={(v: string) => docente?.tipo_docente === 'interno'
                       ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador: v })
@@ -604,7 +624,7 @@ export default function PagoDocenteForm() {
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador_url: v })}
                   />
                 </div>
-              </div>
+              </section>
             </div>
           </TabPanel>
 
@@ -615,6 +635,7 @@ export default function PagoDocenteForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DocumentField
                   label="Oficio Conformidad Dirección"
+                  placeholder="003-D-2026-EPG"
                   value={docInterno.numero_oficio_conformidad_direccion}
                   onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
                   urlValue={docInterno.numero_oficio_conformidad_direccion_url}
@@ -622,6 +643,7 @@ export default function PagoDocenteForm() {
                 />
                 <DocumentField
                   label="Resolución de Aprobación"
+                  placeholder="004-2026-EPG-D"
                   value={docInterno.numero_resolucion_aprobacion}
                   onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_aprobacion: v })}
                   // Assuming no URL for approval resolution for now, or reuse existing if needed. 
@@ -642,6 +664,7 @@ export default function PagoDocenteForm() {
                 </div>
                 <DocumentField
                   label="Resolución de Pago"
+                  placeholder="005-2026-EPG-D"
                   value={docInterno.numero_resolucion_pago}
                   onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_pago: v })}
                   urlValue={docInterno.numero_resolucion_url}
@@ -657,6 +680,7 @@ export default function PagoDocenteForm() {
                 </div>
                 <DocumentField
                   label="Oficio Contabilidad"
+                  placeholder="006-2026-UC-EPG-UNPRG"
                   value={docInterno.numero_oficio_contabilidad}
                   onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })}
                   urlValue={docInterno.numero_oficio_contabilidad_url}
@@ -692,6 +716,7 @@ export default function PagoDocenteForm() {
                 </div>
                 <DocumentField
                   label="Recibo por Honorario"
+                  placeholder="E001-10"
                   value={docExterno.numero_recibo_honorario}
                   onChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario: v })}
                   urlValue={docExterno.numero_recibo_honorario_url}
@@ -707,6 +732,7 @@ export default function PagoDocenteForm() {
                 </div>
                 <DocumentField
                   label="Pedido de Servicio"
+                  placeholder="001-2026"
                   value={docExterno.numero_pedido_servicio}
                   onChange={(v: string) => setDocExterno({ ...docExterno, numero_pedido_servicio: v })}
                   urlValue={docExterno.numero_pedido_servicio_url}
@@ -723,6 +749,7 @@ export default function PagoDocenteForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <DocumentField
                   label="Oficio de Pago de Dirección"
+                  placeholder="007-D-2026-EPG"
                   value={numeroOficioPagoDireccion}
                   onChange={(v: string) => setNumeroOficioPagoDireccion(v)}
                   urlValue={numeroOficioPagoDireccionUrl}
@@ -733,36 +760,36 @@ export default function PagoDocenteForm() {
                   <Label className="text-sm">Pedido de Servicio</Label>
                   <Input
                     value={pedidoServicio}
+                    placeholder="001-2026"
                     onChange={(e) => setPedidoServicio(e.target.value)}
                     className="h-9"
-                    placeholder="Número"
                   />
                 </div>
                 <div>
                   <Label className="text-sm">Orden de Servicio</Label>
                   <Input
                     value={ordenServicio}
+                    placeholder="002-2026"
                     onChange={(e) => setOrdenServicio(e.target.value)}
                     className="h-9"
-                    placeholder="Número"
                   />
                 </div>
                 <div>
                   <Label className="text-sm">Acta de Conformidad</Label>
                   <Input
                     value={actaConformidad}
+                    placeholder="003-2026"
                     onChange={(e) => setActaConformidad(e.target.value)}
                     className="h-9"
-                    placeholder="Número"
                   />
                 </div>
                 <div>
                   <Label className="text-sm">N° Exp SIAF</Label>
                   <Input
                     value={numeroExpSiaf}
+                    placeholder="0001"
                     onChange={(e) => setNumeroExpSiaf(e.target.value)}
                     className="h-9"
-                    placeholder="Número"
                   />
                 </div>
                 <div>
@@ -771,7 +798,7 @@ export default function PagoDocenteForm() {
                     value={notaPago}
                     onChange={(e) => setNotaPago(e.target.value)}
                     className="h-9"
-                    placeholder="Número"
+                    placeholder="7211.25.81.2507108"
                   />
                 </div>
               </div>

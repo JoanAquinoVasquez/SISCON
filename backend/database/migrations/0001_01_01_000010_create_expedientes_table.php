@@ -33,10 +33,6 @@ return new class extends Migration {
             // Relación con pago_docente (auto-creado o vinculado)
             $table->foreignId('pago_docente_id')->nullable()->constrained('pagos_docentes')->onDelete('set null');
 
-            // Documentos coordinador
-            $table->string('numero_oficio_presentacion_coordinador')->nullable();
-            $table->string('numero_oficio_conformidad_coordinador')->nullable();
-
             // Campos devolución
             $table->string('persona_devolucion')->nullable();
             $table->string('dni_devolucion')->nullable();

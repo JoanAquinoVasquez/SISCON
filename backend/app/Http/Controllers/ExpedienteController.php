@@ -146,7 +146,6 @@ class ExpedienteController extends Controller
                     $oficioConformidadFacultad = null;
 
                     if ($request->tipo_asunto === 'presentacion') {
-                        Log::info($dc['numero_oficio_presentacion_coordinador']);
                         $oficioPresentacionCoordinador = $dc['numero_oficio_presentacion_coordinador'] ?? null;
                     } elseif ($request->tipo_asunto === 'conformidad') {
                         $oficioConformidadCoordinador = $dc['numero_oficio_conformidad_coordinador'] ?? null;
@@ -229,7 +228,7 @@ class ExpedienteController extends Controller
      */
     public function show(string $id)
     {
-        $expediente = Expediente::with(['docente', 'curso', 'pagoDocente'])->findOrFail($id);
+        $expediente = Expediente::with(['docente', 'curso', 'pagoDocente', 'semestre.programa.grado'])->findOrFail($id);
 
         return response()->json(['data' => $expediente], 200);
     }

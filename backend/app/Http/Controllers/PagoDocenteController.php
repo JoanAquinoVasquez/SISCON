@@ -109,6 +109,10 @@ class PagoDocenteController extends Controller
             'numero_informe_final' => 'nullable|string',
             'numero_informe_final_url' => 'nullable|url',
             'fecha_resolucion_aprobacion' => 'nullable|date',
+            'nota_pago_2' => 'nullable|string',
+            'fecha_pago' => 'nullable|date',
+            'fecha_nota_pago' => 'nullable|date',
+            'fecha_nota_pago_2' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {

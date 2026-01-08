@@ -73,33 +73,8 @@ export default function ExpedientesList() {
   };
 
   const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return '-';
-    try {
-      // Laravel devuelve fechas en formato "YYYY-MM-DD" o "YYYY-MM-DD HH:mm:ss"
-      // Agregar hora para evitar problemas de zona horaria con fechas solo YYYY-MM-DD
-      let date: Date;
-
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
-        // Solo fecha, agregar hora para parseo correcto
-        date = new Date(dateString + 'T00:00:00');
-      } else {
-        date = new Date(dateString);
-      }
-
-      if (isNaN(date.getTime())) {
-        console.warn('Fecha inválida:', dateString);
-        return '-';
-      }
-
-      return date.toLocaleDateString('es-PE', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-    } catch (error) {
-      console.error('Error al formatear fecha:', dateString, error);
-      return '-';
-    }
+     if (!dateString) return '';
+        return dateString.split('T')[0].split(' ')[0];
   };
 
   const getTipoAsuntoBadge = (tipo: string) => {

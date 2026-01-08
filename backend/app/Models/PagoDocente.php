@@ -62,6 +62,10 @@ class PagoDocente extends Model
         'numero_exp_siaf',
         'nota_pago',
         'fecha_mesa_partes',
+        'nota_pago_2',
+        'fecha_pago',
+        'fecha_nota_pago',
+        'fecha_nota_pago_2',
     ];
 
     protected $casts = [
@@ -75,6 +79,9 @@ class PagoDocente extends Model
         'fecha_recibo_honorario' => 'date',
         'fecha_oficio_contabilidad' => 'date',
         'fecha_mesa_partes' => 'date',
+        'fecha_pago' => 'date',
+        'fecha_nota_pago' => 'date',
+        'fecha_nota_pago_2' => 'date',
     ];
 
     // Relaciones

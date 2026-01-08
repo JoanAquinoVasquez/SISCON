@@ -135,6 +135,10 @@ export default function PagoDocenteForm() {
   const [actaConformidad, setActaConformidad] = useState('');
   const [numeroExpSiaf, setNumeroExpSiaf] = useState('');
   const [notaPago, setNotaPago] = useState('');
+  const [notaPago2, setNotaPago2] = useState('');
+  const [fechaPago, setFechaPago] = useState('');
+  const [fechaNotaPago, setFechaNotaPago] = useState('');
+  const [fechaNotaPago2, setFechaNotaPago2] = useState('');
 
   // Documentos internos
   const [docInterno, setDocInterno] = useState({
@@ -165,7 +169,6 @@ export default function PagoDocenteForm() {
     numero_recibo_honorario: '',
     numero_recibo_honorario_url: '',
     fecha_recibo_honorario: '',
-    numero_pedido_servicio: '',
     numero_pedido_servicio_url: '',
     // Campos comunes con internos
     numero_oficio_presentacion_facultad: '',
@@ -222,7 +225,7 @@ export default function PagoDocenteForm() {
 
           setCurso({
             id: data.curso_id,
-            label: `${data.curso.nombre} (${data.periodo})`,
+            label: `${data.curso.nombre}`,
             periodo: data.periodo,
             programa_id: 0 // No longer needed
           });
@@ -241,7 +244,12 @@ export default function PagoDocenteForm() {
           setOrdenServicio(data.orden_servicio || '');
           setActaConformidad(data.acta_conformidad || '');
           setNumeroExpSiaf(data.numero_exp_siaf || '');
+          setNumeroExpSiaf(data.numero_exp_siaf || '');
           setNotaPago(data.nota_pago || '');
+          setNotaPago2(data.nota_pago_2 || '');
+          setFechaPago(formatDateForInput(data.fecha_pago));
+          setFechaNotaPago(formatDateForInput(data.fecha_nota_pago));
+          setFechaNotaPago2(formatDateForInput(data.fecha_nota_pago_2));
 
           // Siempre poblar documentos internos (disponibles para todos los tipos)
           setDocInterno({
@@ -272,7 +280,6 @@ export default function PagoDocenteForm() {
               numero_recibo_honorario: data.numero_recibo_honorario || '',
               numero_recibo_honorario_url: data.numero_recibo_honorario_url || '',
               fecha_recibo_honorario: formatDateForInput(data.fecha_recibo_honorario),
-              numero_pedido_servicio: data.numero_pedido_servicio || '',
               numero_pedido_servicio_url: data.numero_pedido_servicio_url || '',
               // Campos comunes (ya están en docInterno, pero los mantenemos aquí para consistencia)
               numero_oficio_presentacion_facultad: data.numero_oficio_presentacion_facultad || '',
@@ -374,6 +381,10 @@ export default function PagoDocenteForm() {
         acta_conformidad: actaConformidad,
         numero_exp_siaf: numeroExpSiaf,
         nota_pago: notaPago,
+        nota_pago_2: notaPago2,
+        fecha_pago: fechaPago,
+        fecha_nota_pago: fechaNotaPago,
+        fecha_nota_pago_2: fechaNotaPago2,
         ...(docente.tipo_docente === 'interno' ? {
           ...docInterno,
           numero_resolucion_pago: docInterno.numero_resolucion_pago,
@@ -384,7 +395,7 @@ export default function PagoDocenteForm() {
           ...docExterno,
           numero_resolucion_pago: docExterno.numero_resolucion_pago,
           numero_resolucion_aprobacion: docExterno.numero_resolucion_aprobacion,
-          fecha_resolucion_aprobacion: docExterno.fecha_resolucion_aprobacion
+          fecha_resolucion_aprobacion: docExterno.fecha_resolucion_aprobacion,
         } : {}),
       };
 
@@ -414,15 +425,10 @@ export default function PagoDocenteForm() {
     const baseTabs = [
       { id: 'general', label: 'Información General', icon: '📋' },
       { id: 'calculos', label: 'Cálculos', icon: '💰' },
-      { id: 'documentos', label: 'Documentos', icon: '📄' },
-      { id: 'documentos-internos', label: 'Docs. Internos', icon: '📑' },
+      { id: 'documentos', label: 'Presentación', icon: '📄' },
+      { id: 'documentos-internos', label: 'Conformidad', icon: '📑' },
+      { id: 'doc-recibido', label: 'Doc Recibido', icon: '📬' }
     ];
-
-    if (docente?.tipo_docente === 'externo') {
-      baseTabs.push({ id: 'documentos-externos', label: 'Docs. Externos', icon: '📑' });
-    }
-
-    baseTabs.push({ id: 'doc-recibido', label: 'Doc Recibido', icon: '📬' });
 
     return baseTabs;
   };
@@ -486,68 +492,81 @@ export default function PagoDocenteForm() {
                 />
                 <div>
                   <Label>Programa</Label>
-                  <Input value={datosCurso.programa_nombre || ''} disabled className="bg-gray-50" />
+                  <Input title={`${datosCurso.programa_nombre || ''}`} value={datosCurso.programa_nombre || ''} disabled className="bg-gray-50" />
                 </div>
               </div>
             </div>
           </TabPanel>
 
           <TabPanel id="calculos" activeTab={activeTab}>
-            <div className="max-w-3xl mx-auto space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>N° de Horas *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={numeroHoras}
-                    onChange={(e) => setNumeroHoras(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label>Costo por Hora *</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={costoPorHora}
-                    onChange={(e) => setCostoPorHora(e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label>Importe Total</Label>
-                  <Input
-                    value={Number(importeTotal || 0).toFixed(2)}
-                    disabled
-                    className="font-semibold bg-blue-50"
-                  />
-                </div>
-              </div>
+            <div className="max-w-4xl mx-auto space-y-4">
 
-              <div>
-                <Label>Importe en Letras</Label>
-                <textarea
-                  value={importeLetras}
-                  disabled
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-gray-50 px-3 py-2 text-sm"
-                />
-              </div>
+              {/* Contenedor Compacto de Fechas */}
+              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
+                    Fechas de Enseñanza <span className="text-red-500">*</span>
+                  </h3>
+                  <span className="text-xs text-slate-400 bg-white px-2 py-1 rounded border">
+                    {fechasEnsenanza.length} días seleccionados
+                  </span>
+                </div>
 
-              <div className="pt-4">
-                <h3 className="text-lg font-semibold text-gray-700 mb-4">Fechas de Enseñanza *</h3>
                 <CalendarioMultiple
                   label=""
                   selectedDates={fechasEnsenanza}
                   onChange={setFechasEnsenanza}
                   highlightWeekends={true}
                 />
+
               </div>
+
+              {/* Fila de Cálculos Comprimida */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600">N° de Horas</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={numeroHoras}
+                    onChange={(e) => setNumeroHoras(e.target.value)}
+                    placeholder="0.00"
+                    className="h-9 focus-visible:ring-blue-400"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-600">Costo por Hora</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/.</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={costoPorHora}
+                      onChange={(e) => setCostoPorHora(e.target.value)}
+                      placeholder="0.00"
+                      className="h-9 pl-7 focus-visible:ring-blue-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Importe Total ocupando 2 columnas para balancear */}
+                <div className="md:col-span-2 space-y-1.5">
+                  <Label className="text-xs font-semibold text-blue-700">Importe Total Calculado</Label>
+                  <div className="flex items-center h-9 px-4 rounded-md bg-blue-600 text-white font-bold shadow-sm">
+                    <span className="text-sm mr-auto text-blue-100 font-normal">Total:</span>
+                    <span className="text-lg">
+                      S/ {Number(importeTotal || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </TabPanel>
 
           <TabPanel id="documentos" activeTab={activeTab}>
-            <div className="space-y-6">
+            <div className="bg-blue-50 p-6 rounded-lg space-y-6">
               {/* GRUPO 1: PRESENTACIÓN */}
               <section>
                 <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4">
@@ -581,23 +600,64 @@ export default function PagoDocenteForm() {
                 </div>
               </section>
               <hr className="border-gray-200" />
-              {/* GRUPO 2: CONFORMIDAD */}
+              {docente?.tipo_docente === 'externo' && (
+                <>
+                  <section>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">
+                      📂 Generar Resolución de Aprobación
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <DocumentField
+                        label="Resolución de Aprobación"
+                        placeholder="004-2026-EPG-D"
+                        value={docExterno.numero_resolucion_aprobacion}
+                        onChange={(v: string) => setDocExterno({ ...docExterno, numero_resolucion_aprobacion: v })}
+                        urlValue=""
+                        onUrlChange={() => { }}
+                      />
+                      <div>
+                        <Label>Fecha Resolución Aprobación</Label>
+                        <Input
+                          type="date"
+                          value={docExterno.fecha_resolucion_aprobacion}
+                          onChange={(e) => setDocExterno({ ...docExterno, fecha_resolucion_aprobacion: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Pedido de Servicio</Label>
+                        <Input
+                          value={pedidoServicio}
+                          placeholder="001-2026"
+                          onChange={(e) => setPedidoServicio(e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )}
+
+            </div>
+          </TabPanel>
+
+          {/* Tab exclusivo para Documentos Internos */}
+          <TabPanel id="documentos-internos" activeTab={activeTab}>
+            {/* GRUPO 3: CONFORMIDAD */}
+            <div className="bg-blue-50 p-6 rounded-lg">
               <section>
-                <h3 className="text-sm font-semibold text-green-600 uppercase tracking-wider mb-4">
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4">
                   ✅ Documentos de Conformidad e Informe
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {/* El Informe Final ahora encabeza este grupo */}
-                  <div className="md:col-span-2">
-                    <DocumentField
-                      label="Informe Final"
-                      placeholder="001-JEAV"
-                      value={numeroInformeFinal}
-                      onChange={setNumeroInformeFinal}
-                      urlValue={numeroInformeFinalUrl}
-                      onUrlChange={setNumeroInformeFinalUrl}
-                    />
-                  </div>
+                  <DocumentField
+                    label="Oficio Conformidad Dirección"
+                    placeholder="003-D-2026-EPG"
+                    value={docInterno.numero_oficio_conformidad_direccion}
+                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
+                    urlValue={docInterno.numero_oficio_conformidad_direccion_url}
+                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
+                  />
 
                   <DocumentField
                     label="Oficio Conformidad Facultad"
@@ -623,122 +683,87 @@ export default function PagoDocenteForm() {
                       ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador_url: v })}
                   />
+
+                </div>
+                {docente?.tipo_docente === 'externo' && (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <DocumentField
+                      label="Informe Final"
+                      placeholder="001-JEAV"
+                      value={numeroInformeFinal}
+                      onChange={setNumeroInformeFinal}
+                      urlValue={numeroInformeFinalUrl}
+                      onUrlChange={setNumeroInformeFinalUrl}
+                    />
+                    <DocumentField
+                      label="Recibo por Honorario"
+                      placeholder="E001-10"
+                      value={docExterno.numero_recibo_honorario}
+                      onChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario: v })}
+                      urlValue={docExterno.numero_recibo_honorario_url}
+                      onUrlChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario_url: v })}
+                    />
+                    <div>
+                      <Label>Fecha Recibo Honorario</Label>
+                      <Input
+                        type="date"
+                        value={docExterno.fecha_recibo_honorario}
+                        onChange={(e) => setDocExterno({ ...docExterno, fecha_recibo_honorario: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>¿Retención del 8%? *</Label>
+                      <select
+                        value={docExterno.tiene_retencion_8_porciento ? 'si' : 'no'}
+                        onChange={(e) => setDocExterno({ ...docExterno, tiene_retencion_8_porciento: e.target.value === 'si' })}
+                        className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm"
+                      >
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <hr className="border-gray-200 mt-6" />
+              <section>
+                <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4 mt-6">📑 Generar Resolución de Pago y Oficio de Contabilidad</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <DocumentField
+                    label="Resolución de Pago"
+                    placeholder="005-2026-EPG-D"
+                    value={docInterno.numero_resolucion_pago}
+                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_pago: v })}
+                    urlValue={docInterno.numero_resolucion_url}
+                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_url: v })}
+                  />
+                  <div>
+                    <Label>Fecha Resolución</Label>
+                    <Input
+                      type="date"
+                      value={docInterno.fecha_resolucion}
+                      onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })}
+                    />
+                  </div>
+                  <DocumentField
+                    label="Oficio Contabilidad"
+                    placeholder="006-2026-UC-EPG-UNPRG"
+                    value={docInterno.numero_oficio_contabilidad}
+                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })}
+                    urlValue={docInterno.numero_oficio_contabilidad_url}
+                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })}
+                  />
+                  <div>
+                    <Label>Fecha Oficio Contabilidad</Label>
+                    <Input
+                      type="date"
+                      value={docInterno.fecha_oficio_contabilidad}
+                      onChange={(e) => setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })}
+                    />
+                  </div>
                 </div>
               </section>
-            </div>
-          </TabPanel>
-
-          {/* Tab exclusivo para Documentos Internos */}
-          <TabPanel id="documentos-internos" activeTab={activeTab}>
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <h3 className="text-2xl font-semibold text-blue-800 mb-6">📑 Documentos Internos</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DocumentField
-                  label="Oficio Conformidad Dirección"
-                  placeholder="003-D-2026-EPG"
-                  value={docInterno.numero_oficio_conformidad_direccion}
-                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
-                  urlValue={docInterno.numero_oficio_conformidad_direccion_url}
-                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
-                />
-                <DocumentField
-                  label="Resolución de Aprobación"
-                  placeholder="004-2026-EPG-D"
-                  value={docInterno.numero_resolucion_aprobacion}
-                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_aprobacion: v })}
-                  // Assuming no URL for approval resolution for now, or reuse existing if needed. 
-                  // If we need a URL field for approval, we should have added it to state. 
-                  // For now, I will leave URL empty or not show it if not in state.
-                  // But wait, I need to pass something to DocumentField.
-                  // I'll pass empty string and a dummy handler if I don't have a URL field for it.
-                  urlValue=""
-                  onUrlChange={() => { }}
-                />
-                <div>
-                  <Label>Fecha Resolución Aprobación</Label>
-                  <Input
-                    type="date"
-                    value={docInterno.fecha_resolucion_aprobacion}
-                    onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion_aprobacion: e.target.value })}
-                  />
-                </div>
-                <DocumentField
-                  label="Resolución de Pago"
-                  placeholder="005-2026-EPG-D"
-                  value={docInterno.numero_resolucion_pago}
-                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_pago: v })}
-                  urlValue={docInterno.numero_resolucion_url}
-                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_url: v })}
-                />
-                <div>
-                  <Label>Fecha Resolución</Label>
-                  <Input
-                    type="date"
-                    value={docInterno.fecha_resolucion}
-                    onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })}
-                  />
-                </div>
-                <DocumentField
-                  label="Oficio Contabilidad"
-                  placeholder="006-2026-UC-EPG-UNPRG"
-                  value={docInterno.numero_oficio_contabilidad}
-                  onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })}
-                  urlValue={docInterno.numero_oficio_contabilidad_url}
-                  onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })}
-                />
-                <div>
-                  <Label>Fecha Oficio Contabilidad</Label>
-                  <Input
-                    type="date"
-                    value={docInterno.fecha_oficio_contabilidad}
-                    onChange={(e) => setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-          </TabPanel>
-
-          {/* Tab exclusivo para Documentos Externos */}
-          <TabPanel id="documentos-externos" activeTab={activeTab}>
-            <div className="bg-green-50 p-6 rounded-lg">
-              <h3 className="text-2xl font-semibold text-green-800 mb-6">📑 Documentos Externos</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>¿Retención del 8%? *</Label>
-                  <select
-                    value={docExterno.tiene_retencion_8_porciento ? 'si' : 'no'}
-                    onChange={(e) => setDocExterno({ ...docExterno, tiene_retencion_8_porciento: e.target.value === 'si' })}
-                    className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm"
-                  >
-                    <option value="no">No</option>
-                    <option value="si">Sí</option>
-                  </select>
-                </div>
-                <DocumentField
-                  label="Recibo por Honorario"
-                  placeholder="E001-10"
-                  value={docExterno.numero_recibo_honorario}
-                  onChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario: v })}
-                  urlValue={docExterno.numero_recibo_honorario_url}
-                  onUrlChange={(v: string) => setDocExterno({ ...docExterno, numero_recibo_honorario_url: v })}
-                />
-                <div>
-                  <Label>Fecha Recibo Honorario</Label>
-                  <Input
-                    type="date"
-                    value={docExterno.fecha_recibo_honorario}
-                    onChange={(e) => setDocExterno({ ...docExterno, fecha_recibo_honorario: e.target.value })}
-                  />
-                </div>
-                <DocumentField
-                  label="Pedido de Servicio"
-                  placeholder="001-2026"
-                  value={docExterno.numero_pedido_servicio}
-                  onChange={(v: string) => setDocExterno({ ...docExterno, numero_pedido_servicio: v })}
-                  urlValue={docExterno.numero_pedido_servicio_url}
-                  onUrlChange={(v: string) => setDocExterno({ ...docExterno, numero_pedido_servicio_url: v })}
-                />
-              </div>
             </div>
           </TabPanel>
 
@@ -756,15 +781,6 @@ export default function PagoDocenteForm() {
                   onUrlChange={(v: string) => setNumeroOficioPagoDireccionUrl(v)}
                   showUpload={true}
                 />
-                <div>
-                  <Label className="text-sm">Pedido de Servicio</Label>
-                  <Input
-                    value={pedidoServicio}
-                    placeholder="001-2026"
-                    onChange={(e) => setPedidoServicio(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
                 <div>
                   <Label className="text-sm">Orden de Servicio</Label>
                   <Input
@@ -793,18 +809,59 @@ export default function PagoDocenteForm() {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm">Nota de Pago</Label>
+                  <Label className="text-sm">Fecha de Pago</Label>
                   <Input
-                    value={notaPago}
-                    onChange={(e) => setNotaPago(e.target.value)}
+                    type="date"
+                    value={fechaPago}
+                    onChange={(e) => setFechaPago(e.target.value)}
                     className="h-9"
-                    placeholder="7211.25.81.2507108"
                   />
+                </div>
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4 mt-2">
+                  <div>
+                    <Label className="text-sm">Nota de Pago (S/. {docExterno.tiene_retencion_8_porciento ? (0.92 * importeTotal).toFixed(2) : importeTotal.toFixed(2)})</Label>
+                    <Input
+                      value={notaPago}
+                      placeholder="0001"
+                      onChange={(e) => setNotaPago(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm">Fecha Nota de Pago</Label>
+                    <Input
+                      type="date"
+                      value={fechaNotaPago}
+                      onChange={(e) => setFechaNotaPago(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  {docente?.tipo_docente === 'externo' && docExterno.tiene_retencion_8_porciento && (
+                    <>
+                      <div>
+                        <Label className="text-sm">2° Nota de Pago (S/. {docExterno.tiene_retencion_8_porciento ? (0.08 * importeTotal).toFixed(2) : importeTotal.toFixed(2)})</Label>
+                        <Input
+                          value={notaPago2}
+                          placeholder="0002"
+                          onChange={(e) => setNotaPago2(e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm">Fecha 2° Nota de Pago</Label>
+                        <Input
+                          type="date"
+                          value={fechaNotaPago2}
+                          onChange={(e) => setFechaNotaPago2(e.target.value)}
+                          className="h-9"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </TabPanel>
-
 
         </Card>
 

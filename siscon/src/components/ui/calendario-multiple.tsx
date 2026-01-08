@@ -149,103 +149,84 @@ export function CalendarioMultiple({
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
   return (
-    <div className={cn('space-y-4', className)}>
-      <Label>{label}</Label>
+    <div className={cn('space-y-3', className)}>
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-bold text-slate-700">{label}</Label>
+      </div>
 
-      {/* Selector de rango con días específicos (opcional) */}
-      <div className="border rounded-lg p-4 bg-gradient-to-br from-blue-50 to-indigo-50">
-        <p className="text-sm font-medium text-blue-800 mb-3">📅 Seleccionar fechas</p>
+      <div className="border rounded-xl p-3 bg-white shadow-sm border-slate-200">
+        {/* Fila Superior: DatePicker y Días */}
+        <div className="flex flex-col md:flex-row gap-3 items-start">
+          <div className="w-full md:w-1/2">
+            <DatePicker
+              selectsRange={true}
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(update) => setDateRange(update as [Date | null, Date | null])}
+              placeholderText="Seleccionar rango..."
+              dateFormat="dd/MM/yyyy"
+              className="w-full text-sm h-9 px-3 border rounded-md focus:ring-1 focus:ring-blue-500 bg-slate-50"
+              isClearable={true}
+            />
+          </div>
 
-        <div className="mb-3">
-          <DatePicker
-            selectsRange={true}
-            startDate={startDate}
-            endDate={endDate}
-            onChange={(update) => {
-              setDateRange(update as [Date | null, Date | null]);
-            }}
-            placeholderText="Selecciona un rango de fechas"
-            dateFormat="dd/MM/yyyy"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            isClearable={true}
-            monthsShown={2}
-          />
-        </div>
-
-        <div className="mb-3">
-          <Label className="text-xs mb-2 block text-gray-700">
-            Días específicos (opcional - deja vacío para agregar todos los días del rango)
-          </Label>
-          <div className="flex flex-wrap gap-2">
+          <div className="w-full md:w-1/2 flex flex-wrap gap-1">
             {dayNames.map((day, index) => (
               <button
                 key={index}
                 type="button"
                 onClick={() => toggleDay(index)}
                 className={cn(
-                  'px-3 py-1 rounded-md text-sm font-medium transition-colors',
+                  'h-9 flex-1 min-w-[35px] rounded text-[10px] font-bold transition-all border uppercase',
                   selectedDays.includes(index)
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
                 )}
               >
-                {day}
+                {day.substring(0, 2)} {/* Solo 2 letras para máximo ahorro de espacio */}
               </button>
             ))}
           </div>
-          {selectedDays.length > 0 && (
-            <p className="text-xs text-blue-600 mt-2">
-              ✓ Se agregarán solo: {selectedDays.map(d => dayNames[d]).join(', ')}
-            </p>
-          )}
-          {selectedDays.length === 0 && startDate && endDate && (
-            <p className="text-xs text-gray-500 mt-2">
-              ℹ️ Se agregarán todos los días del rango
-            </p>
-          )}
         </div>
 
+        {/* Botón de Acción Principal */}
         <Button
           type="button"
           onClick={handleAddRange}
           disabled={!startDate || !endDate}
+          variant="secondary"
           size="sm"
-          className="w-full"
+          className="w-full text-blue-500 mt-3 h-8 text-xs font-semibold bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border-none transition-all"
         >
-          {selectedDays.length > 0
-            ? `Agregar ${selectedDays.map(d => dayNames[d]).join(', ')}`
-            : 'Agregar Rango Completo'
-          }
+          {selectedDays.length > 0 ? 'Agregar días filtrados' : 'Agregar todo el rango'}
         </Button>
+
+        {/* Área de Resultado: Solo aparece si hay fechas */}
+        {selectedDates.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-dashed border-slate-200">
+            {/* Cambiamos items-start por items-center */}
+            <div className="flex items-center gap-3 group min-h-[40px]">
+              <div className="flex-shrink-0 p-1.5 bg-blue-50 rounded-full">
+                <span className="text-blue-600 text-xs block leading-none">📅</span>
+              </div>
+
+              <div className="flex-1">
+                {/* Usamos un leading-tight para que el texto multilínea no se separe demasiado */}
+                <p className="text-[13px] leading-tight text-slate-600 font-medium">
+                  {formatearFechasLegibles(selectedDates)}
+                </p>
+              </div>
+
+              <button
+                onClick={handleClearAll}
+                className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 font-bold hover:underline transition-opacity whitespace-nowrap ml-2"
+              >
+                BORRAR TODO
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Fechas seleccionadas */}
-      {selectedDates.length > 0 && (
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <div className="flex justify-between items-center mb-3">
-            <p className="text-sm font-medium text-gray-700">
-              Fechas seleccionadas ({selectedDates.length})
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleClearAll}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              Limpiar todo
-            </Button>
-          </div>
-
-
-          {/* Fechas formateadas en texto legible */}
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm font-medium text-blue-900">
-              📅 {formatearFechasLegibles(selectedDates)}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -218,6 +218,10 @@ class DocumentGeneratorService
         $template->setValue('NUMERO_RESOLUCION', $pago->numero_resolucion_pago ?? '');
         $template->setValue('FECHA_DE_RESOLUCION', $this->formatearFecha($pago->fecha_resolucion));
 
+        // Variables de resolución de aprobación
+        $template->setValue('RESOLUCION_APROBACION', $pago->numero_resolucion_aprobacion ?? '');
+        $template->setValue('FECHA_DE_RESOLUCION_APROBACION', $this->formatearFecha($pago->fecha_resolucion_aprobacion));
+
         // Variables de oficios - Usando nombres exactos de la plantilla
         $template->setValue('OFICIO_DE_PRESENTACION_FAC', $pago->numero_oficio_presentacion_facultad ?? '');
         $template->setValue('OFICIO_PRESENTACION_COORDINADOR', $pago->numero_oficio_presentacion_coordinador ?? '');
@@ -299,7 +303,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'RES ACEPTACION ' . $pago->numero_resolucion_pago . '.docx';
+        $fileName = 'RES N° ' . $pago->numero_resolucion_aprobacion . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe

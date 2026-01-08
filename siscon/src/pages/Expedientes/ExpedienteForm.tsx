@@ -219,14 +219,14 @@ export default function ExpedienteForm() {
       if (data.curso) {
         setCurso({
           id: data.curso.id,
-          label: `${data.curso.nombre} (${data.semestre.programa.grado.nombre} en ${data.semestre.programa.nombre} ${data.pago_docente.periodo}) `,
+          label: `${data.curso.nombre} (${data.semestre.programa.grado.nombre} en ${data.semestre.programa.nombre} ${data.semestre.programa.periodo}) `,
         });
       }
 
       setFechasEnsenanza(data.fechas_ensenanza || []);
-      setNumeroOficioPresentacionCoordinador(data.pago_docente.numero_oficio_presentacion_coordinador || '');
-      setNumeroOficioConformidadCoordinador(data.pago_docente.numero_oficio_conformidad_coordinador || '');
-      setNumeroOficioConformidadFacultad(data.pago_docente.numero_oficio_conformidad_facultad || '');
+      setNumeroOficioPresentacionCoordinador(data.pago_docente.numero_oficio_presentacion_coordinador || null);
+      setNumeroOficioConformidadCoordinador(data.pago_docente.numero_oficio_conformidad_coordinador || null);
+      setNumeroOficioConformidadFacultad(data.pago_docente.numero_oficio_conformidad_facultad || null);
 
       // Devolucion fields
       setPersonaDevolucion(data.persona_devolucion || '');
@@ -649,7 +649,7 @@ export default function ExpedienteForm() {
                         {tipoAsunto === 'conformidad' && (
                           <>
                             <div>
-                              <Label>N° Oficio Conformidad Facultad (Opcional)</Label>
+                              <Label>N° Oficio Conformidad Facultad</Label>
                               <Input
                                 value={numeroOficioConformidadFacultad}
                                 onChange={(e) => setNumeroOficioConformidadFacultad(e.target.value)}

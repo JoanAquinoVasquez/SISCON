@@ -462,8 +462,8 @@ export default function PagosDocentesList() {
                   <TableCell className='text-center'>
                     {/* Si el docente es externo, que muestre la resolucion de aprobacion si es que hay, y si no hay, salga pendiente, pero si es docente interno, me salga no acto */}
                     {
-                      pago.docente?.tipo_docente === "externo" ? (
-                        pago.numero_resolucion_aprobacion ? `N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'
+                      pago.tipo_docente === 'externo' ? (
+                        pago.numero_resolucion_aprobacion ? `RES N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'
                       ) : (
                         "-"
                       )
@@ -647,21 +647,34 @@ export default function PagosDocentesList() {
               </div>
 
               {/* Documentos */}
-              <div>
-                <h3 className="font-semibold mb-3">Documentos Relacionados</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {/* Número de presentacion facultad, número de conformidad de facultad, número aprobacion (opcional), número de resolucion y oficio de conta */}
-                  {selectedPago.numero_oficio_presentacion_facultad && (
-                    <p className="text-sm text-muted-foreground">Número de presentación facultad: {selectedPago.numero_oficio_presentacion_facultad}</p>
-                  )}
-                  {selectedPago.numero_oficio_conformidad_facultad && (
-                    <p className="text-sm text-muted-foreground">Número de conformidad facultad: {selectedPago.numero_oficio_conformidad_facultad}</p>
-                  )}
-                  {selectedPago.numero_resolucion_aprobacion && (
-                    <p className="text-sm text-muted-foreground">Número de resolución: {selectedPago.numero_resolucion_aprobacion}</p>
-                  )}
-                  {selectedPago.numero_resolucion_pago && (
-                    <p className="text-sm text-muted-foreground">Número de resolución de pago: {selectedPago.numero_resolucion_pago}</p>
+              <div className="mt-4 border-t pt-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
+                  Documentos Relacionados
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {[
+                    { label: "Pres. Facultad", value: selectedPago.numero_oficio_presentacion_facultad },
+                    { label: "Pres. Coordinador", value: selectedPago.numero_oficio_presentacion_coordinador },
+                    { label: "Resol. Aprobación", value: selectedPago.numero_resolucion_aprobacion ? `RES N° ${selectedPago.numero_resolucion_aprobacion}` : null },
+                    { label: "Conf. Facultad", value: selectedPago.numero_oficio_conformidad_facultad },
+                    { label: "Conf. Coordinador", value: selectedPago.numero_oficio_conformidad_coordinador },
+                    { label: "Resol. Pago", value: selectedPago.numero_resolucion_pago },
+                    { label: "Oficio Contabilidad", value: selectedPago.numero_oficio_contabilidad },
+                  ].map((doc, index) =>
+                    doc.value && (
+                      <div
+                        key={index}
+                        className="flex flex-col p-2 rounded-md border bg-muted/30 hover:bg-muted/50 transition-colors"
+                      >
+                        <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">
+                          {doc.label}
+                        </span>
+                        <span className="text-sm font-medium truncate" title={doc.value}>
+                          {doc.value}
+                        </span>
+                      </div>
+                    )
                   )}
                 </div>
               </div>

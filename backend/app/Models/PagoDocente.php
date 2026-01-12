@@ -54,8 +54,8 @@ class PagoDocente extends Model
         'numero_pedido_servicio',
         'numero_pedido_servicio_url',
         // Doc Recibido
-        'numero_oficio_pago_direccion',
-        'numero_oficio_pago_direccion_url',
+        'numero_expediente_nota_pago',
+        'numero_expediente_nota_pago_url',
         'orden_servicio',
         'acta_conformidad',
         'numero_exp_siaf',
@@ -63,7 +63,7 @@ class PagoDocente extends Model
         'nota_pago',
         'fecha_mesa_partes',
         'nota_pago_2',
-        'fecha_pago',
+        'fecha_constancia_pago',
         'fecha_nota_pago',
         'fecha_nota_pago_2',
     ];
@@ -79,7 +79,7 @@ class PagoDocente extends Model
         'fecha_recibo_honorario' => 'date',
         'fecha_oficio_contabilidad' => 'date',
         'fecha_mesa_partes' => 'date',
-        'fecha_pago' => 'date',
+        'fecha_constancia_pago' => 'date',
         'fecha_nota_pago' => 'date',
         'fecha_nota_pago_2' => 'date',
     ];

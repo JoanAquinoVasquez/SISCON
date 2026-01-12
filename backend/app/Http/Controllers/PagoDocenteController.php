@@ -18,7 +18,7 @@ class PagoDocenteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PagoDocente::with(['docente', 'curso.semestres.programa']);
+        $query = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
 
         // Search by docente name, DNI, or curso name
         // Search by multiple fields
@@ -104,12 +104,15 @@ class PagoDocenteController extends Controller
                 'numero_oficio_conformidad_facultad' => $pago->numero_oficio_conformidad_facultad,
                 'numero_oficio_conformidad_coordinador' => $pago->numero_oficio_conformidad_coordinador,
                 'numero_oficio_conformidad_direccion' => $pago->numero_oficio_conformidad_direccion,
+                'numero_expediente_nota_pago' => $pago->numero_expediente_nota_pago,
                 'numero_resolucion_aprobacion' => $pago->numero_resolucion_aprobacion,
                 'fecha_resolucion_aprobacion' => $pago->fecha_resolucion_aprobacion,
                 'numero_resolucion_pago' => $pago->numero_resolucion_pago,
                 'numero_oficio_contabilidad' => $pago->numero_oficio_contabilidad,
                 'created_at' => $pago->created_at,
                 'updated_at' => $pago->updated_at,
+                'facultad_codigo' => $programa->facultad->codigo ?? null,
+                'grado_nombre' => $programa->grado->nombre ?? null,
             ];
         });
 
@@ -134,7 +137,7 @@ class PagoDocenteController extends Controller
             'numero_informe_final_url' => 'nullable|url',
             'fecha_resolucion_aprobacion' => 'nullable|date',
             'nota_pago_2' => 'nullable|string',
-            'fecha_pago' => 'nullable|date',
+            'fecha_constancia_pago' => 'nullable|date',
             'fecha_nota_pago' => 'nullable|date',
             'fecha_nota_pago_2' => 'nullable|date',
         ]);
@@ -158,12 +161,14 @@ class PagoDocenteController extends Controller
      */
     public function show($id)
     {
-        $pago = PagoDocente::with(['docente', 'curso.semestres.programa'])->findOrFail($id);
+        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->findOrFail($id);
 
         // Obtener programa del primer semestre del curso
         $programa = $pago->curso->semestres->first()->programa ?? null;
 
         $pago->programa_nombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre} ({$programa->periodo})" : null;
+        $pago->facultad_codigo = $programa->facultad->codigo ?? null;
+        $pago->grado_nombre = $programa->grado->nombre ?? null;
 
         return response()->json(['data' => $pago], 200);
     }
@@ -362,6 +367,7 @@ class PagoDocenteController extends Controller
                     'periodo' => $semestre->programa->periodo,
                     'programa_id' => $semestre->programa_id,
                     'semestre_id' => $semestre->id,
+                    'grado_nombre' => $grado,
                 ];
             }
         }
@@ -382,7 +388,7 @@ class PagoDocenteController extends Controller
                 }
             ])->find($cursoId);
         } else {
-            $curso = Curso::with(['semestres.programa.facultad', 'semestres.programa.coordinadores'])->find($id);
+            $curso = Curso::with(['semestres.programa.facultad', 'semestres.programa.coordinadores', 'semestres.programa.grado'])->find($id);
         }
 
         if (!$curso) {
@@ -412,6 +418,8 @@ class PagoDocenteController extends Controller
             'facultad_nombre' => $programa->facultad->nombre ?? null,
             'director_nombre' => $programa->facultad->director_nombre ?? null,
             'coordinador_nombre' => $coordinador ? $coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno : null,
+            'facultad_codigo' => $programa->facultad->codigo ?? null,
+            'grado_nombre' => $programa->grado->nombre ?? null,
         ];
 
         return response()->json(['data' => $datos], 200);

@@ -65,7 +65,7 @@ return new class extends Migration {
 
             // Documento recibido
             $table->string('numero_oficio_pago_direccion')->nullable();
-            $table->text('numero_oficio_pago_direccion_url')->nullable();
+            $table->text('numero_expediente_nota_pago_url')->nullable();
             $table->string('orden_servicio')->nullable();
             $table->string('acta_conformidad')->nullable();
             $table->string('numero_exp_siaf')->nullable();

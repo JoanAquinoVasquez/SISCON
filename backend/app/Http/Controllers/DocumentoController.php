@@ -18,7 +18,7 @@ class DocumentoController extends Controller
             'presentacion_facultad' => ['col' => 'numero_oficio_presentacion_facultad', 'url' => 'numero_oficio_presentacion_facultad_url', 'label' => 'Presentación Facultad'],
             'conformidad_facultad' => ['col' => 'numero_oficio_conformidad_facultad', 'url' => 'numero_oficio_conformidad_facultad_url', 'label' => 'Conformidad Facultad'],
             'conformidad_direccion' => ['col' => 'numero_oficio_conformidad_direccion', 'url' => 'numero_oficio_conformidad_direccion_url', 'label' => 'Conformidad Dirección'],
-            'pago_direccion' => ['col' => 'numero_oficio_pago_direccion', 'url' => 'numero_oficio_pago_direccion_url', 'label' => 'Pago Dirección'],
+            'expediente_nota_pago' => ['col' => 'numero_expediente_nota_pago', 'url' => 'numero_expediente_nota_pago_url', 'label' => 'Expediente Nota de Pago'],
             'contabilidad' => ['col' => 'numero_oficio_contabilidad', 'url' => 'numero_oficio_contabilidad_url', 'label' => 'Contabilidad'],
         ];
 

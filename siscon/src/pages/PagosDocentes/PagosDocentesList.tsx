@@ -139,8 +139,10 @@ interface PagoDocente {
   fecha_resolucion_aprobacion?: string;
   numero_resolucion_pago?: string;
   numero_oficio_contabilidad?: string;
-  numero_oficio_pago_direccion?: string;
-  numero_oficio_pago_direccion_url?: string;
+  numero_expediente_nota_pago?: string;
+  numero_expediente_nota_pago_url?: string;
+  facultad_codigo?: string;
+  grado_nombre?: string;
   docente?: {
     titulo_profesional?: string;
     nombres: string;
@@ -360,10 +362,10 @@ export default function PagosDocentesList() {
     }
   };
 
-  const handleViewOficioPagoContabilidad = (numero_oficio_pago_direccion_url: string) => {
-    console.log(numero_oficio_pago_direccion_url);
-    // Redirigir al link donde está subido el archivo numero_oficio_pago_direccion_url
-    window.open(numero_oficio_pago_direccion_url, '_blank');
+  const handleViewOficioPagoContabilidad = (numero_expediente_nota_pago_url: string) => {
+    console.log(numero_expediente_nota_pago_url);
+    // Redirigir al link donde está subido el archivo numero_expediente_nota_pago_url
+    window.open(numero_expediente_nota_pago_url, '_blank');
   };
 
   const getEstadoBadge = (estado: string) => {
@@ -650,9 +652,9 @@ export default function PagosDocentesList() {
                       action: () => handleGenerateOficio(selectedPago.id)
                     },
                     {
-                      label: "Oficio de Pago de Contabilidad",
-                      value: selectedPago.numero_oficio_pago_direccion,
-                      action: () => handleViewOficioPagoContabilidad(selectedPago.numero_oficio_pago_direccion_url || '')
+                      label: "Expediente Nota de Pago",
+                      value: selectedPago.numero_expediente_nota_pago,
+                      action: () => handleViewOficioPagoContabilidad(selectedPago.numero_expediente_nota_pago_url || '')
                     }
                   ].map((doc, index) =>
                     doc.value && (
@@ -684,7 +686,7 @@ export default function PagosDocentesList() {
               {/* Solo renderiza la sección completa si hay algo que mostrar */}
               {selectedPago && (
                 // Condición lógica: 
-                // 1. Si es interno y pendiente (Muestra Res. Aprobación)
+                // 1. Si es interno y pendiente (Muestra Res. Aprobación) - EXCEPTO Segunda Especialidad FE
                 // 2. O si el estado es 'proceso' (Muestra los otros dos botones)
                 ((selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo') ||
                   selectedPago.estado === 'proceso') && (
@@ -695,45 +697,54 @@ export default function PagosDocentesList() {
 
                       {/* CASO: EXTERNO + PENDIENTE */}
                       {selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo' && (
-                        <Button
-                          onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
-                          disabled={isGeneratingResolucionAceptacion}
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                        >
-                          {isGeneratingResolucionAceptacion ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                          ) : (
-                            <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Aprobación</>
-                          )}
-                        </Button>
+                        // NO mostrar si es Segunda Especialidad de FE
+                        !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo === 'FE') && (
+                          <Button
+                            onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
+                            disabled={isGeneratingResolucionAceptacion}
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                          >
+                            {isGeneratingResolucionAceptacion ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                            ) : (
+                              <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Aprobación</>
+                            )}
+                          </Button>
+                        )
                       )}
 
                       {/* CASO: ESTADO EN PROCESO */}
                       {selectedPago.estado === 'proceso' && (
                         <>
-                          <Button
-                            onClick={() => handleGenerateResolucion(selectedPago.id)}
-                            disabled={isGeneratingResolucion}
-                            className="w-full bg-blue-600 hover:bg-blue-700"
-                          >
-                            {isGeneratingResolucion ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                            ) : (
-                              <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Pago</>
-                            )}
-                          </Button>
+                          {/* Resolución de Pago: NO mostrar para Segunda Especialidad excepto FIQIA */}
+                          {!(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo !== 'FIQUIA') && (
+                            <Button
+                              onClick={() => handleGenerateResolucion(selectedPago.id)}
+                              disabled={isGeneratingResolucion}
+                              className="w-full bg-blue-600 hover:bg-blue-700"
+                            >
+                              {isGeneratingResolucion ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                              ) : (
+                                <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Pago</>
+                              )}
+                            </Button>
+                          )}
 
-                          <Button
-                            onClick={() => handleGenerateResolucion(selectedPago.id)}
-                            disabled={isGeneratingOficio}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                          >
-                            {isGeneratingOficio ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                            ) : (
-                              <><Clipboard className="mr-2 h-4 w-4" /> Generar Oficio de Contabilidad</>
-                            )}
-                          </Button>
+                          {/* Oficio Contabilidad: NO mostrar para NINGUNA Segunda Especialidad */}
+                          {selectedPago.grado_nombre !== 'Segunda Especialidad Profesional' && (
+                            <Button
+                              onClick={() => handleGenerateOficio(selectedPago.id)}
+                              disabled={isGeneratingOficio}
+                              className="w-full bg-green-600 hover:bg-green-700"
+                            >
+                              {isGeneratingOficio ? (
+                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
+                              ) : (
+                                <><Clipboard className="mr-2 h-4 w-4" /> Generar Oficio de Contabilidad</>
+                              )}
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>

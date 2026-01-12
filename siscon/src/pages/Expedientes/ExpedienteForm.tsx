@@ -102,6 +102,25 @@ export default function ExpedienteForm() {
     return () => clearTimeout(timeoutId);
   }, [numeroDocumento]);
 
+  // Auto-fill numeroOficioConformidadFacultad for Segunda Especialidad
+  useEffect(() => {
+    if (tipoAsunto === 'conformidad' && curso?.grado_nombre === 'Segunda Especialidad Profesional' && numeroDocumento) {
+      // Poner el valor de numeroDocumento en numeroOficioConformidadFacultad pero quitando el "OFICIO N°"
+      setNumeroOficioConformidadFacultad(numeroDocumento.replace('OFICIO N° ', ''));
+    }
+  }, [tipoAsunto, curso, numeroDocumento]);
+
+  // Auto-fill for multiple mode
+  useEffect(() => {
+    if (tipoAsunto === 'conformidad' && usarMultiple && docentesCursos.length > 0 && numeroDocumento) {
+      // Check if any of the courses is Segunda Especialidad
+      const hasSegundaEspecialidad = docentesCursos.some(dc => dc.curso?.grado_nombre === 'Segunda Especialidad Profesional');
+      if (hasSegundaEspecialidad) {
+        setNumeroOficioConformidadFacultad(numeroDocumento);
+      }
+    }
+  }, [tipoAsunto, usarMultiple, docentesCursos, numeroDocumento]);
+
   const searchDirectorByCode = async () => {
     try {
       // Primero verificar si contiene "EPG" o "Posgrado"

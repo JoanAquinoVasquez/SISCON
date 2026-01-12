@@ -32,6 +32,8 @@ interface DatosCurso {
   facultad_nombre: string | null;
   director_nombre: string | null;
   coordinador_nombre: string | null;
+  facultad_codigo?: string;
+  grado_nombre?: string;
 }
 
 // Componente DocumentField fuera del componente principal para evitar pérdida de foco
@@ -128,7 +130,7 @@ export default function PagoDocenteForm() {
   const [numeroInformeFinalUrl, setNumeroInformeFinalUrl] = useState('');
 
   // Doc Recibido
-  const [numeroOficioPagoDireccion, setNumeroOficioPagoDireccion] = useState('');
+  const [numeroExpedienteNotaPago, setNumeroExpedienteNotaPago] = useState('');
   const [numeroOficioPagoDireccionUrl, setNumeroOficioPagoDireccionUrl] = useState('');
   const [pedidoServicio, setPedidoServicio] = useState('');
   const [ordenServicio, setOrdenServicio] = useState('');
@@ -136,7 +138,7 @@ export default function PagoDocenteForm() {
   const [numeroExpSiaf, setNumeroExpSiaf] = useState('');
   const [notaPago, setNotaPago] = useState('');
   const [notaPago2, setNotaPago2] = useState('');
-  const [fechaPago, setFechaPago] = useState('');
+  const [fechaConstanciaPago, setFechaConstanciaPago] = useState('');
   const [fechaNotaPago, setFechaNotaPago] = useState('');
   const [fechaNotaPago2, setFechaNotaPago2] = useState('');
 
@@ -242,8 +244,8 @@ export default function PagoDocenteForm() {
           setFechasEnsenanza(data.fechas_ensenanza || []);
           setNumeroInformeFinal(data.numero_informe_final || '');
           setNumeroInformeFinalUrl(data.numero_informe_final_url || '');
-          setNumeroOficioPagoDireccion(data.numero_oficio_pago_direccion || '');
-          setNumeroOficioPagoDireccionUrl(data.numero_oficio_pago_direccion_url || '');
+          setNumeroExpedienteNotaPago(data.numero_expediente_nota_pago || '');
+          setNumeroOficioPagoDireccionUrl(data.numero_expediente_nota_pago_url || '');
           setPedidoServicio(data.numero_pedido_servicio || '');
           setOrdenServicio(data.orden_servicio || '');
           setActaConformidad(data.acta_conformidad || '');
@@ -251,7 +253,7 @@ export default function PagoDocenteForm() {
           setNumeroExpSiaf(data.numero_exp_siaf || '');
           setNotaPago(data.nota_pago || '');
           setNotaPago2(data.nota_pago_2 || '');
-          setFechaPago(formatDateForInput(data.fecha_pago));
+          setFechaConstanciaPago(formatDateForInput(data.fecha_constancia_pago));
           setFechaNotaPago(formatDateForInput(data.fecha_nota_pago));
           setFechaNotaPago2(formatDateForInput(data.fecha_nota_pago_2));
 
@@ -326,6 +328,8 @@ export default function PagoDocenteForm() {
               facultad_nombre: data.facultad_nombre,
               director_nombre: data.director_nombre,
               coordinador_nombre: data.coordinador_nombre,
+              facultad_codigo: data.facultad_codigo,
+              grado_nombre: data.grado_nombre,
             });
           }
 
@@ -415,15 +419,15 @@ export default function PagoDocenteForm() {
         fechas_ensenanza: fechasEnsenanza,
         numero_informe_final: numeroInformeFinal,
         numero_informe_final_url: numeroInformeFinalUrl,
-        numero_oficio_pago_direccion: numeroOficioPagoDireccion,
-        numero_oficio_pago_direccion_url: numeroOficioPagoDireccionUrl,
+        numero_expediente_nota_pago: numeroExpedienteNotaPago,
+        numero_expediente_nota_pago_url: numeroOficioPagoDireccionUrl,
         numero_pedido_servicio: pedidoServicio,
         orden_servicio: ordenServicio,
         acta_conformidad: actaConformidad,
         numero_exp_siaf: numeroExpSiaf,
         nota_pago: notaPago,
         nota_pago_2: notaPago2,
-        fecha_pago: fechaPago,
+        fecha_constancia_pago: fechaConstanciaPago,
         fecha_nota_pago: fechaNotaPago,
         fecha_nota_pago_2: fechaNotaPago2,
         ...(docente?.tipo_docente === 'interno' ? {
@@ -699,14 +703,17 @@ export default function PagoDocenteForm() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {/* El Informe Final ahora encabeza este grupo */}
-                  <DocumentField
-                    label="Oficio Conformidad Dirección"
-                    placeholder="003-D-2026-EPG"
-                    value={docInterno.numero_oficio_conformidad_direccion}
-                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
-                    urlValue={docInterno.numero_oficio_conformidad_direccion_url}
-                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
-                  />
+                  {/* Oficio Conformidad Dirección: NO mostrar para Segunda Especialidad */}
+                  {datosCurso.grado_nombre !== 'Segunda Especialidad Profesional' && (
+                    <DocumentField
+                      label="Oficio Conformidad Dirección"
+                      placeholder="003-D-2026-EPG"
+                      value={docInterno.numero_oficio_conformidad_direccion}
+                      onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion: v })}
+                      urlValue={docInterno.numero_oficio_conformidad_direccion_url}
+                      onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_conformidad_direccion_url: v })}
+                    />
+                  )}
 
                   <DocumentField
                     label="Oficio Conformidad Facultad"
@@ -801,28 +808,33 @@ export default function PagoDocenteForm() {
                         : setDocExterno({ ...docExterno, fecha_resolucion: e.target.value })}
                     />
                   </div>
-                  <DocumentField
-                    label="Oficio Contabilidad"
-                    placeholder="006-2026-UC-EPG-UNPRG"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad : docExterno.numero_oficio_contabilidad}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })
-                      : setDocExterno({ ...docExterno, numero_oficio_contabilidad: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad_url : docExterno.numero_oficio_contabilidad_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })
-                      : setDocExterno({ ...docExterno, numero_oficio_contabilidad_url: v })}
-                  />
-                  <div>
-                    <Label>Fecha Oficio Contabilidad</Label>
-                    <Input
-                      type="date"
-                      value={docente?.tipo_docente === 'interno' ? docInterno.fecha_oficio_contabilidad : docExterno.fecha_oficio_contabilidad}
-                      onChange={(e) => docente?.tipo_docente === 'interno'
-                        ? setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })
-                        : setDocExterno({ ...docExterno, fecha_oficio_contabilidad: e.target.value })}
-                    />
-                  </div>
+                  {/* Oficio Contabilidad: NO mostrar para Segunda Especialidad */}
+                  {datosCurso.grado_nombre !== 'Segunda Especialidad Profesional' && (
+                    <>
+                      <DocumentField
+                        label="Oficio Contabilidad"
+                        placeholder="006-2026-UC-EPG-UNPRG"
+                        value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad : docExterno.numero_oficio_contabilidad}
+                        onChange={(v: string) => docente?.tipo_docente === 'interno'
+                          ? setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })
+                          : setDocExterno({ ...docExterno, numero_oficio_contabilidad: v })}
+                        urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad_url : docExterno.numero_oficio_contabilidad_url}
+                        onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                          ? setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })
+                          : setDocExterno({ ...docExterno, numero_oficio_contabilidad_url: v })}
+                      />
+                      <div>
+                        <Label>Fecha Oficio Contabilidad</Label>
+                        <Input
+                          type="date"
+                          value={docente?.tipo_docente === 'interno' ? docInterno.fecha_oficio_contabilidad : docExterno.fecha_oficio_contabilidad}
+                          onChange={(e) => docente?.tipo_docente === 'interno'
+                            ? setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })
+                            : setDocExterno({ ...docExterno, fecha_oficio_contabilidad: e.target.value })}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </section>
             </div>
@@ -903,11 +915,11 @@ export default function PagoDocenteForm() {
                     </>
                   )}
                   <div>
-                    <Label className="text-sm">Fecha de Pago</Label>
+                    <Label className="text-sm">Fecha de Constancia de Pago</Label>
                     <Input
                       type="date"
-                      value={fechaPago}
-                      onChange={(e) => setFechaPago(e.target.value)}
+                      value={fechaConstanciaPago}
+                      onChange={(e) => setFechaConstanciaPago(e.target.value)}
                       className="h-9"
                     />
                   </div>
@@ -916,10 +928,10 @@ export default function PagoDocenteForm() {
 
               </div>
               <DocumentField
-                label="Oficio de Pago de Dirección"
+                label="Expediente Nota de Pago"
                 placeholder="007-D-2026-EPG"
-                value={numeroOficioPagoDireccion}
-                onChange={(v: string) => setNumeroOficioPagoDireccion(v)}
+                value={numeroExpedienteNotaPago}
+                onChange={(v: string) => setNumeroExpedienteNotaPago(v)}
                 urlValue={numeroOficioPagoDireccionUrl}
                 onUrlChange={(v: string) => setNumeroOficioPagoDireccionUrl(v)}
                 showUpload={true}

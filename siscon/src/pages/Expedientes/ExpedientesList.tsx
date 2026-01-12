@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Plus, Search, Edit, Trash2, FileText, Loader2 } from 'lucide-react';
+import { Plus, Search, Trash2, Loader2, MoreVertical, Eye, Pencil } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Expediente {
   id: number;
@@ -36,28 +38,45 @@ export default function ExpedientesList() {
   const [estadoPago, setEstadoPago] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [fetchId, setFetchId] = useState(0);
+
+  const debouncedSearch = useDebounce(search, 500);
 
   useEffect(() => {
+    let active = true;
+
+    const fetchExpedientes = async () => {
+      try {
+        setLoading(true);
+        const params: any = { page: currentPage };
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (tipoAsunto) params.tipo_asunto = tipoAsunto;
+        if (estadoPago) params.estado_pago = estadoPago;
+
+        const response = await axios.get('/expedientes', { params });
+
+        if (active) {
+          setExpedientes(response.data.data);
+          setTotalPages(response.data.last_page);
+        }
+      } catch (error) {
+        console.error('Error al cargar expedientes:', error);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchExpedientes();
-  }, [search, tipoAsunto, estadoPago, currentPage]);
 
-  const fetchExpedientes = async () => {
-    try {
-      setLoading(true);
-      const params: any = { page: currentPage };
-      if (search) params.search = search;
-      if (tipoAsunto) params.tipo_asunto = tipoAsunto;
-      if (estadoPago) params.estado_pago = estadoPago;
+    return () => {
+      active = false;
+    };
+  }, [debouncedSearch, tipoAsunto, estadoPago, currentPage, fetchId]);
 
-      const response = await axios.get('/expedientes', { params });
-
-      setExpedientes(response.data.data);
-      setTotalPages(response.data.last_page);
-    } catch (error) {
-      console.error('Error al cargar expedientes:', error);
-    } finally {
-      setLoading(false);
-    }
+  const refreshExpedientes = () => {
+    setFetchId(prev => prev + 1);
   };
 
   const handleDelete = async (id: number) => {
@@ -65,7 +84,7 @@ export default function ExpedientesList() {
 
     try {
       await axios.delete(`/expedientes/${id}`);
-      fetchExpedientes();
+      refreshExpedientes();
     } catch (error) {
       console.error('Error al eliminar:', error);
       toast.error('Error al eliminar el expediente');
@@ -73,8 +92,10 @@ export default function ExpedientesList() {
   };
 
   const formatDate = (dateString: string | null | undefined): string => {
-     if (!dateString) return '';
-        return dateString.split('T')[0].split(' ')[0];
+    if (!dateString) return '';
+    const datePart = dateString.split('T')[0].split(' ')[0];
+    const [year, month, day] = datePart.split('-');
+    return `${day}-${month}-${year}`;
   };
 
   const getTipoAsuntoBadge = (tipo: string) => {
@@ -103,15 +124,17 @@ export default function ExpedientesList() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Expedientes</h1>
           <p className="text-gray-600 mt-1">Gestión de documentos recibidos en contabilidad</p>
         </div>
-        <Button onClick={() => navigate('/expedientes/nuevo')} size="lg">
-          <Plus className="w-5 h-5 mr-2" />
-          Nuevo Expediente
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          <Button onClick={() => navigate('/expedientes/nuevo')} size="lg">
+            <Plus className="w-5 h-5 mr-2" />
+            Nuevo Expediente
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -212,33 +235,23 @@ export default function ExpedientesList() {
                       <div className="text-xs text-muted-foreground">{exp.grado_nombre} en {exp.programa_nombre} {exp.periodo}</div>
                     </TableCell>
                     <TableCell>{getEstadoPagoBadge(exp.estado_pago)}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        {exp.pago_docente_id && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/pagos-docentes/${exp.pago_docente_id}/editar`)}
-                            title="Ver pago vinculado"
-                          >
-                            <FileText className="w-4 h-4" />
+                    <TableCell className="text-right">
+                      {/* Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/expedientes/${exp.id}/editar`)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(exp.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => navigate(`/expedientes/${exp.id}/editar`)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDelete(exp.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))

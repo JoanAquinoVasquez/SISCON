@@ -69,7 +69,7 @@ export function FileUpload({ label, value, onChange, disabled = false }: FileUpl
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-0">
       <Label>{label}</Label>
       
       <div className="flex items-center gap-2">

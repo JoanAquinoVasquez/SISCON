@@ -24,9 +24,9 @@ class DocumentGeneratorService
 
         // Determinar plantilla según tipo de docente
         if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'interno') {
-            $templateName = 'Resoluciones Plantilla DI.docx';
+            $templateName = 'Resoluciones Plantilla DI 2025.docx';
         } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
-            $templateName = 'Resoluciones Plantilla DE.docx';
+            $templateName = 'Resoluciones Plantilla DE 2025.docx';
         } elseif ($pago->periodo === '2024-II') {
             $templateName = 'Resolucion Plantilla 2024.docx';
         }
@@ -174,6 +174,7 @@ class DocumentGeneratorService
                 if ($coordinadorGenero === 'F') {
                     $coordinadorOCoordinadora = 'Coordinadora';
                     $artCoordinador = 'la';
+
                 }
             }
         }
@@ -195,6 +196,7 @@ class DocumentGeneratorService
         $template->setValue('FACULTAD', $pago->facultad_nombre ?? '');
         $template->setValue('DIRECTOR_FACULTAD', $pago->director_nombre ?? '');
         $template->setValue('COORDINADOR', $pago->coordinador_nombre ?? '');
+        $template->setValue('Articulo_el_o_la', $artCoordinador);
 
         // Artículos de género del docente
         $template->setValue('Articulo_del_o_de_la', $articuloDelODeLa);
@@ -223,11 +225,11 @@ class DocumentGeneratorService
         $template->setValue('FECHA_DE_RESOLUCION_APROBACION', $this->formatearFecha($pago->fecha_resolucion_aprobacion));
 
         // Variables de oficios - Usando nombres exactos de la plantilla
-        $template->setValue('OFICIO_DE_PRESENTACION_FAC', $pago->numero_oficio_presentacion_facultad ?? '');
+        $template->setValue('OFICIO_DE_PRESENTACION_FAC', str_replace('OFICIO', '', $pago->numero_oficio_presentacion_facultad ?? ''));
         $template->setValue('OFICIO_PRESENTACION_COORDINADOR', $pago->numero_oficio_presentacion_coordinador ?? '');
         $template->setValue('OFICIO_DE_CONFORMIDAD_FAC', $pago->numero_oficio_conformidad_facultad ?? '');
         $template->setValue('OFICIO_CONFORMIDAD_COORDINADOR', $pago->numero_oficio_conformidad_coordinador ?? '');
-        $template->setValue('OFICIO_DE_CONFORMIDAD_DIRECCION', $pago->numero_oficio_conformidad_direccion ?? '');
+        $template->setValue('OFICIO_DE_CONFORMIDAD_DIRECCION', str_replace('OFICIO', '', $pago->numero_oficio_conformidad_direccion ?? ''));
 
         // Variables de oficio de contabilidad
         $template->setValue('OFICIO_DE_CONTABILIDAD', $pago->numero_oficio_contabilidad ?? '');

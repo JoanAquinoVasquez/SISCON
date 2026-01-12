@@ -136,6 +136,52 @@ export function DocentesPage() {
     return `${titulo}${docente.nombres} ${docente.apellido_paterno} ${docente.apellido_materno}`;
   };
 
+  const getCursosAsignados = (docente: Docente) => {
+    if (!docente.pagos || docente.pagos.length === 0) {
+      return <span className="text-slate-400 italic">Sin asignación</span>;
+    }
+
+    // Extract unique courses from payments
+    const cursosMap = new Map();
+
+    docente.pagos.forEach((pago: any) => {
+      if (pago.curso) {
+        // Find program for this period
+        const semestre = pago.curso.semestres?.find((s: any) => s.programa?.periodo === pago.periodo);
+        const programa = semestre?.programa;
+
+        const key = `${pago.curso.id}-${pago.periodo}`;
+        if (!cursosMap.has(key)) {
+          cursosMap.set(key, {
+            grado: programa?.grado?.nombre || 'Grado',
+            curso: pago.curso.nombre,
+            programa: programa?.nombre || 'Programa',
+            periodo: pago.periodo
+          });
+        }
+      }
+    });
+
+    const cursos = Array.from(cursosMap.values());
+
+    if (cursos.length === 0) {
+      return <span className="text-slate-400 italic">Sin asignación</span>;
+    }
+
+    return (
+      <div className="flex flex-col gap-1">
+        {cursos.map((item: any, index) => (
+          <div key={index} className="text-xs">
+            <span className="font-medium text-slate-700">{item.curso}</span>
+            <div className="text-slate-500 ml-1">
+            {item.grado} en {item.programa} ({item.periodo})
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">
       <div className="text-center">
@@ -220,9 +266,10 @@ export function DocentesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre Completo</TableHead>
+                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead className="min-w-[250px]">Nombre Completo</TableHead>
+                  <TableHead className="min-w-[300px]">Curso Asignado</TableHead>
                   <TableHead>DNI</TableHead>
-                  <TableHead>Género</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -231,13 +278,25 @@ export function DocentesPage() {
               <TableBody>
                 {docentes.map((docente: Docente) => (
                   <TableRow key={docente.id}>
+                    <TableCell className="font-medium text-slate-500">
+                      {docente.id}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {getFullName(docente)}
                     </TableCell>
+                    <TableCell>
+                      {getCursosAsignados(docente)}
+                    </TableCell>
                     <TableCell>{docente.dni}</TableCell>
-                    <TableCell>{docente.genero === 'M' ? 'Masculino' : 'Femenino'}</TableCell>
                     <TableCell>{docente.numero_telefono || '-'}</TableCell>
-                    <TableCell>{getTipoDocenteLabel(docente.tipo_docente)}</TableCell>
+                    <TableCell>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${docente.tipo_docente.includes('interno')
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-purple-100 text-purple-700'
+                        }`}>
+                        {getTipoDocenteLabel(docente.tipo_docente)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button

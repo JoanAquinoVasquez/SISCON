@@ -137,7 +137,7 @@ class Expediente extends Model
 
         // Obtener coordinador (asumiendo el primero activo o el más reciente)
         $coordinador = $semestre->programa->coordinadores->first();
-        $coordinadorNombre = $coordinador ? ($coordinador->nombres . ' ' . $coordinador->apellidos) : null;
+        $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
 
         // Crear pago docente pendiente
         $pago = PagoDocente::create([
@@ -188,10 +188,10 @@ class Expediente extends Model
 
         $periodo = $semestre->programa->periodo;
         $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
-        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->decano : null;
+        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
 
         $coordinador = $semestre->programa->coordinadores->first();
-        $coordinadorNombre = $coordinador ? ($coordinador->nombres . ' ' . $coordinador->apellidos) : null;
+        $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
 
         // Si ya tiene un pago vinculado, actualizarlo
         if ($this->pago_docente_id) {
@@ -245,8 +245,9 @@ class Expediente extends Model
                 'coordinador_nombre' => $coordinadorNombre,
             ]);
 
+            // Force update using DB facade to ensure it's saved
+            \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $this->id)->update(['pago_docente_id' => $pago->id]);
             $this->pago_docente_id = $pago->id;
-            $this->save();
 
             return $pago;
         } else {

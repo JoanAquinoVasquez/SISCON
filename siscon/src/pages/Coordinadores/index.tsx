@@ -1,4 +1,3 @@
-// src/pages/Coordinadores/index.tsx
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { Button } from '../../components/ui/button';
@@ -19,7 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../../components/ui/dropdown-menu';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, MoreVertical, Eye } from 'lucide-react';
 import { coordinadorService, type Coordinador } from '../../services/coordinadorService';
 import { CoordinadorForm } from './CoordinadorForm';
 import { useToast } from '../../context/ToastContext';
@@ -126,6 +133,38 @@ export function CoordinadoresPage() {
     return `${titulo}${coordinador.nombres} ${coordinador.apellido_paterno} ${coordinador.apellido_materno}`;
   };
 
+  const getProgramasAsignados = (coordinador: Coordinador) => {
+    if (!coordinador.programas || coordinador.programas.length === 0) {
+      return <span className="text-slate-400 italic">Sin asignación</span>;
+    }
+
+    // Group programs by name and grade
+    const programsMap = new Map();
+
+    coordinador.programas.forEach((programa: any) => {
+      const key = `${programa.grado?.nombre || 'Programa'}-${programa.nombre}`;
+      if (!programsMap.has(key)) {
+        programsMap.set(key, {
+          nombre: programa.nombre,
+          grado: programa.grado?.nombre || 'Programa',
+          periodos: []
+        });
+      }
+      programsMap.get(key).periodos.push(programa.periodo);
+    });
+
+    return (
+      <div className="flex flex-col gap-1">
+        {Array.from(programsMap.values()).map((prog: any, index) => (
+          <div key={index} className="text-xs">
+            <span className="font-medium text-slate-700">{prog.grado} en {prog.nombre}</span>
+            <span className="text-slate-500 ml-1">({prog.periodos.join(', ')})</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center h-64">
       <div className="text-center">
@@ -208,9 +247,10 @@ export function CoordinadoresPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre Completo</TableHead>
+                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead className="min-w-[250px]">Nombre Completo</TableHead>
+                  <TableHead className="min-w-[300px]">Programa Asignado</TableHead>
                   <TableHead>DNI</TableHead>
-                  <TableHead>Género</TableHead>
                   <TableHead>Teléfono</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -219,31 +259,49 @@ export function CoordinadoresPage() {
               <TableBody>
                 {coordinadores.map((coordinador: Coordinador) => (
                   <TableRow key={coordinador.id}>
+                    <TableCell className="font-medium text-slate-500">
+                      {coordinador.id}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {getFullName(coordinador)}
                     </TableCell>
+                    <TableCell>
+                      {getProgramasAsignados(coordinador)}
+                    </TableCell>
                     <TableCell>{coordinador.dni || '-'}</TableCell>
-                    <TableCell>{coordinador.genero === 'M' ? 'Masculino' : 'Femenino'}</TableCell>
                     <TableCell>{coordinador.numero_telefono || '-'}</TableCell>
-                    <TableCell className="capitalize">{coordinador.tipo_coordinador}</TableCell>
+                    <TableCell className="capitalize">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${coordinador.tipo_coordinador === 'interno'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-purple-100 text-purple-700'
+                        }`}>
+                        {coordinador.tipo_coordinador}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(coordinador)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(coordinador.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleEdit(coordinador)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(coordinador.id)}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}

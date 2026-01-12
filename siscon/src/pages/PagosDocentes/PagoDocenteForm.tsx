@@ -19,7 +19,7 @@ interface Docente {
 }
 
 interface Curso {
-  id: number;
+  id: number | string;
   label: string;
   periodo: string;
   programa_id: number;
@@ -223,8 +223,12 @@ export default function PagoDocenteForm() {
             tipo_docente: data.docente.tipo_docente
           });
 
+          // Encontrar el semestre que coincide con el periodo para construir el ID compuesto
+          const matchingSemestre = data.curso.semestres?.find((s: any) => s.programa?.periodo === data.periodo);
+          const compositeId = matchingSemestre ? `${data.curso_id}-${matchingSemestre.id}` : data.curso_id;
+
           setCurso({
-            id: data.curso_id,
+            id: compositeId,
             label: `${data.curso.nombre}`,
             periodo: data.periodo,
             programa_id: 0 // No longer needed
@@ -303,14 +307,27 @@ export default function PagoDocenteForm() {
             });
           }
 
-          setDatosCurso({
-            programa_id: 0,
-            programa_nombre: data.programa_nombre || '',
-            periodo: data.periodo,
-            facultad_nombre: data.facultad_nombre,
-            director_nombre: data.director_nombre,
-            coordinador_nombre: data.coordinador_nombre,
-          });
+
+          // Fetch fresh course data immediately to avoid flash of old content
+          try {
+            const courseResponse = await axios.get(`/pagos-docentes/curso/${compositeId}/datos`);
+            setDatosCurso(courseResponse.data.data);
+            // Ensure period is consistent
+            if (courseResponse.data.data.periodo) {
+              setPeriodo(courseResponse.data.data.periodo);
+            }
+          } catch (error) {
+            console.error('Error fetching fresh course data:', error);
+            // Fallback to stored data if fetch fails
+            setDatosCurso({
+              programa_id: 0,
+              programa_nombre: data.programa_nombre || '',
+              periodo: data.periodo,
+              facultad_nombre: data.facultad_nombre,
+              director_nombre: data.director_nombre,
+              coordinador_nombre: data.coordinador_nombre,
+            });
+          }
 
         } catch (error) {
           console.error('Error al cargar pago:', error);
@@ -335,7 +352,12 @@ export default function PagoDocenteForm() {
 
   // Cargar datos del curso cuando se selecciona
   useEffect(() => {
-    if (curso && !id) { // Solo si no es edición o si cambia el curso
+    if (curso) {
+      // Si es un nuevo registro (!id) SIEMPRE cargar datos
+      // Si es edición (id), SOLO cargar si el curso seleccionado es diferente al que vino de la BD
+      // Para simplificar: Si el usuario selecciona un curso en el combobox, queremos actualizar los datos
+      // El problema es que al cargar la página, setCurso dispara este efecto.
+
       const fetchDatosCurso = async () => {
         try {
           const response = await axios.get(`/pagos-docentes/curso/${curso.id}/datos`);
@@ -345,15 +367,32 @@ export default function PagoDocenteForm() {
           console.error('Error al cargar datos del curso:', error);
         }
       };
+
+      // Si estamos editando y acabamos de cargar los datos (loadingData es true o acabamos de setear el curso inicial),
+      // tal vez no queramos sobrescribir.
+      // Pero si el usuario CAMBIA el curso, sí.
+      // Una forma es comparar el ID del curso con el que teníamos guardado.
+
+      // Solución pragmática: Si datosCurso.programa_nombre está vacío (caso nuevo) O
+      // si el usuario interactuó (podríamos usar un flag, pero por ahora...)
+      // Vamos a permitir la recarga si el ID del curso no coincide con el que teníamos en datosCurso (si tuviéramos ese dato guardado aparte)
+      // O simplemente permitirlo siempre que no sea la carga inicial.
+
       fetchDatosCurso();
     }
-  }, [curso, id]);
+  }, [curso]); // Removemos 'id' de la dependencia para que corra siempre que cambie curso
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!docente || !curso || !periodo || fechasEnsenanza.length === 0) {
-      showToast('Por favor complete todos los campos requeridos', 'warning');
+    const missingFields = [];
+    if (!docente) missingFields.push('Docente');
+    if (!curso) missingFields.push('Curso');
+    if (!periodo) missingFields.push('Periodo');
+    if (fechasEnsenanza.length === 0) missingFields.push('Fechas de Enseñanza');
+
+    if (missingFields.length > 0) {
+      showToast(`Por favor complete: ${missingFields.join(', ')}`, 'warning');
       return;
     }
 
@@ -361,9 +400,11 @@ export default function PagoDocenteForm() {
 
     try {
       const payload = {
-        docente_id: docente.id,
-        curso_id: curso.id,
-        periodo: periodo,
+        docente_id: docente?.id,
+        curso_id: typeof curso?.id === 'string' && curso?.id.includes('-')
+          ? curso?.id.split('-')[0]
+          : curso?.id,
+        periodo: periodo || '', // Ensure empty string is sent if null/undefined
         facultad_nombre: datosCurso.facultad_nombre,
         director_nombre: datosCurso.director_nombre,
         coordinador_nombre: datosCurso.coordinador_nombre,
@@ -385,19 +426,21 @@ export default function PagoDocenteForm() {
         fecha_pago: fechaPago,
         fecha_nota_pago: fechaNotaPago,
         fecha_nota_pago_2: fechaNotaPago2,
-        ...(docente.tipo_docente === 'interno' ? {
+        ...(docente?.tipo_docente === 'interno' ? {
           ...docInterno,
           numero_resolucion_pago: docInterno.numero_resolucion_pago,
           numero_resolucion_aprobacion: docInterno.numero_resolucion_aprobacion,
           fecha_resolucion_aprobacion: docInterno.fecha_resolucion_aprobacion
         } : {}),
-        ...(docente.tipo_docente === 'externo' ? {
+        ...(docente?.tipo_docente === 'externo' ? {
           ...docExterno,
           numero_resolucion_pago: docExterno.numero_resolucion_pago,
           numero_resolucion_aprobacion: docExterno.numero_resolucion_aprobacion,
           fecha_resolucion_aprobacion: docExterno.fecha_resolucion_aprobacion,
         } : {}),
       };
+
+      console.log('Enviando payload:', payload);
 
       if (id) {
         await axios.put(`/pagos-docentes/${id}`, payload);
@@ -487,7 +530,13 @@ export default function PagoDocenteForm() {
                   label="Curso *"
                   searchEndpoint="/pagos-docentes/buscar-curso"
                   value={curso}
-                  onChange={(option) => setCurso(option as Curso | null)}
+                  onChange={(option) => {
+                    const newCurso = option as Curso | null;
+                    setCurso(newCurso);
+                    if (newCurso && newCurso.periodo) {
+                      setPeriodo(newCurso.periodo);
+                    }
+                  }}
                   placeholder="Buscar por código o nombre..."
                 />
                 <div>
@@ -733,33 +782,45 @@ export default function PagoDocenteForm() {
                   <DocumentField
                     label="Resolución de Pago"
                     placeholder="005-2026-EPG-D"
-                    value={docInterno.numero_resolucion_pago}
-                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_pago: v })}
-                    urlValue={docInterno.numero_resolucion_url}
-                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_resolucion_url: v })}
+                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_resolucion_pago : docExterno.numero_resolucion_pago}
+                    onChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_resolucion_pago: v })
+                      : setDocExterno({ ...docExterno, numero_resolucion_pago: v })}
+                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_resolucion_url : docExterno.numero_resolucion_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_resolucion_url: v })
+                      : setDocExterno({ ...docExterno, numero_resolucion_url: v })}
                   />
                   <div>
                     <Label>Fecha Resolución</Label>
                     <Input
                       type="date"
-                      value={docInterno.fecha_resolucion}
-                      onChange={(e) => setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })}
+                      value={docente?.tipo_docente === 'interno' ? docInterno.fecha_resolucion : docExterno.fecha_resolucion}
+                      onChange={(e) => docente?.tipo_docente === 'interno'
+                        ? setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })
+                        : setDocExterno({ ...docExterno, fecha_resolucion: e.target.value })}
                     />
                   </div>
                   <DocumentField
                     label="Oficio Contabilidad"
                     placeholder="006-2026-UC-EPG-UNPRG"
-                    value={docInterno.numero_oficio_contabilidad}
-                    onChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })}
-                    urlValue={docInterno.numero_oficio_contabilidad_url}
-                    onUrlChange={(v: string) => setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })}
+                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad : docExterno.numero_oficio_contabilidad}
+                    onChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_contabilidad: v })}
+                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad_url : docExterno.numero_oficio_contabilidad_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_contabilidad_url: v })}
                   />
                   <div>
                     <Label>Fecha Oficio Contabilidad</Label>
                     <Input
                       type="date"
-                      value={docInterno.fecha_oficio_contabilidad}
-                      onChange={(e) => setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })}
+                      value={docente?.tipo_docente === 'interno' ? docInterno.fecha_oficio_contabilidad : docExterno.fecha_oficio_contabilidad}
+                      onChange={(e) => docente?.tipo_docente === 'interno'
+                        ? setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })
+                        : setDocExterno({ ...docExterno, fecha_oficio_contabilidad: e.target.value })}
                     />
                   </div>
                 </div>
@@ -771,16 +832,7 @@ export default function PagoDocenteForm() {
           <TabPanel id="doc-recibido" activeTab={activeTab}>
             <div className="bg-purple-50 p-6 rounded-lg">
               <h3 className="text-2xl font-semibold text-purple-800 mb-6">📬 Documentos Recibidos</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DocumentField
-                  label="Oficio de Pago de Dirección"
-                  placeholder="007-D-2026-EPG"
-                  value={numeroOficioPagoDireccion}
-                  onChange={(v: string) => setNumeroOficioPagoDireccion(v)}
-                  urlValue={numeroOficioPagoDireccionUrl}
-                  onUrlChange={(v: string) => setNumeroOficioPagoDireccionUrl(v)}
-                  showUpload={true}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                   <Label className="text-sm">Orden de Servicio</Label>
                   <Input
@@ -808,16 +860,7 @@ export default function PagoDocenteForm() {
                     className="h-9"
                   />
                 </div>
-                <div>
-                  <Label className="text-sm">Fecha de Pago</Label>
-                  <Input
-                    type="date"
-                    value={fechaPago}
-                    onChange={(e) => setFechaPago(e.target.value)}
-                    className="h-9"
-                  />
-                </div>
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4 mt-2">
+                <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 border-t pt-4 mt-2">
                   <div>
                     <Label className="text-sm">Nota de Pago (S/. {docExterno.tiene_retencion_8_porciento ? (0.92 * importeTotal).toFixed(2) : importeTotal.toFixed(2)})</Label>
                     <Input
@@ -856,10 +899,31 @@ export default function PagoDocenteForm() {
                           className="h-9"
                         />
                       </div>
+
                     </>
                   )}
+                  <div>
+                    <Label className="text-sm">Fecha de Pago</Label>
+                    <Input
+                      type="date"
+                      value={fechaPago}
+                      onChange={(e) => setFechaPago(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+
                 </div>
+
               </div>
+              <DocumentField
+                label="Oficio de Pago de Dirección"
+                placeholder="007-D-2026-EPG"
+                value={numeroOficioPagoDireccion}
+                onChange={(v: string) => setNumeroOficioPagoDireccion(v)}
+                urlValue={numeroOficioPagoDireccionUrl}
+                onUrlChange={(v: string) => setNumeroOficioPagoDireccionUrl(v)}
+                showUpload={true}
+              />
             </div>
           </TabPanel>
 

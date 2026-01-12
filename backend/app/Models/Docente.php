@@ -41,6 +41,11 @@ class Docente extends Model
         return $this->hasMany(AsignacionEnfermeria::class);
     }
 
+    public function pagos()
+    {
+        return $this->hasMany(PagoDocente::class);
+    }
+
     // Scopes para filtrar por tipo
     public function scopeInternos(Builder $query)
     {

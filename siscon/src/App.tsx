@@ -15,6 +15,8 @@ import { MainLayout } from './components/layout/MainLayout';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useAuth } from './context/AuthContext';
 import { AuthCallback } from './pages/AuthCallback';
+import OficiosList from './pages/Documentos/OficiosList';
+import ResolucionesList from './pages/Documentos/ResolucionesList';
 
 function App() {
   const { user, loading } = useAuth();
@@ -88,6 +90,16 @@ function App() {
           <Route path="expedientes/:id/editar" element={
             <ErrorBoundary>
               <ExpedienteForm />
+            </ErrorBoundary>
+          } />
+          <Route path="documentos/oficios" element={
+            <ErrorBoundary>
+              <OficiosList />
+            </ErrorBoundary>
+          } />
+          <Route path="documentos/resoluciones" element={
+            <ErrorBoundary>
+              <ResolucionesList />
             </ErrorBoundary>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

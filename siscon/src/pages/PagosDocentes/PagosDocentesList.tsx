@@ -26,6 +26,14 @@ import {
   DialogTitle,
   DialogDescription
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
@@ -37,7 +45,8 @@ import {
   Clipboard,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  MoreVertical
 } from 'lucide-react';
 
 // Función para formatear fechas en formato legible
@@ -130,6 +139,8 @@ interface PagoDocente {
   fecha_resolucion_aprobacion?: string;
   numero_resolucion_pago?: string;
   numero_oficio_contabilidad?: string;
+  numero_oficio_pago_direccion?: string;
+  numero_oficio_pago_direccion_url?: string;
   docente?: {
     titulo_profesional?: string;
     nombres: string;
@@ -349,6 +360,12 @@ export default function PagosDocentesList() {
     }
   };
 
+  const handleViewOficioPagoContabilidad = (numero_oficio_pago_direccion_url: string) => {
+    console.log(numero_oficio_pago_direccion_url);
+    // Redirigir al link donde está subido el archivo numero_oficio_pago_direccion_url
+    window.open(numero_oficio_pago_direccion_url, '_blank');
+  };
+
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
       case 'pendiente':
@@ -412,20 +429,20 @@ export default function PagosDocentesList() {
       </div>
 
       {/* Tabla */}
-      <div className="rounded-md border bg-white shadow-sm">
+      <div className="rounded-md border bg-white shadow-sm overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead className="text-center">Docente</TableHead>
-              <TableHead className="text-center">Curso</TableHead>
-              <TableHead className="text-center">Presentación</TableHead>
-              <TableHead className="text-center">Aprobación</TableHead>
-              <TableHead className="text-center">Conformidad</TableHead>
-              <TableHead className="text-center">Documentos Generados</TableHead>
-              <TableHead className="text-right">Importe</TableHead>
-              <TableHead className="text-center">Estado</TableHead>
-              <TableHead className="text-center">Acciones</TableHead>
+              <TableHead className="w-[50px]">ID</TableHead>
+              <TableHead className="text-center min-w-[175px]">Docente</TableHead>
+              <TableHead className="text-center min-w-[300px]">Curso</TableHead>
+              <TableHead className="text-center min-w-[250px]">Presentación</TableHead>
+              <TableHead className="text-center min-w-[170px]">Aprobación</TableHead>
+              <TableHead className="text-center min-w-[200px]">Conformidad</TableHead>
+              <TableHead className="text-center min-w-[220px]">Documentos Generados</TableHead>
+              <TableHead className="text-right min-w-[100px]">Importe</TableHead>
+              <TableHead className="text-center min-w-[100px]">Estado</TableHead>
+              <TableHead className="text-center min-w-[70px]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -450,9 +467,9 @@ export default function PagosDocentesList() {
                   <TableCell>{pago.id}</TableCell>
                   <TableCell>
                     <div className="font-medium">{pago.docente_nombre}</div>
-                    <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente}</div>
+                    <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente} {pago.periodo}</div>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate" title={pago.curso_nombre}>{pago.curso_nombre}
+                  <TableCell className="" title={pago.curso_nombre}>{pago.curso_nombre}
                     <div className="text-xs text-muted-foreground" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.programa_nombre} {pago.periodo}</div></TableCell>
                   <TableCell className='text-center' title={pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}>
                     {pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
@@ -470,11 +487,11 @@ export default function PagosDocentesList() {
                     }
                   </TableCell>
                   <TableCell className='text-center'>
-                    {pago.numero_oficio_conformidad_facultad ? `${pago.numero_oficio_conformidad_facultad}` : 'Pendiente'}
+                    {pago.numero_oficio_conformidad_facultad ? `Of. ${pago.numero_oficio_conformidad_facultad}` : 'Pendiente'}
                     <div className="text-xs text-muted-foreground">Cord. Ofic.{' '}
                       {pago.numero_oficio_conformidad_coordinador ? `N° ${pago.numero_oficio_conformidad_coordinador}` : 'Pendiente'}</div>
-                    <div className="text-xs text-muted-foreground">Dir. Ofic.{' '}
-                      {pago.numero_oficio_conformidad_direccion ? `N° ${pago.numero_oficio_conformidad_direccion}` : 'Pendiente'}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {pago.numero_oficio_conformidad_direccion ? `${pago.numero_oficio_conformidad_direccion}` : 'Pendiente'}</div>
                   </TableCell>
                   <TableCell className='text-center'> Resol. Pago {' '}
                     {pago.numero_resolucion_pago ? `N° ${pago.numero_resolucion_pago}` : 'Pendiente'}
@@ -491,67 +508,26 @@ export default function PagosDocentesList() {
                     {getEstadoBadge(pago.estado)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleViewDetail(pago.id)} title="Ver detalle">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {pago.tipo_docente === 'externo' && pago.estado === 'pendiente' ? (
-                        /* CASO 1: Externo y Pendiente -> Solo Resolución de Aprobación */
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleGenerateResolucionAceptacion(pago.id)}
-                          disabled={isGeneratingResolucionAceptacion}
-                          title="Generar Resolución de Aprobación"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        >
-                          {isGeneratingResolucionAceptacion ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
-                      ) : pago.estado === 'proceso' ? (
-                        /* CASO 2: En proceso (Sea interno o externo) -> Resolución de Pago y Oficio */
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleGenerateResolucion(pago.id)}
-                            disabled={isGeneratingResolucion}
-                            title="Generar Resolución de Pago"
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            {isGeneratingResolucion ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <FileText className="h-4 w-4" />
-                            )}
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleGenerateOficio(pago.id)}
-                            disabled={isGeneratingOficio}
-                            title="Generar Oficio de Contabilidad"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            {isGeneratingOficio ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Clipboard className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </>
-                      ) : null}
-                      <Button variant="ghost" size="icon" onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)} title="Editar">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(pago.id)} title="Eliminar">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleViewDetail(pago.id)}>
+                          <Eye className="mr-2 h-4 w-4" /> Ver detalle
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)}>
+                          <Pencil className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDelete(pago.id)}>
+                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -656,22 +632,46 @@ export default function PagosDocentesList() {
                   {[
                     { label: "Pres. Facultad", value: selectedPago.numero_oficio_presentacion_facultad },
                     { label: "Pres. Coordinador", value: selectedPago.numero_oficio_presentacion_coordinador },
-                    { label: "Resol. Aprobación", value: selectedPago.numero_resolucion_aprobacion ? `RES N° ${selectedPago.numero_resolucion_aprobacion}` : null },
+                    {
+                      label: "Resol. Aprobación",
+                      value: selectedPago.numero_resolucion_aprobacion ? `RES N° ${selectedPago.numero_resolucion_aprobacion}` : null,
+                      action: () => handleGenerateResolucionAceptacion(selectedPago.id)
+                    },
                     { label: "Conf. Facultad", value: selectedPago.numero_oficio_conformidad_facultad },
                     { label: "Conf. Coordinador", value: selectedPago.numero_oficio_conformidad_coordinador },
-                    { label: "Resol. Pago", value: selectedPago.numero_resolucion_pago },
-                    { label: "Oficio Contabilidad", value: selectedPago.numero_oficio_contabilidad },
+                    {
+                      label: "Resol. Pago",
+                      value: selectedPago.numero_resolucion_pago,
+                      action: () => handleGenerateResolucion(selectedPago.id)
+                    },
+                    {
+                      label: "Oficio Contabilidad",
+                      value: selectedPago.numero_oficio_contabilidad,
+                      action: () => handleGenerateOficio(selectedPago.id)
+                    },
+                    {
+                      label: "Oficio de Pago de Contabilidad",
+                      value: selectedPago.numero_oficio_pago_direccion,
+                      action: () => handleViewOficioPagoContabilidad(selectedPago.numero_oficio_pago_direccion_url || '')
+                    }
                   ].map((doc, index) =>
                     doc.value && (
                       <div
                         key={index}
-                        className="flex flex-col p-2 rounded-md border bg-muted/30 hover:bg-muted/50 transition-colors"
+                        onClick={doc.action ? doc.action : undefined}
+                        className={`flex flex-col p-2 rounded-md border transition-colors ${doc.action
+                          ? "bg-primary/10 border-primary/20 hover:bg-primary/20 cursor-pointer"
+                          : "bg-muted/30 hover:bg-muted/50"
+                          }`}
                       >
                         <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">
                           {doc.label}
                         </span>
-                        <span className="text-sm font-medium truncate" title={doc.value}>
+                        <span className="text-sm font-medium truncate flex items-center gap-1" title={doc.value}>
                           {doc.value}
+                          {doc.action && (
+                            <span className="text-[10px] text-primary">(Abrir)</span>
+                          )}
                         </span>
                       </div>
                     )
@@ -724,7 +724,7 @@ export default function PagosDocentesList() {
                           </Button>
 
                           <Button
-                            onClick={() => handleGenerateOficio(selectedPago.id)}
+                            onClick={() => handleGenerateResolucion(selectedPago.id)}
                             disabled={isGeneratingOficio}
                             className="w-full bg-green-600 hover:bg-green-700"
                           >

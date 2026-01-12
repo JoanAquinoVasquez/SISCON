@@ -28,7 +28,7 @@ class CoordinadorController extends Controller
             $query->where('genero', $genero);
         }
         $perPage = $request->query('per_page', 10);
-        $coordinadores = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $coordinadores = $query->with(['programas.grado'])->orderBy('created_at', 'desc')->paginate($perPage);
         return response()->json($coordinadores);
     }
 
@@ -50,12 +50,17 @@ class CoordinadorController extends Controller
         }
 
         $coordinador = Coordinador::create($request->all());
+
+        if ($request->has('programas')) {
+            $coordinador->programas()->sync($request->programas);
+        }
+
         return response()->json(['data' => $coordinador, 'message' => 'Coordinador creado exitosamente'], 201);
     }
 
     public function show($id)
     {
-        $coordinador = Coordinador::find($id);
+        $coordinador = Coordinador::with(['programas'])->find($id);
 
         if (!$coordinador) {
             return response()->json(['message' => 'Coordinador no encontrado'], 404);
@@ -81,6 +86,8 @@ class CoordinadorController extends Controller
             'dni' => 'nullable|string|size:8|unique:coordinadores,dni,' . $id,
             'numero_telefono' => 'nullable|string',
             'tipo_coordinador' => 'sometimes|in:interno,externo',
+            'programas' => 'nullable|array',
+            'programas.*' => 'exists:programas,id',
         ]);
 
         if ($validator->fails()) {
@@ -88,6 +95,11 @@ class CoordinadorController extends Controller
         }
 
         $coordinador->update($request->all());
+
+        if ($request->has('programas')) {
+            $coordinador->programas()->sync($request->programas);
+        }
+
         return response()->json(['data' => $coordinador, 'message' => 'Coordinador actualizado exitosamente']);
     }
 

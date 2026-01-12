@@ -33,7 +33,13 @@ class DocenteController extends Controller
         }
 
         $perPage = $request->query('per_page', 10);
-        $docentes = $query->orderBy('created_at', 'desc')->paginate($perPage);
+        $perPage = $request->query('per_page', 10);
+        $docentes = $query->with(['pagos.curso.semestres.programa.grado'])
+            ->withCount('pagos')
+            ->orderBy('pagos_count', 'desc')
+            ->orderBy('nombres', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
         return response()->json($docentes);
     }
 

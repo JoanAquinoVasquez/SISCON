@@ -224,9 +224,9 @@ export default function ExpedienteForm() {
       }
 
       setFechasEnsenanza(data.fechas_ensenanza || []);
-      setNumeroOficioPresentacionCoordinador(data.pago_docente.numero_oficio_presentacion_coordinador || null);
-      setNumeroOficioConformidadCoordinador(data.pago_docente.numero_oficio_conformidad_coordinador || null);
-      setNumeroOficioConformidadFacultad(data.pago_docente.numero_oficio_conformidad_facultad || null);
+      setNumeroOficioPresentacionCoordinador(data.pago_docente?.numero_oficio_presentacion_coordinador || '');
+      setNumeroOficioConformidadCoordinador(data.pago_docente?.numero_oficio_conformidad_coordinador || '');
+      setNumeroOficioConformidadFacultad(data.pago_docente?.numero_oficio_conformidad_facultad || '');
 
       // Devolucion fields
       setPersonaDevolucion(data.persona_devolucion || '');

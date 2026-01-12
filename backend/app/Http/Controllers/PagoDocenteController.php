@@ -8,6 +8,7 @@ use App\Models\Programa;
 use App\Models\Curso;
 use App\Services\DocumentGeneratorService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PagoDocenteController extends Controller
@@ -20,16 +21,39 @@ class PagoDocenteController extends Controller
         $query = PagoDocente::with(['docente', 'curso.semestres.programa']);
 
         // Search by docente name, DNI, or curso name
+        // Search by multiple fields
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->whereHas('docente', function ($q) use ($search) {
-                $q->where('nombres', 'LIKE', "%{$search}%")
-                    ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
-                    ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
-                    ->orWhere('dni', 'LIKE', "%{$search}%");
-            })->orWhereHas('curso', function ($q) use ($search) {
-                $q->where('nombre', 'LIKE', "%{$search}%")
-                    ->orWhere('codigo', 'LIKE', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                // Docente
+                $q->whereHas('docente', function ($q) use ($search) {
+                    $q->where('nombres', 'LIKE', "%{$search}%")
+                        ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
+                        ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
+                        ->orWhere('dni', 'LIKE', "%{$search}%");
+                })
+                    // Curso
+                    ->orWhereHas('curso', function ($q) use ($search) {
+                        $q->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhere('codigo', 'LIKE', "%{$search}%");
+                    })
+                    // Programa (via Curso -> Semestres -> Programa)
+                    ->orWhereHas('curso.semestres.programa', function ($q) use ($search) {
+                        $q->where('nombre', 'LIKE', "%{$search}%");
+                    })
+                    // Direct fields
+                    ->orWhere('periodo', 'LIKE', "%{$search}%")
+                    ->orWhere('importe_total', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_horas', 'LIKE', "%{$search}%")
+                    // Document Numbers
+                    ->orWhere('numero_oficio_presentacion_facultad', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_presentacion_coordinador', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_resolucion_aprobacion', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_facultad', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_coordinador', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_direccion', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_resolucion_pago', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_contabilidad', 'LIKE', "%{$search}%");
             });
         }
 
@@ -149,6 +173,8 @@ class PagoDocenteController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        Log::info('Update PagoDocente Payload:', $request->all());
+        Log::info('Periodo received:', ['periodo' => $request->periodo]);
         $pago = PagoDocente::find($id);
 
         if (!$pago) {
@@ -163,6 +189,13 @@ class PagoDocenteController extends Controller
             'costo_por_hora' => 'sometimes|numeric|min:0',
             'importe_total' => 'sometimes|numeric|min:0',
             'fecha_resolucion_aprobacion' => 'nullable|date',
+            'numero_resolucion_aprobacion' => 'nullable|string',
+            'numero_resolucion_pago' => 'nullable|string',
+            'fecha_resolucion' => 'nullable|date',
+            'numero_oficio_contabilidad' => 'nullable|string',
+            'fecha_oficio_contabilidad' => 'nullable|date',
+            'director_nombre' => 'nullable|string',
+            'coordinador_nombre' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -271,14 +304,12 @@ class PagoDocenteController extends Controller
 
         // Obtener el coordinador activo (sin fecha_fin o fecha_fin futura)
         $coordinador = $programa->coordinadores()
-            ->wherePivot('fecha_fin', null)
-            ->orWherePivot('fecha_fin', '>', now())
             ->first();
 
         $datos = [
             'facultad_nombre' => $programa->facultad->nombre ?? null,
             'director_nombre' => $programa->facultad->director_nombre ?? null,
-            'coordinador_nombre' => $coordinador ? $coordinador->nombre_completo : null,
+            'coordinador_nombre' => $coordinador ? $coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno : null,
         ];
 
         return response()->json(['data' => $datos], 200);
@@ -291,8 +322,6 @@ class PagoDocenteController extends Controller
     {
         $query = $request->get('q', '');
         $facultadCodigo = trim($request->get('facultad_codigo', ''));
-
-        \Illuminate\Support\Facades\Log::info('PagoDocenteController::buscarCursos', ['query' => $query, 'facultad_codigo' => $facultadCodigo]);
 
         if (strlen($query) < 2) {
             return response()->json(['data' => []], 200);
@@ -344,13 +373,23 @@ class PagoDocenteController extends Controller
      */
     public function obtenerDatosCurso(string $id)
     {
-        $curso = Curso::with(['semestres.programa.facultad', 'semestres.programa.coordinadores'])->find($id);
+        // Check if ID is composite (curso_id-semestre_id)
+        if (strpos($id, '-') !== false) {
+            [$cursoId, $semestreId] = explode('-', $id);
+            $curso = Curso::with([
+                'semestres' => function ($q) use ($semestreId) {
+                    $q->where('semestres.id', $semestreId)->with(['programa.facultad', 'programa.coordinadores']);
+                }
+            ])->find($cursoId);
+        } else {
+            $curso = Curso::with(['semestres.programa.facultad', 'semestres.programa.coordinadores'])->find($id);
+        }
 
         if (!$curso) {
             return response()->json(['message' => 'Curso no encontrado'], 404);
         }
 
-        // Obtener el primer semestre del curso
+        // Obtener el semestre específico o el primero
         $semestre = $curso->semestres->first();
 
         if (!$semestre) {
@@ -367,12 +406,12 @@ class PagoDocenteController extends Controller
 
         $datos = [
             'programa_id' => $programa->id,
-            'programa_nombre' => $programa->grado->nombre . ' en ' . $programa->nombre . ' (' . $programa->facultad->codigo . ')',
-            'periodo' => $semestre->periodo,
+            'programa_nombre' => $programa->grado->nombre . ' en ' . $programa->nombre . ' (' . $programa->periodo . ')',
+            'periodo' => $programa->periodo,
             'semestre_id' => $semestre->id,
-            'facultad_nombre' => $programa->facultad->codigo ?? null,
+            'facultad_nombre' => $programa->facultad->nombre ?? null,
             'director_nombre' => $programa->facultad->director_nombre ?? null,
-            'coordinador_nombre' => $coordinador ? $coordinador->nombre_completo : null,
+            'coordinador_nombre' => $coordinador ? $coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno : null,
         ];
 
         return response()->json(['data' => $datos], 200);

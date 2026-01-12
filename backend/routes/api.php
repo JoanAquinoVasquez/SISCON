@@ -154,4 +154,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Oficios
     Route::apiResource('oficios', OficioController::class);
     Route::get('oficios/{id}/pagos', [OficioController::class, 'pagos']);
+
+    // ========================================
+    // Documents (Oficios & Resoluciones)
+    // ========================================
+    Route::get('documentos/oficios', [App\Http\Controllers\DocumentoController::class, 'indexOficios']);
+    Route::get('documentos/resoluciones', [App\Http\Controllers\DocumentoController::class, 'indexResoluciones']);
 });

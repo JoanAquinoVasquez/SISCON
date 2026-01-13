@@ -7,6 +7,8 @@ use App\Models\Docente;
 use App\Models\Programa;
 use App\Models\Curso;
 use App\Services\DocumentGeneratorService;
+use App\Exports\PagoDocenteExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -63,7 +65,7 @@ class PagoDocenteController extends Controller
         }
 
         // Filter by tipo_docente
-        if ($request->has('tipo_docente') && $request->tipo_docente) {
+        if ($request->has('tipo_docente') && $request->tipo_docente && $request->tipo_docente !== 'todos') {
             $query->whereHas('docente', function ($q) use ($request) {
                 $q->where('tipo_docente', $request->tipo_docente);
             });
@@ -75,6 +77,9 @@ class PagoDocenteController extends Controller
                 $q->where('programa_id', $request->programa_id);
             });
         }
+
+        // Clone query to calculate total sum without pagination
+        $totalImporte = $query->clone()->sum('importe_total');
 
         $pagos = $query->latest()->paginate(15);
 
@@ -116,7 +121,11 @@ class PagoDocenteController extends Controller
             ];
         });
 
-        return response()->json($pagos, 200);
+        // Return paginated data and total sum
+        return response()->json([
+            'data' => $pagos,
+            'total_importe' => $totalImporte
+        ], 200);
     }
 
     /**
@@ -140,6 +149,8 @@ class PagoDocenteController extends Controller
             'fecha_constancia_pago' => 'nullable|date',
             'fecha_nota_pago' => 'nullable|date',
             'fecha_nota_pago_2' => 'nullable|date',
+            'oficio_direccion_exp_docentes' => 'nullable|string',
+            'oficio_direccion_exp_docentes_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
@@ -201,13 +212,29 @@ class PagoDocenteController extends Controller
             'fecha_oficio_contabilidad' => 'nullable|date',
             'director_nombre' => 'nullable|string',
             'coordinador_nombre' => 'nullable|string',
+            'oficio_direccion_exp_docentes' => 'nullable|string',
+            'oficio_direccion_exp_docentes_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $pago->update($request->all());
+        $pago->fill($request->all());
+
+        // Verificar si todos los campos requeridos para completar el pago están presentes
+        if (
+            !empty($pago->orden_servicio) &&
+            !empty($pago->acta_conformidad) &&
+            !empty($pago->numero_exp_siaf) &&
+            !empty($pago->nota_pago) &&
+            !empty($pago->fecha_nota_pago) &&
+            !empty($pago->fecha_constancia_pago)
+        ) {
+            $pago->estado = 'completado';
+        }
+
+        $pago->save();
 
         return response()->json([
             'message' => 'Pago actualizado exitosamente',
@@ -510,5 +537,15 @@ class PagoDocenteController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+    /**
+     * Exportar pagos a Excel
+     */
+    public function exportExcel(Request $request)
+    {
+        $filters = $request->all();
+        $fileName = 'pagos_docentes_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return Excel::download(new PagoDocenteExport($filters), $fileName);
     }
 }

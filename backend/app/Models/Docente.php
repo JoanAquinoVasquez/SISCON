@@ -19,8 +19,10 @@ class Docente extends Model
         'apellido_materno',
         'titulo_profesional',
         'genero',
+        'fecha_nacimiento',
         'dni',
         'numero_telefono',
+        'email',
         'tipo_docente',
         'lugar_procedencia_id',
     ];

@@ -46,7 +46,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  MoreVertical
+  MoreVertical,
+  Download
 } from 'lucide-react';
 
 // Función para formatear fechas en formato legible
@@ -179,6 +180,7 @@ export default function PagosDocentesList() {
   });
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
+  const [totalImporte, setTotalImporte] = useState(0);
 
   // Modal de detalle
   const [selectedPago, setSelectedPago] = useState<PagoDocente | null>(null);
@@ -195,14 +197,15 @@ export default function PagosDocentesList() {
       };
 
       const response = await axios.get('/pagos-docentes', { params });
-      setPagos(response.data.data);
+      setPagos(response.data.data.data);
+      setTotalImporte(response.data.total_importe);
       setPagination({
-        current_page: response.data.current_page,
-        last_page: response.data.last_page,
-        per_page: response.data.per_page,
-        total: response.data.total,
-        from: response.data.from,
-        to: response.data.to
+        current_page: response.data.data.current_page,
+        last_page: response.data.data.last_page,
+        per_page: response.data.data.per_page,
+        total: response.data.data.total,
+        from: response.data.data.from,
+        to: response.data.data.to
       });
     } catch (error) {
       console.error('Error al cargar pagos:', error);
@@ -362,6 +365,35 @@ export default function PagosDocentesList() {
     }
   };
 
+  // Exportar Excel
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const params = { ...filters };
+      const response = await axios.get('/pagos-docentes/exportar-excel', {
+        params,
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Reporte_Pagos_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Reporte exportado exitosamente');
+    } catch (error) {
+      console.error('Error al exportar:', error);
+      toast.error('Error al exportar el reporte');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleViewOficioPagoContabilidad = (numero_expediente_nota_pago_url: string) => {
     console.log(numero_expediente_nota_pago_url);
     // Redirigir al link donde está subido el archivo numero_expediente_nota_pago_url
@@ -376,8 +408,8 @@ export default function PagosDocentesList() {
         return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">En Proceso</Badge>;
       case 'observado':
         return <Badge variant="destructive">Observado</Badge>;
-      case 'finalizado':
-        return <Badge variant="default" className="bg-green-600 hover:bg-green-700">Finalizado</Badge>;
+      case 'completado':
+        return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Completado</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
@@ -392,10 +424,19 @@ export default function PagosDocentesList() {
             Gestión de pagos y expedientes de docentes
           </p>
         </div>
-        <Button onClick={() => navigate('/pagos-docentes/nuevo')}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Pago
-        </Button>
+        <div className="flex gap-2 items-center">
+          <div className="bg-primary/10 text-primary px-4 py-2 rounded-md font-bold mr-2">
+            Total: S/ {Number(totalImporte).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Exportar Excel
+          </Button>
+          <Button onClick={() => navigate('/pagos-docentes/nuevo')}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Pago
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -504,7 +545,7 @@ export default function PagosDocentesList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    S/ {Number(pago.importe_total || 0).toFixed(2)}
+                    S/. {Number(pago.importe_total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </TableCell>
                   <TableCell className="text-center">
                     {getEstadoBadge(pago.estado)}
@@ -574,7 +615,6 @@ export default function PagosDocentesList() {
             <DialogTitle>Detalle del Pago</DialogTitle>
             <DialogDescription>Información completa del expediente de pago</DialogDescription>
           </DialogHeader>
-
           {loadingDetail ? (
             <div className="flex justify-center p-8">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -632,128 +672,119 @@ export default function PagosDocentesList() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                   {[
-                    { label: "Pres. Facultad", value: selectedPago.numero_oficio_presentacion_facultad },
-                    { label: "Pres. Coordinador", value: selectedPago.numero_oficio_presentacion_coordinador },
+                    {
+                      label: "Pres. Facultad",
+                      value: selectedPago.numero_oficio_presentacion_facultad,
+                      show: true
+                    },
+                    {
+                      label: "Pres. Coordinador",
+                      value: selectedPago.numero_oficio_presentacion_coordinador,
+                      show: true
+                    },
                     {
                       label: "Resol. Aprobación",
                       value: selectedPago.numero_resolucion_aprobacion ? `RES N° ${selectedPago.numero_resolucion_aprobacion}` : null,
-                      action: () => handleGenerateResolucionAceptacion(selectedPago.id)
+                      show: selectedPago.docente?.tipo_docente === 'externo',
+                      canGenerate: selectedPago.estado === 'pendiente' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo === 'FE'),
+                      generateAction: () => handleGenerateResolucionAceptacion(selectedPago.id),
+                      isGenerating: isGeneratingResolucionAceptacion
                     },
-                    { label: "Conf. Facultad", value: selectedPago.numero_oficio_conformidad_facultad },
-                    { label: "Conf. Coordinador", value: selectedPago.numero_oficio_conformidad_coordinador },
+                    {
+                      label: "Conf. Facultad",
+                      value: selectedPago.numero_oficio_conformidad_facultad,
+                      show: true
+                    },
+                    {
+                      label: "Conf. Coordinador",
+                      value: selectedPago.numero_oficio_conformidad_coordinador,
+                      show: true
+                    },
                     {
                       label: "Resol. Pago",
                       value: selectedPago.numero_resolucion_pago,
-                      action: () => handleGenerateResolucion(selectedPago.id)
+                      show: true,
+                      canGenerate: selectedPago.estado === 'proceso' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo !== 'FIQUIA'),
+                      generateAction: () => handleGenerateResolucion(selectedPago.id),
+                      isGenerating: isGeneratingResolucion
                     },
                     {
                       label: "Oficio Contabilidad",
                       value: selectedPago.numero_oficio_contabilidad,
-                      action: () => handleGenerateOficio(selectedPago.id)
+                      show: true,
+                      canGenerate: selectedPago.estado === 'proceso' && selectedPago.grado_nombre !== 'Segunda Especialidad Profesional',
+                      generateAction: () => handleGenerateOficio(selectedPago.id),
+                      isGenerating: isGeneratingOficio
                     },
                     {
                       label: "Expediente Nota de Pago",
                       value: selectedPago.numero_expediente_nota_pago,
-                      action: () => handleViewOficioPagoContabilidad(selectedPago.numero_expediente_nota_pago_url || '')
+                      action: () => handleViewOficioPagoContabilidad(selectedPago.numero_expediente_nota_pago_url || ''),
+                      show: true
                     }
-                  ].map((doc, index) =>
-                    doc.value && (
+                  ].map((doc, index) => {
+                    // Si no tiene valor y no se puede generar, no mostrar (ocultar "Pendiente")
+                    if (!doc.value && !doc.canGenerate) return null;
+                    if (!doc.show) return null;
+
+                    // Determinar si es clickeable (tiene valor y acción, o es generable)
+                    const isClickable = (!!doc.value && (!!doc.generateAction || !!doc.action));
+
+                    const handleClick = () => {
+                      if (doc.value) {
+                        if (doc.generateAction) doc.generateAction();
+                        else if (doc.action) doc.action();
+                      }
+                    };
+
+                    return (
                       <div
                         key={index}
-                        onClick={doc.action ? doc.action : undefined}
-                        className={`flex flex-col p-2 rounded-md border transition-colors ${doc.action
+                        className={`flex flex-col p-2 rounded-md border transition-colors ${isClickable
                           ? "bg-primary/10 border-primary/20 hover:bg-primary/20 cursor-pointer"
-                          : "bg-muted/30 hover:bg-muted/50"
+                          : "bg-muted/30"
                           }`}
+                        onClick={isClickable ? handleClick : undefined}
                       >
                         <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">
                           {doc.label}
                         </span>
-                        <span className="text-sm font-medium truncate flex items-center gap-1" title={doc.value}>
-                          {doc.value}
-                          {doc.action && (
-                            <span className="text-[10px] text-primary">(Abrir)</span>
-                          )}
-                        </span>
+                        <div className="min-h-[20px] flex items-center">
+                          {doc.value ? (
+                            <span className="text-sm font-medium truncate flex items-center gap-1" title={doc.value}>
+                              {doc.value}
+                              {isClickable && (
+                                doc.isGenerating ? (
+                                  <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+                                ) : (
+                                  <span className="text-[10px] text-primary ml-1">(Abrir)</span>
+                                )
+                              )}
+                            </span>
+                          ) : doc.canGenerate ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs w-full mt-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (doc.generateAction) doc.generateAction();
+                              }}
+                              disabled={doc.isGenerating}
+                            >
+                              {doc.isGenerating ? (
+                                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Generando...</>
+                              ) : (
+                                <><FileText className="mr-1 h-3 w-3" /> Generar</>
+                              )}
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
               </div>
-
-              {/* Generar Documentos */}
-
-              {/* Solo renderiza la sección completa si hay algo que mostrar */}
-              {selectedPago && (
-                // Condición lógica: 
-                // 1. Si es interno y pendiente (Muestra Res. Aprobación) - EXCEPTO Segunda Especialidad FE
-                // 2. O si el estado es 'proceso' (Muestra los otros dos botones)
-                ((selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo') ||
-                  selectedPago.estado === 'proceso') && (
-
-                  <div className="border-b pb-4">
-                    <h3 className="font-semibold mb-3">Generar Documentos</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-
-                      {/* CASO: EXTERNO + PENDIENTE */}
-                      {selectedPago.estado === 'pendiente' && selectedPago.docente?.tipo_docente === 'externo' && (
-                        // NO mostrar si es Segunda Especialidad de FE
-                        !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo === 'FE') && (
-                          <Button
-                            onClick={() => handleGenerateResolucionAceptacion(selectedPago.id)}
-                            disabled={isGeneratingResolucionAceptacion}
-                            className="w-full bg-blue-600 hover:bg-blue-700"
-                          >
-                            {isGeneratingResolucionAceptacion ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                            ) : (
-                              <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Aprobación</>
-                            )}
-                          </Button>
-                        )
-                      )}
-
-                      {/* CASO: ESTADO EN PROCESO */}
-                      {selectedPago.estado === 'proceso' && (
-                        <>
-                          {/* Resolución de Pago: NO mostrar para Segunda Especialidad excepto FIQIA */}
-                          {!(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo !== 'FIQUIA') && (
-                            <Button
-                              onClick={() => handleGenerateResolucion(selectedPago.id)}
-                              disabled={isGeneratingResolucion}
-                              className="w-full bg-blue-600 hover:bg-blue-700"
-                            >
-                              {isGeneratingResolucion ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                              ) : (
-                                <><FileText className="mr-2 h-4 w-4" /> Generar Resolución de Pago</>
-                              )}
-                            </Button>
-                          )}
-
-                          {/* Oficio Contabilidad: NO mostrar para NINGUNA Segunda Especialidad */}
-                          {selectedPago.grado_nombre !== 'Segunda Especialidad Profesional' && (
-                            <Button
-                              onClick={() => handleGenerateOficio(selectedPago.id)}
-                              disabled={isGeneratingOficio}
-                              className="w-full bg-green-600 hover:bg-green-700"
-                            >
-                              {isGeneratingOficio ? (
-                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generando...</>
-                              ) : (
-                                <><Clipboard className="mr-2 h-4 w-4" /> Generar Oficio de Contabilidad</>
-                              )}
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )
-              )}
-
-
-
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">

@@ -38,9 +38,11 @@ class PagoDocente extends Model
         'numero_oficio_conformidad_coordinador_url',
         'numero_oficio_conformidad_direccion',
         'numero_oficio_conformidad_direccion_url',
-        'numero_resolucion_aprobacion', // New field
-        'fecha_resolucion_aprobacion', // New field
-        'numero_resolucion_pago', // Renamed from numero_resolucion
+        'oficio_direccion_exp_docentes',
+        'oficio_direccion_exp_docentes_url',
+        'numero_resolucion_aprobacion',
+        'fecha_resolucion_aprobacion',
+        'numero_resolucion_pago',
         'numero_resolucion_url',
         'fecha_resolucion',
         'numero_oficio_contabilidad',
@@ -58,7 +60,6 @@ class PagoDocente extends Model
         'numero_expediente_nota_pago_url',
         'orden_servicio',
         'acta_conformidad',
-        'numero_exp_siaf',
         'numero_exp_siaf',
         'nota_pago',
         'fecha_mesa_partes',

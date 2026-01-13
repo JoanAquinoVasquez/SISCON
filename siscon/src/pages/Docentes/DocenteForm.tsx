@@ -31,6 +31,8 @@ const docenteSchema = z.object({
   genero: z.enum(['M', 'F']),
   dni: z.string().length(8, 'El DNI debe tener 8 dígitos'),
   numero_telefono: z.string().optional(),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  fecha_nacimiento: z.string().optional(),
   tipo_docente: z.enum(['interno', 'externo', 'interno_enfermeria', 'externo_enfermeria']),
 });
 
@@ -65,8 +67,9 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
           apellido_materno: docente.apellido_materno,
           titulo_profesional: docente.titulo_profesional || '',
           genero: docente.genero,
-          dni: docente.dni,
           numero_telefono: docente.numero_telefono || '',
+          email: docente.email || '',
+          fecha_nacimiento: docente.fecha_nacimiento || '',
           tipo_docente: docente.tipo_docente,
         });
       } else {
@@ -78,6 +81,8 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
           genero: 'M',
           dni: '',
           numero_telefono: '',
+          email: '',
+          fecha_nacimiento: '',
           tipo_docente: 'interno',
         });
       }
@@ -177,6 +182,20 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="fecha_nacimiento">Fecha de Nacimiento</Label>
+              <Input
+                id="fecha_nacimiento"
+                type="date"
+                {...register('fecha_nacimiento')}
+              />
+              {errors.fecha_nacimiento && (
+                <p className="text-sm text-destructive">{errors.fecha_nacimiento.message}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="numero_telefono">Teléfono</Label>
               <Input
                 id="numero_telefono"
@@ -185,6 +204,19 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
               />
               {errors.numero_telefono && (
                 <p className="text-sm text-destructive">{errors.numero_telefono.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register('email')}
+                placeholder="ejemplo@correo.com"
+              />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
               )}
             </div>
           </div>

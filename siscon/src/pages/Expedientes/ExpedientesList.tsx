@@ -102,7 +102,7 @@ export default function ExpedientesList() {
     const variants: Record<string, any> = {
       descripcion: { variant: 'secondary', label: 'Descripción' },
       presentacion: { variant: 'default', label: 'Presentación' },
-      conformidad: { variant: 'warning', label: 'Conformidad' },
+      conformidad: { variant: 'tertiary', label: 'Conformidad' },
       resolucion: { variant: 'success', label: 'Resolución' },
     };
     const config = variants[tipo] || variants.descripcion;
@@ -113,8 +113,8 @@ export default function ExpedientesList() {
     if (!estado) return <span className="text-gray-400">-</span>;
 
     const variants: Record<string, any> = {
-      pendiente: { variant: 'secondary', label: 'Pendiente' },
-      en_proceso: { variant: 'warning', label: 'En Proceso' },
+      pendiente: { variant: 'warning', label: 'Pendiente' },
+      en_proceso: { variant: 'default', label: 'En Proceso' },
       completado: { variant: 'success', label: 'Completado' },
     };
     const config = variants[estado] || variants.pendiente;

@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::table('pagos_docentes', function (Blueprint $table) {
             $table->renameColumn('numero_oficio_pago_direccion', 'numero_expediente_nota_pago');
+            $table->renameColumn('numero_oficio_pago_direccion_url', 'numero_expediente_nota_pago_url');
             $table->renameColumn('fecha_pago', 'fecha_constancia_pago');
         });
     }

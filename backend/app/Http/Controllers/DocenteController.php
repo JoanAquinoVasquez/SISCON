@@ -51,8 +51,10 @@ class DocenteController extends Controller
             'apellido_materno' => 'required|string|min:2',
             'titulo_profesional' => 'nullable|string',
             'genero' => 'required|in:M,F',
+            'fecha_nacimiento' => 'nullable|date',
             'dni' => 'nullable|string|size:8|unique:docentes,dni',
             'numero_telefono' => 'nullable|string',
+            'email' => 'nullable|email',
             'tipo_docente' => 'required|in:interno,externo,interno_enfermeria,externo_enfermeria',
             'lugar_procedencia_id' => 'nullable|exists:lugares_procedencia,id',
         ]);
@@ -90,8 +92,10 @@ class DocenteController extends Controller
             'apellido_materno' => 'sometimes|string|min:2',
             'titulo_profesional' => 'nullable|string',
             'genero' => 'sometimes|in:M,F',
+            'fecha_nacimiento' => 'nullable|date',
             'dni' => 'nullable|string|size:8|unique:docentes,dni,' . $id,
             'numero_telefono' => 'nullable|string',
+            'email' => 'nullable|email',
             'tipo_docente' => 'sometimes|in:interno,externo,interno_enfermeria,externo_enfermeria',
             'lugar_procedencia_id' => 'nullable|exists:lugares_procedencia,id',
         ]);

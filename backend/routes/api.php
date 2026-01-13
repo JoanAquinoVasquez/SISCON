@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('pagos-docentes/{id}/generar-resolucion', [PagoDocenteController::class, 'generateResolucion']);
     Route::post('pagos-docentes/{id}/generar-resolucion-aceptacion', [PagoDocenteController::class, 'generateResolucionAceptacion']);
     Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
+    Route::get('pagos-docentes/exportar-excel', [PagoDocenteController::class, 'exportExcel']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 
     // File Upload

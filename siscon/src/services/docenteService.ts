@@ -9,6 +9,7 @@ export interface Docente {
   genero: "M" | "F";
   dni: string;
   numero_telefono?: string;
+  email?: string;
   tipo_docente:
     | "interno"
     | "externo"
@@ -17,6 +18,7 @@ export interface Docente {
   titulo_profesional?: string;
   lugar_procedencia_id?: number;
   pagos?: any[];
+  fecha_nacimiento?: string;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,7 @@ export interface CreateDocenteDto {
   genero: "M" | "F";
   dni?: string;
   numero_telefono?: string;
+  email?: string;
   tipo_docente:
     | "interno"
     | "externo"
@@ -35,6 +38,7 @@ export interface CreateDocenteDto {
     | "externo_enfermeria";
   titulo_profesional?: string;
   lugar_procedencia_id?: number;
+  fecha_nacimiento?: string;
 }
 
 export interface UpdateDocenteDto extends Partial<CreateDocenteDto> {}

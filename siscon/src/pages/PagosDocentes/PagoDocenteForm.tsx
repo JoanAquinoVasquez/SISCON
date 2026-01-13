@@ -162,6 +162,8 @@ export default function PagoDocenteForm() {
     numero_oficio_contabilidad: '',
     numero_oficio_contabilidad_url: '',
     fecha_oficio_contabilidad: '',
+    oficio_direccion_exp_docentes: '',
+    oficio_direccion_exp_docentes_url: '',
   });
 
   // Documentos externos
@@ -191,6 +193,8 @@ export default function PagoDocenteForm() {
     numero_oficio_contabilidad: '',
     numero_oficio_contabilidad_url: '',
     fecha_oficio_contabilidad: '',
+    oficio_direccion_exp_docentes: '',
+    oficio_direccion_exp_docentes_url: '',
   });
 
   // Cargar datos si es edición
@@ -277,6 +281,8 @@ export default function PagoDocenteForm() {
             numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
             numero_oficio_contabilidad_url: data.numero_oficio_contabilidad_url || '',
             fecha_oficio_contabilidad: formatDateForInput(data.fecha_oficio_contabilidad),
+            oficio_direccion_exp_docentes: data.oficio_direccion_exp_docentes || '',
+            oficio_direccion_exp_docentes_url: data.oficio_direccion_exp_docentes_url || '',
           });
 
           // Poblar documentos externos solo si es externo
@@ -306,6 +312,8 @@ export default function PagoDocenteForm() {
               numero_oficio_contabilidad: data.numero_oficio_contabilidad || '',
               numero_oficio_contabilidad_url: data.numero_oficio_contabilidad_url || '',
               fecha_oficio_contabilidad: formatDateForInput(data.fecha_oficio_contabilidad),
+              oficio_direccion_exp_docentes: data.oficio_direccion_exp_docentes || '',
+              oficio_direccion_exp_docentes_url: data.oficio_direccion_exp_docentes_url || '',
             });
           }
 
@@ -833,9 +841,23 @@ export default function PagoDocenteForm() {
                             : setDocExterno({ ...docExterno, fecha_oficio_contabilidad: e.target.value })}
                         />
                       </div>
+
                     </>
                   )}
                 </div>
+                <DocumentField
+                  label="Oficio Dirección Exp. Docentes"
+                  placeholder="001-DIR-2026"
+                  value={docente?.tipo_docente === 'interno' ? docInterno.oficio_direccion_exp_docentes : docExterno.oficio_direccion_exp_docentes}
+                  onChange={(v: string) => docente?.tipo_docente === 'interno'
+                    ? setDocInterno({ ...docInterno, oficio_direccion_exp_docentes: v })
+                    : setDocExterno({ ...docExterno, oficio_direccion_exp_docentes: v })}
+                  urlValue={docente?.tipo_docente === 'interno' ? docInterno.oficio_direccion_exp_docentes_url : docExterno.oficio_direccion_exp_docentes_url}
+                  onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                    ? setDocInterno({ ...docInterno, oficio_direccion_exp_docentes_url: v })
+                    : setDocExterno({ ...docExterno, oficio_direccion_exp_docentes_url: v })}
+                  showUpload={true}
+                />
               </section>
             </div>
           </TabPanel>
@@ -867,7 +889,7 @@ export default function PagoDocenteForm() {
                   <Label className="text-sm">N° Exp SIAF</Label>
                   <Input
                     value={numeroExpSiaf}
-                    placeholder="0001"
+                    placeholder="0001-2026"
                     onChange={(e) => setNumeroExpSiaf(e.target.value)}
                     className="h-9"
                   />

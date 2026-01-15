@@ -14,13 +14,15 @@ return new class extends Migration {
             $table->id();
 
             // Datos personales
+            $table->string('titulo_profesional', 50)->nullable();
             $table->string('nombres');
             $table->string('apellido_paterno');
             $table->string('apellido_materno');
-            $table->string('titulo_profesional', 50)->nullable();
+            $table->string('email')->nullable();
             $table->enum('genero', ['M', 'F', 'Otro'])->nullable();
             $table->string('dni', 8)->nullable()->unique();
             $table->string('numero_telefono', 20)->nullable();
+            $table->date('fecha_nacimiento')->nullable();
 
             // Clasificación
             $table->enum('tipo_docente', [
@@ -41,6 +43,10 @@ return new class extends Migration {
 
             $table->index('tipo_docente');
             $table->index('dni');
+            $table->index('nombres');
+            $table->index('apellido_paterno');
+            $table->index('apellido_materno');
+            $table->index('genero');
         });
     }
 

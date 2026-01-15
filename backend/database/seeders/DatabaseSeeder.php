@@ -24,6 +24,8 @@ class DatabaseSeeder extends Seeder
             SemestreCursoSeeder::class,
             CursosSeeder::class,
             DocenteSeeder::class,
+            SegundaEspecialidadSemestreCursoSeeder::class,
+            DoctoradoSemestreCursoSeeder::class,
         ]);
     }
 }

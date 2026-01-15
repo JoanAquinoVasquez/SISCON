@@ -189,8 +189,6 @@ class PagoDocenteController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        Log::info('Update PagoDocente Payload:', $request->all());
-        Log::info('Periodo received:', ['periodo' => $request->periodo]);
         $pago = PagoDocente::find($id);
 
         if (!$pago) {

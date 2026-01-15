@@ -48,8 +48,11 @@ return new class extends Migration {
             $table->text('numero_oficio_conformidad_coordinador_url')->nullable();
             $table->string('numero_oficio_conformidad_direccion')->nullable();
             $table->text('numero_oficio_conformidad_direccion_url')->nullable();
-            $table->string('numero_resolucion')->nullable();
+
+            $table->string('numero_resolucion_pago')->nullable();
+            $table->string('numero_resolucion_aprobacion')->nullable();
             $table->text('numero_resolucion_url')->nullable();
+
             $table->date('fecha_resolucion')->nullable();
             $table->string('numero_oficio_contabilidad')->nullable();
             $table->text('numero_oficio_contabilidad_url')->nullable();
@@ -64,15 +67,24 @@ return new class extends Migration {
             $table->text('numero_pedido_servicio_url')->nullable();
 
             // Documento recibido
-            $table->string('numero_oficio_pago_direccion')->nullable();
+            $table->string('numero_expediente_nota_pago')->nullable();
             $table->text('numero_expediente_nota_pago_url')->nullable();
             $table->string('orden_servicio')->nullable();
             $table->string('acta_conformidad')->nullable();
             $table->string('numero_exp_siaf')->nullable();
             $table->string('nota_pago')->nullable();
+            $table->string('nota_pago_2')->nullable();
+            $table->date('fecha_constancia_pago')->nullable();
+            $table->date('fecha_nota_pago')->nullable();
+            $table->date('fecha_nota_pago_2')->nullable();
 
             $table->timestamps();
             $table->softDeletes();
+
+            $table->string('oficio_direccion_exp_docentes')->nullable();
+            $table->string('oficio_direccion_exp_docentes_url')->nullable();
+            $table->date('fecha_resolucion_aprobacion')->nullable();
+            $table->date('fecha_mesa_partes')->nullable();
 
             // Índices
             $table->index(['docente_id', 'periodo']);

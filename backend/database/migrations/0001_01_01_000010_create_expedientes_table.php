@@ -16,7 +16,7 @@ return new class extends Migration {
             // Información del documento
             $table->string('numero_expediente_mesa_partes')->nullable();
             $table->string('numero_documento');
-            $table->date('fecha_documento');
+            $table->date('fecha_mesa_partes');
             $table->date('fecha_recepcion_contabilidad');
             $table->string('remitente'); // quien escribe
 
@@ -47,7 +47,7 @@ return new class extends Migration {
 
             // Índices
             $table->index('tipo_asunto');
-            $table->index('fecha_documento');
+            $table->index('fecha_mesa_partes');
             $table->index('docente_id');
             $table->index('curso_id');
         });

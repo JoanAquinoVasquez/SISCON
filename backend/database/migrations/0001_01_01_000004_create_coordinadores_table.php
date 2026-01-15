@@ -30,6 +30,10 @@ return new class extends Migration {
 
             $table->index('tipo_coordinador');
             $table->index('dni');
+            $table->index('nombres');
+            $table->index('apellido_paterno');
+            $table->index('apellido_materno');
+            $table->index('genero');
         });
     }
 

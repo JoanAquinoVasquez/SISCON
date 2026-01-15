@@ -42,7 +42,6 @@ import {
   Pencil,
   Trash2,
   FileText,
-  Clipboard,
   ChevronLeft,
   ChevronRight,
   Loader2,

@@ -261,7 +261,8 @@ class Expediente extends Model
                 'costo_por_hora' => 0, // Se actualizará después
                 'importe_total' => 0, // Se calculará después
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
-                'numero_oficio_conformidad_coordinador' => $this->numero_oficio_conformidad_coordinador,
+                'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
+                'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
                 'estado' => 'en_proceso',
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,

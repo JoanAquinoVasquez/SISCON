@@ -7,12 +7,21 @@ use App\Models\Docente;
 use App\Models\Curso;
 use App\Models\PagoDocente;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 
 class ExpedienteController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
+    protected $googleSheetsService;
+
+    public function __construct(\App\Services\GoogleSheetsService $googleSheetsService)
+    {
+        $this->googleSheetsService = $googleSheetsService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -165,6 +174,9 @@ class ExpedienteController extends Controller
                     }
 
                     $expedientes[] = $expediente->load(['docente', 'curso', 'pagoDocente']);
+
+                    // Guardar en Google Sheets
+                    $this->saveToGoogleSheets($expediente);
                 }
 
                 DB::commit();
@@ -208,6 +220,9 @@ class ExpedienteController extends Controller
 
                 DB::commit();
 
+                // Guardar en Google Sheets
+                $this->saveToGoogleSheets($expediente);
+
                 return response()->json([
                     'message' => 'Expediente registrado exitosamente',
                     'data' => $expediente->load(['docente', 'curso', 'pagoDocente']),
@@ -221,6 +236,112 @@ class ExpedienteController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function saveToGoogleSheets($expediente)
+    {
+        // Cargar relaciones necesarias si no están cargadas
+        $expediente->loadMissing([
+            'docente',
+            'curso',
+            'pagoDocente',
+            'semestre.programa.grado'
+        ]);
+
+        $estado = $expediente->pagoDocente->estado ?? 'PENDIENTE';
+        $numeroExpediente = $expediente->numero_expediente_mesa_partes;
+        $fechaMP = $expediente->fecha_mesa_partes ? $expediente->fecha_mesa_partes->format('d/m/Y') : '';
+        $numeroDocumento = $expediente->numero_documento;
+        $fechaRecepcion = $expediente->fecha_recepcion_contabilidad ? $expediente->fecha_recepcion_contabilidad->format('d/m/Y') : '';
+        $nombre = $expediente->remitente;
+
+        $asunto = $this->generarAsunto($expediente);
+
+        $data = [
+            strtoupper($estado),
+            $numeroExpediente,
+            $fechaMP,
+            $numeroDocumento,
+            $fechaRecepcion,
+            $nombre,
+            $asunto,
+        ];
+
+        $this->googleSheetsService->appendExpediente($data);
+    }
+
+    private function generarAsunto($expediente)
+    {
+        if ($expediente->tipo_asunto === 'descripcion') {
+            return $expediente->descripcion_asunto;
+        }
+
+        $docente = $expediente->docente;
+        $curso = $expediente->curso;
+        $programa = $expediente->semestre->programa ?? null;
+        $grado = $programa ? ($programa->grado->nombre ?? '') : '';
+        $periodo = $programa ? $programa->periodo : '';
+
+        $nombreDocente = $docente ? trim("{$docente->titulo_profesional} {$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}") : 'Docente no especificado';
+        $nombreCurso = $curso ? $curso->nombre : 'Curso no especificado';
+        $nombrePrograma = $programa ? $programa->nombre : '';
+
+        $fechasFormat = $this->formatearFechas($expediente->fechas_ensenanza);
+
+        $texto = "";
+
+        if ($expediente->tipo_asunto === 'presentacion') {
+            $texto = "Presentación del docente {$nombreDocente} para enseñar el curso {$nombreCurso} del programa de {$grado} {$nombrePrograma} {$periodo}.";
+
+            // Agregar oficio de coordinador si existe (se guarda en PagoDocente o se pasó en el request,
+            // pero al guardar ya se procesó en procesarPresentacion y se guardó en PagoDocente)
+            if ($expediente->pagoDocente && $expediente->pagoDocente->numero_oficio_presentacion_coordinador) {
+                $texto .= " Con Oficio N° " . $expediente->pagoDocente->numero_oficio_presentacion_coordinador . ".";
+            }
+        } elseif ($expediente->tipo_asunto === 'conformidad') {
+            $texto = "Conformidad del docente {$nombreDocente} por la enseñanza del curso {$nombreCurso} del programa de {$grado} {$nombrePrograma} {$periodo}.";
+
+            if ($expediente->pagoDocente) {
+                if ($expediente->pagoDocente->numero_oficio_conformidad_coordinador) {
+                    $texto .= " Con Oficio de Coordinador N° " . $expediente->pagoDocente->numero_oficio_conformidad_coordinador . ".";
+                }
+                if ($expediente->pagoDocente->numero_oficio_conformidad_facultad) {
+                    $texto .= " Con Oficio de Facultad N° " . $expediente->pagoDocente->numero_oficio_conformidad_facultad . ".";
+                }
+            }
+        } elseif ($expediente->tipo_asunto === 'devolucion') {
+            return "Devolución - " . ($expediente->descripcion_asunto ?? '');
+        }
+
+        if ($fechasFormat) {
+            $texto .= " Fechas: " . $fechasFormat . ".";
+        }
+
+        return $texto;
+    }
+
+    private function formatearFechas($fechas)
+    {
+        if (empty($fechas) || !is_array($fechas)) {
+            return '';
+        }
+
+        // Agrupar por mes
+        $meses = [];
+        foreach ($fechas as $fecha) {
+            $carbon = \Carbon\Carbon::parse($fecha);
+            $nombreMes = ucfirst($carbon->locale('es')->monthName);
+            $dia = $carbon->day;
+            $meses[$nombreMes][] = $dia;
+        }
+
+        $partes = [];
+        foreach ($meses as $mes => $dias) {
+            sort($dias);
+            $partes[] = "{$mes}: " . implode(', ', $dias);
+        }
+
+        return implode('; ', $partes);
     }
 
     /**
@@ -515,8 +636,6 @@ class ExpedienteController extends Controller
     {
         $query = $request->get('q', '');
         $facultadCodigo = trim($request->get('facultad_codigo', ''));
-
-        \Illuminate\Support\Facades\Log::info('buscarCursos', ['query' => $query, 'facultad_codigo' => $facultadCodigo]);
 
         if (strlen($query) < 2) {
             return response()->json(['data' => []], 200);

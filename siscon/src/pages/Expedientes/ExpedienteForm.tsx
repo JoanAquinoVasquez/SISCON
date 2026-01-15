@@ -18,6 +18,7 @@ export default function ExpedienteForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
 
   // Tab state
   const [activeTab, setActiveTab] = useState('general');
@@ -63,6 +64,7 @@ export default function ExpedienteForm() {
 
   useEffect(() => {
     if (id) {
+      setLoadingData(true);
       fetchExpediente();
     }
   }, [id]);
@@ -262,6 +264,8 @@ export default function ExpedienteForm() {
     } catch (error) {
       console.error('Error al cargar expediente:', error);
       showToast('Error al cargar el expediente', 'error');
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -456,6 +460,14 @@ export default function ExpedienteForm() {
     { id: 'general', label: 'Información General', icon: '📋' },
     { id: 'asunto', label: 'Asunto', icon: '📝' },
   ];
+
+  if (loadingData) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

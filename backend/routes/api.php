@@ -35,6 +35,8 @@ Route::get('/', function () {
     ]);
 });
 
+
+
 // Authentication Routes
 Route::get('auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('auth/google/callback', [AuthController::class, 'handleGoogleCallback']);

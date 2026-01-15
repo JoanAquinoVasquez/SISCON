@@ -26,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, MoreVertical, Eye } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { coordinadorService, type Coordinador } from '../../services/coordinadorService';
 import { CoordinadorForm } from './CoordinadorForm';
 import { useToast } from '../../context/ToastContext';

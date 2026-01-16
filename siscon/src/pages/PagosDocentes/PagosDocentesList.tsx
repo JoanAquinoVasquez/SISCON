@@ -47,7 +47,6 @@ import {
   Loader2,
   MoreVertical,
   Download,
-  FileSpreadsheet
 } from 'lucide-react';
 
 // Función para formatear fechas en formato legible
@@ -394,18 +393,6 @@ export default function PagosDocentesList() {
     }
   };
 
-  // Enviar a Google Sheets
-  const handleEnviarASheets = async (id: number) => {
-    const toastId = toast.loading('Enviando a Google Sheets...');
-    try {
-      await axios.post(`/pagos-docentes/${id}/enviar-sheets`);
-      toast.success('Enviado a Google Sheets exitosamente', { id: toastId });
-    } catch (error) {
-      console.error('Error al enviar a Sheets:', error);
-      toast.error('Error al enviar a Google Sheets', { id: toastId });
-    }
-  };
-
   const handleViewOficioPagoContabilidad = (numero_expediente_nota_pago_url: string) => {
     console.log(numero_expediente_nota_pago_url);
     // Redirigir al link donde está subido el archivo numero_expediente_nota_pago_url
@@ -577,9 +564,6 @@ export default function PagosDocentesList() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEnviarASheets(pago.id)}>
-                          <FileSpreadsheet className="mr-2 h-4 w-4" /> Enviar a Sheets
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDelete(pago.id)}>
                           <Trash2 className="mr-2 h-4 w-4" /> Eliminar

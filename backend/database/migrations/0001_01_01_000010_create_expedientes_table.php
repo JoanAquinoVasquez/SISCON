@@ -41,6 +41,7 @@ return new class extends Migration {
             $table->enum('tipo_devolucion', ['inscripcion', 'idiomas', 'grados_titulos'])->nullable();
             $table->decimal('importe_devolucion', 10, 2)->nullable();
             $table->string('numero_voucher')->nullable();
+            $table->foreignId('devolucion_id')->nullable()->constrained('devoluciones')->onDelete('set null');
 
             $table->timestamps();
             $table->softDeletes();

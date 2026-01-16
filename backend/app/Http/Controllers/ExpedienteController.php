@@ -245,10 +245,16 @@ class ExpedienteController extends Controller
             'docente',
             'curso',
             'pagoDocente',
-            'semestre.programa.grado'
+            'semestre.programa.grado',
+            'devolucion'
         ]);
 
-        $estado = $expediente->pagoDocente->estado ?? 'PENDIENTE';
+        $estado = 'PENDIENTE';
+        if ($expediente->tipo_asunto === 'devolucion') {
+            $estado = $expediente->devolucion->estado ?? 'PENDIENTE';
+        } else {
+            $estado = $expediente->pagoDocente->estado ?? 'PENDIENTE';
+        }
         $numeroExpediente = $expediente->numero_expediente_mesa_partes;
         $fechaMP = $expediente->fecha_mesa_partes ? $expediente->fecha_mesa_partes->format('d/m/Y') : '';
         $numeroDocumento = $expediente->numero_documento;
@@ -276,9 +282,13 @@ class ExpedienteController extends Controller
             return $expediente->descripcion_asunto;
         }
 
+        if ($expediente->tipo_asunto === 'devolucion') {
+            return "Devolución - " . ($expediente->descripcion_asunto ?? '');
+        }
+
         $docente = $expediente->docente;
         $curso = $expediente->curso;
-        $programa = $expediente->semestre->programa ?? null;
+        $programa = $expediente->semestre ? $expediente->semestre->programa : null;
         $grado = $programa ? ($programa->grado->nombre ?? '') : '';
         $periodo = $programa ? $programa->periodo : '';
 
@@ -309,8 +319,6 @@ class ExpedienteController extends Controller
                     $texto .= " Con Oficio de Facultad N° " . $expediente->pagoDocente->numero_oficio_conformidad_facultad . ".";
                 }
             }
-        } elseif ($expediente->tipo_asunto === 'devolucion') {
-            return "Devolución - " . ($expediente->descripcion_asunto ?? '');
         }
 
         if ($fechasFormat) {

@@ -15,10 +15,10 @@ class DocumentoController extends Controller
 
         // Define the types of oficios and their corresponding columns
         $types = [
-            'presentacion_facultad' => ['col' => 'numero_oficio_presentacion_facultad', 'url' => 'numero_oficio_presentacion_facultad_url', 'label' => 'Presentación Facultad'],
-            'conformidad_facultad' => ['col' => 'numero_oficio_conformidad_facultad', 'url' => 'numero_oficio_conformidad_facultad_url', 'label' => 'Conformidad Facultad'],
-            'conformidad_direccion' => ['col' => 'numero_oficio_conformidad_direccion', 'url' => 'numero_oficio_conformidad_direccion_url', 'label' => 'Conformidad Dirección'],
-            'expediente_nota_pago' => ['col' => 'numero_expediente_nota_pago', 'url' => 'numero_expediente_nota_pago_url', 'label' => 'Expediente Nota de Pago'],
+            // 'presentacion_facultad' => ['col' => 'numero_oficio_presentacion_facultad', 'url' => 'numero_oficio_presentacion_facultad_url', 'label' => 'Presentación Facultad'],
+            // 'conformidad_facultad' => ['col' => 'numero_oficio_conformidad_facultad', 'url' => 'numero_oficio_conformidad_facultad_url', 'label' => 'Conformidad Facultad'],
+            // 'conformidad_direccion' => ['col' => 'numero_oficio_conformidad_direccion', 'url' => 'numero_oficio_conformidad_direccion_url', 'label' => 'Conformidad Dirección'],
+            // 'expediente_nota_pago' => ['col' => 'numero_expediente_nota_pago', 'url' => 'numero_expediente_nota_pago_url', 'label' => 'Expediente Nota de Pago'],
             'contabilidad' => ['col' => 'numero_oficio_contabilidad', 'url' => 'numero_oficio_contabilidad_url', 'label' => 'Contabilidad'],
         ];
 
@@ -27,6 +27,11 @@ class DocumentoController extends Controller
         foreach ($types as $typeKey => $config) {
             $query = DB::table('pagos_docentes')
                 ->join('docentes', 'pagos_docentes.docente_id', '=', 'docentes.id')
+                ->join('cursos', 'pagos_docentes.curso_id', '=', 'cursos.id')
+                ->join('curso_semestre', 'cursos.id', '=', 'curso_semestre.curso_id')
+                ->join('semestres', 'curso_semestre.semestre_id', '=', 'semestres.id')
+                ->join('programas', 'semestres.programa_id', '=', 'programas.id')
+                ->join('grados', 'programas.grado_id', '=', 'grados.id')
                 ->select(
                     'pagos_docentes.id as pago_id',
                     "pagos_docentes.{$config['col']} as numero",
@@ -34,11 +39,15 @@ class DocumentoController extends Controller
                     DB::raw("'$typeKey' as tipo_codigo"),
                     DB::raw("'{$config['label']}' as tipo_label"),
                     'pagos_docentes.created_at as fecha_registro',
-                    DB::raw("CONCAT(docentes.titulo_profesional, ' ', docentes.nombres, ' ', docentes.apellido_paterno, ' ', docentes.apellido_materno) as docente_nombre")
+                    DB::raw("CONCAT(docentes.titulo_profesional, ' ', docentes.nombres, ' ', docentes.apellido_paterno, ' ', docentes.apellido_materno) as docente_nombre"),
+                    'grados.nombre as grado_nombre',
+                    'programas.nombre as programa_nombre',
+                    'pagos_docentes.periodo as periodo'
                 )
                 ->whereNotNull("pagos_docentes.{$config['col']}")
                 ->where("pagos_docentes.{$config['col']}", '!=', '')
-                ->orderBy("pagos_docentes.created_at", 'desc');
+                ->orderBy("pagos_docentes.created_at", 'desc')
+                ->distinct(); // Add distinct to avoid duplicates from joins
 
             if ($search) {
                 $query->where("pagos_docentes.{$config['col']}", 'like', "%{$search}%");
@@ -88,6 +97,11 @@ class DocumentoController extends Controller
         foreach ($types as $typeKey => $config) {
             $query = DB::table('pagos_docentes')
                 ->join('docentes', 'pagos_docentes.docente_id', '=', 'docentes.id')
+                ->join('cursos', 'pagos_docentes.curso_id', '=', 'cursos.id')
+                ->join('curso_semestre', 'cursos.id', '=', 'curso_semestre.curso_id')
+                ->join('semestres', 'curso_semestre.semestre_id', '=', 'semestres.id')
+                ->join('programas', 'semestres.programa_id', '=', 'programas.id')
+                ->join('grados', 'programas.grado_id', '=', 'grados.id')
                 ->select(
                     'pagos_docentes.id as pago_id',
                     "pagos_docentes.{$config['col']} as numero",
@@ -96,11 +110,15 @@ class DocumentoController extends Controller
                     DB::raw("'$typeKey' as tipo_codigo"),
                     DB::raw("'{$config['label']}' as tipo_label"),
                     'pagos_docentes.created_at as fecha_registro',
-                    DB::raw("CONCAT(docentes.nombres, ' ', docentes.apellido_paterno, ' ', docentes.apellido_materno) as docente_nombre")
+                    DB::raw("CONCAT(docentes.nombres, ' ', docentes.apellido_paterno, ' ', docentes.apellido_materno) as docente_nombre"),
+                    'grados.nombre as grado_nombre',
+                    'programas.nombre as programa_nombre',
+                    'pagos_docentes.periodo as periodo'
                 )
                 ->whereNotNull("pagos_docentes.{$config['col']}")
                 ->where("pagos_docentes.{$config['col']}", '!=', '')
-                ->orderBy("pagos_docentes.{$config['date']}", 'desc');
+                ->orderBy("pagos_docentes.{$config['date']}", 'desc')
+                ->distinct(); // Add distinct to avoid duplicates from joins
 
             if ($search) {
                 $query->where("pagos_docentes.{$config['col']}", 'like', "%{$search}%");

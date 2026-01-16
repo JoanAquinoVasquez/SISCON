@@ -23,6 +23,7 @@ const menuItems = [
   { icon: UserCog, label: 'Docentes', path: '/docentes' },
   { icon: FileText, label: 'Oficios', path: '/documentos/oficios' },
   { icon: FileCheck, label: 'Resoluciones', path: '/documentos/resoluciones' },
+  { icon: DollarSign, label: 'Devoluciones', path: '/devoluciones' },
 ];
 
 interface SidebarProps {

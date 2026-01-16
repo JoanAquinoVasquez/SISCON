@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Search, Loader2, FileCheck, Eye } from 'lucide-react';
+import { Search, Loader2, FileCheck, Eye, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface Resolucion {
     pago_id: number;
@@ -17,6 +18,9 @@ interface Resolucion {
     tipo_label: string;
     fecha_registro: string;
     docente_nombre: string;
+    grado_nombre: string;
+    programa_nombre: string;
+    periodo: string;
 }
 
 export default function ResolucionesList() {
@@ -27,6 +31,7 @@ export default function ResolucionesList() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [exportingId, setExportingId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchResoluciones();
@@ -46,6 +51,54 @@ export default function ResolucionesList() {
             console.error('Error al cargar resoluciones:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async (resolucion: Resolucion) => {
+        try {
+            setExportingId(resolucion.pago_id);
+            let endpoint = '';
+
+            if (resolucion.tipo_codigo === 'aprobacion') {
+                endpoint = `/pagos-docentes/${resolucion.pago_id}/generar-resolucion-aceptacion`;
+            } else if (resolucion.tipo_codigo === 'pago') {
+                endpoint = `/pagos-docentes/${resolucion.pago_id}/generar-resolucion`;
+            } else {
+                toast.error('Tipo de resolución no soportado para exportación');
+                return;
+            }
+
+            const response = await axios.post(endpoint, {}, {
+                responseType: 'blob'
+            });
+
+            // Crear URL del blob y descargar
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Obtener nombre del archivo del header o generar uno
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `Resolucion_${resolucion.numero}.docx`;
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                if (fileNameMatch && fileNameMatch.length === 2) {
+                    fileName = decodeURIComponent(fileNameMatch[1]);
+                }
+            }
+
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Documento descargado correctamente');
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            toast.error('Error al generar el documento');
+        } finally {
+            setExportingId(null);
         }
     };
 
@@ -94,8 +147,9 @@ export default function ResolucionesList() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Número</TableHead>
-                                    <TableHead>Tipo</TableHead>
+                                    <TableHead className='w-1/12'>Tipo</TableHead>
                                     <TableHead>Docente Relacionado</TableHead>
+                                    <TableHead>Programa</TableHead>
                                     <TableHead>Fecha Documento</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
@@ -103,7 +157,7 @@ export default function ResolucionesList() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8">
+                                        <TableCell colSpan={6} className="text-center py-8">
                                             <div className="flex justify-center items-center gap-2">
                                                 <Loader2 className="h-6 w-6 animate-spin" />
                                                 <span>Cargando resoluciones...</span>
@@ -112,7 +166,7 @@ export default function ResolucionesList() {
                                     </TableRow>
                                 ) : resoluciones.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                             No se encontraron resoluciones
                                         </TableCell>
                                     </TableRow>
@@ -131,6 +185,10 @@ export default function ResolucionesList() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>{res.docente_nombre}</TableCell>
+                                            <TableCell>
+                                                <div className="text-sm">{res.grado_nombre} en {res.programa_nombre}</div>
+                                                <div className="text-xs text-muted-foreground">{res.periodo}</div>
+                                            </TableCell>
                                             <TableCell>{formatDate(res.fecha_documento)}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -144,6 +202,19 @@ export default function ResolucionesList() {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleExport(res)}
+                                                        disabled={exportingId === res.pago_id}
+                                                        title="Exportar Word"
+                                                    >
+                                                        {exportingId === res.pago_id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

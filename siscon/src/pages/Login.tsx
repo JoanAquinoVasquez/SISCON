@@ -1,7 +1,8 @@
 // src/pages/Login.tsx
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import "./Login.css"; // <--- IMPORTANTE: Importamos los estilos aquí
 import fondo01 from "../assets/fondo01.webp";
 import fondo02 from "../assets/fondo02.webp";
@@ -9,6 +10,7 @@ import fondo02 from "../assets/fondo02.webp";
 export const Login = () => {
   const { signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentBg, setCurrentBg] = useState(0);
 
   // Array de fondos (imágenes)
@@ -17,6 +19,17 @@ export const Login = () => {
   useEffect(() => {
     if (user) navigate("/dashboard");
   }, [user, navigate]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const error = params.get("error");
+
+    if (error === "unregistered_user") {
+      toast.error("El usuario no está registrado en el sistema. Contacte al administrador.");
+      // Limpiar el parámetro de la URL para que no aparezca el error al recargar
+      navigate("/login", { replace: true });
+    }
+  }, [location, navigate]);
 
   // Cambiar fondo automáticamente cada 5 segundos
   useEffect(() => {
@@ -29,7 +42,8 @@ export const Login = () => {
   const handleLogin = async () => {
     try {
       await signInWithGoogle();
-      navigate("/dashboard");
+      // La redirección ocurre en el backend o AuthCallback, pero por si acaso
+      // navigate("/dashboard"); 
     } catch (error) {
       console.error("Error login", error);
     }

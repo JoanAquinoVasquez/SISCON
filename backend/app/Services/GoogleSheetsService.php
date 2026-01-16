@@ -30,7 +30,7 @@ class GoogleSheetsService
             $client->setClientId(config('google.client_id'));
             $client->setClientSecret(config('google.client_secret'));
             $client->setAccessType('offline');
-            
+
             // Refrescar el token de acceso usando el refresh token
             $client->refreshToken($refreshToken);
             $accessToken = $client->getAccessToken();
@@ -41,11 +41,17 @@ class GoogleSheetsService
             }
 
             // Usar el token refrescado
-            Sheets::setAccessToken($accessToken)
-                  ->spreadsheet($spreadsheetId)
-                  ->sheet($sheetName)
-                  ->append([$data]);
+            // Asegurar que sea una lista de listas y que todos los valores sean strings (null -> '')
+            $cleanData = array_map(function ($item) {
+                return is_null($item) ? '' : (string) $item;
+            }, array_values($data));
 
+            $values = [$cleanData];
+
+            Sheets::setAccessToken($accessToken)
+                ->spreadsheet($spreadsheetId)
+                ->sheet($sheetName)
+                ->append($values);
 
         } catch (\Exception $e) {
             Log::error('Error al guardar en Google Sheets: ' . $e->getMessage());

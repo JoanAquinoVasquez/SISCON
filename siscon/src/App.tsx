@@ -17,6 +17,7 @@ import { useAuth } from './context/AuthContext';
 import { AuthCallback } from './pages/AuthCallback';
 import OficiosList from './pages/Documentos/OficiosList';
 import ResolucionesList from './pages/Documentos/ResolucionesList';
+import DevolucionesList from './pages/Devoluciones/DevolucionesList';
 
 function App() {
   const { user, loading } = useAuth();
@@ -100,6 +101,11 @@ function App() {
           <Route path="documentos/resoluciones" element={
             <ErrorBoundary>
               <ResolucionesList />
+            </ErrorBoundary>
+          } />
+          <Route path="devoluciones" element={
+            <ErrorBoundary>
+              <DevolucionesList />
             </ErrorBoundary>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

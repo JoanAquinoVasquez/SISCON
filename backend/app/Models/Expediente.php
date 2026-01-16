@@ -71,7 +71,7 @@ class Expediente extends Model
 
     public function devolucion()
     {
-        return $this->hasOne(Devolucion::class, 'id', 'devolucion_id');
+        return $this->belongsTo(Devolucion::class);
     }
 
     public function semestre()
@@ -349,6 +349,10 @@ class Expediente extends Model
             'numero_voucher' => $this->numero_voucher,
             'estado' => 'pendiente',
         ]);
+
+        // Vincular expediente con devolucion
+        $this->devolucion_id = $devolucion->id;
+        $this->save();
 
         return $devolucion;
     }

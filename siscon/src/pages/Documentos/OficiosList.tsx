@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Search, Loader2, FileText, Eye } from 'lucide-react';
+import { Search, Loader2, FileText, Eye, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface Oficio {
     pago_id: number;
@@ -16,6 +17,9 @@ interface Oficio {
     tipo_label: string;
     fecha_registro: string;
     docente_nombre: string;
+    grado_nombre: string;
+    programa_nombre: string;
+    periodo: string;
 }
 
 export default function OficiosList() {
@@ -26,6 +30,7 @@ export default function OficiosList() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+    const [exportingId, setExportingId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchOficios();
@@ -45,6 +50,45 @@ export default function OficiosList() {
             console.error('Error al cargar oficios:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleExport = async (oficio: Oficio) => {
+        try {
+            setExportingId(oficio.pago_id);
+            const endpoint = `/pagos-docentes/${oficio.pago_id}/generar-oficio`;
+
+            const response = await axios.post(endpoint, {}, {
+                responseType: 'blob'
+            });
+
+            // Crear URL del blob y descargar
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Obtener nombre del archivo del header o generar uno
+            const contentDisposition = response.headers['content-disposition'];
+            let fileName = `Oficio_${oficio.numero}.docx`;
+            if (contentDisposition) {
+                const fileNameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                if (fileNameMatch && fileNameMatch.length === 2) {
+                    fileName = decodeURIComponent(fileNameMatch[1]);
+                }
+            }
+
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Documento descargado correctamente');
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            toast.error('Error al generar el documento');
+        } finally {
+            setExportingId(null);
         }
     };
 
@@ -95,6 +139,7 @@ export default function OficiosList() {
                                     <TableHead>Número</TableHead>
                                     <TableHead>Tipo</TableHead>
                                     <TableHead>Docente Relacionado</TableHead>
+                                    <TableHead>Programa</TableHead>
                                     <TableHead>Fecha Registro</TableHead>
                                     <TableHead className="text-right">Acciones</TableHead>
                                 </TableRow>
@@ -102,7 +147,7 @@ export default function OficiosList() {
                             <TableBody>
                                 {loading ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8">
+                                        <TableCell colSpan={6} className="text-center py-8">
                                             <div className="flex justify-center items-center gap-2">
                                                 <Loader2 className="h-6 w-6 animate-spin" />
                                                 <span>Cargando oficios...</span>
@@ -111,7 +156,7 @@ export default function OficiosList() {
                                     </TableRow>
                                 ) : oficios.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                             No se encontraron oficios
                                         </TableCell>
                                     </TableRow>
@@ -130,6 +175,10 @@ export default function OficiosList() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell>{oficio.docente_nombre}</TableCell>
+                                            <TableCell>
+                                                <div className="text-sm">{oficio.grado_nombre} en {oficio.programa_nombre}</div>
+                                                <div className="text-xs text-muted-foreground">{oficio.periodo}</div>
+                                            </TableCell>
                                             <TableCell>{formatDate(oficio.fecha_registro)}</TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-2">
@@ -143,6 +192,19 @@ export default function OficiosList() {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => handleExport(oficio)}
+                                                        disabled={exportingId === oficio.pago_id}
+                                                        title="Exportar Word"
+                                                    >
+                                                        {exportingId === oficio.pago_id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-4 w-4" />
+                                                        )}
+                                                    </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

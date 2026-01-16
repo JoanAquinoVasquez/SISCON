@@ -33,16 +33,22 @@ class AuthController extends Controller
     {
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
+            $email = $googleUser->getEmail();
 
-            $user = User::updateOrCreate(
-                ['email' => $googleUser->getEmail()],
-                [
-                    'name' => $googleUser->getName(),
-                    'google_id' => $googleUser->getId(),
-                    'avatar' => $googleUser->getAvatar(),
-                    'password' => null, // Social users don't have a password
-                ]
-            );
+            // Check if user exists
+            $user = User::where('email', $email)->first();
+
+            if (!$user) {
+                // User not found, redirect with error
+                $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
+                return redirect("{$frontendUrl}/siscon/login?error=unregistered_user");
+            }
+
+            // Update user info
+            $user->update([
+                'google_id' => $googleUser->getId(),
+                'avatar' => $googleUser->getAvatar(),
+            ]);
 
             $token = $user->createToken('auth_token')->plainTextToken;
 

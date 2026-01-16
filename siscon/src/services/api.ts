@@ -1,5 +1,5 @@
 // src/services/api.ts
-import { API_URL } from '../config/api';
+import { API_URL } from "../config/api";
 
 export class ApiService {
   private baseUrl: string;
@@ -9,8 +9,8 @@ export class ApiService {
   }
 
   private async getAuthToken(): Promise<string> {
-    const token = localStorage.getItem('auth_token');
-    if (!token) throw new Error('No authenticated user');
+    const token = localStorage.getItem("auth_token");
+    if (!token) throw new Error("No authenticated user");
     return token;
   }
 
@@ -19,32 +19,37 @@ export class ApiService {
     options: RequestInit = {}
   ): Promise<T> {
     const token = await this.getAuthToken();
-    
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
         ...options.headers,
       },
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Error desconocido" }));
       throw new Error(error.message || `HTTP ${response.status}`);
     }
 
     return response.json();
   }
 
-  async get<T>(endpoint: string, options?: { params?: Record<string, any> }): Promise<T> {
+  async get<T>(
+    endpoint: string,
+    options?: { params?: Record<string, any> }
+  ): Promise<T> {
     let url = endpoint;
     if (options?.params) {
       // Filter out undefined/null values
       const cleanParams = Object.entries(options.params)
-        .filter(([_, v]) => v !== undefined && v !== null && v !== '')
+        .filter(([_, v]) => v !== undefined && v !== null && v !== "")
         .reduce((acc, [k, v]) => ({ ...acc, [k]: String(v) }), {});
-      
+
       const queryString = new URLSearchParams(cleanParams).toString();
       if (queryString) {
         url += `?${queryString}`;
@@ -55,21 +60,28 @@ export class ApiService {
 
   async post<T>(endpoint: string, data: any): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async put<T>(endpoint: string, data: any): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'PUT',
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async patch<T>(endpoint: string, data: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 }

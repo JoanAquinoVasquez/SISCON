@@ -164,19 +164,30 @@ class ExpedienteController extends Controller
                     $expediente = Expediente::create($expedienteData);
 
                     // Procesar auto-linking según tipo de asunto
+                    $pago = null;
                     switch ($expediente->tipo_asunto) {
                         case 'presentacion':
-                            $expediente->procesarPresentacion($oficioPresentacionCoordinador);
+                            $pago = $expediente->procesarPresentacion($oficioPresentacionCoordinador);
                             break;
                         case 'conformidad':
-                            $expediente->procesarConformidad($oficioConformidadCoordinador, $oficioConformidadFacultad);
+                            $pago = $expediente->procesarConformidad($oficioConformidadCoordinador, $oficioConformidadFacultad);
                             break;
                     }
 
                     $expedientes[] = $expediente->load(['docente', 'curso', 'pagoDocente']);
 
-                    // Guardar en Google Sheets
+                    // Guardar en Google Sheets (Expediente)
                     $this->saveToGoogleSheets($expediente);
+
+                    // Guardar en Google Sheets (Pago Docente) si corresponde
+                    if ($pago) {
+                        try {
+                            $this->googleSheetsService->appendPagoDocente($pago);
+                        } catch (\Exception $e) {
+                            // Log error but don't fail the request
+                            \Illuminate\Support\Facades\Log::error('Error sending PagoDocente to Sheets: ' . $e->getMessage());
+                        }
+                    }
                 }
 
                 DB::commit();
@@ -200,12 +211,13 @@ class ExpedienteController extends Controller
                 $expediente = Expediente::create($data);
 
                 // Procesar auto-linking según tipo de asunto
+                $pago = null;
                 switch ($expediente->tipo_asunto) {
                     case 'presentacion':
-                        $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
+                        $pago = $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                         break;
                     case 'conformidad':
-                        $expediente->procesarConformidad(
+                        $pago = $expediente->procesarConformidad(
                             $request->numero_oficio_conformidad_coordinador,
                             $request->numero_oficio_conformidad_facultad
                         );
@@ -220,8 +232,17 @@ class ExpedienteController extends Controller
 
                 DB::commit();
 
-                // Guardar en Google Sheets
+                // Guardar en Google Sheets (Expediente)
                 $this->saveToGoogleSheets($expediente);
+
+                // Guardar en Google Sheets (Pago Docente) si corresponde
+                if ($pago) {
+                    try {
+                        $this->googleSheetsService->appendPagoDocente($pago);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error sending PagoDocente to Sheets: ' . $e->getMessage());
+                    }
+                }
 
                 return response()->json([
                     'message' => 'Expediente registrado exitosamente',
@@ -238,7 +259,7 @@ class ExpedienteController extends Controller
         }
     }
 
-    private function saveToGoogleSheets($expediente)
+    private function saveToGoogleSheets($expediente, $isUpdate = false)
     {
         // Cargar relaciones necesarias si no están cargadas
         $expediente->loadMissing([
@@ -264,6 +285,7 @@ class ExpedienteController extends Controller
         $asunto = $this->generarAsunto($expediente);
 
         $data = [
+            $expediente->id, // ID del expediente (columna A)
             strtoupper($estado),
             $numeroExpediente,
             $fechaMP,
@@ -273,8 +295,13 @@ class ExpedienteController extends Controller
             $asunto,
         ];
 
-        $this->googleSheetsService->appendExpediente($data);
+        if ($isUpdate) {
+            $this->googleSheetsService->updateExpediente($data, $expediente->id);
+        } else {
+            $this->googleSheetsService->appendExpediente($data);
+        }
     }
+
 
     private function generarAsunto($expediente)
     {
@@ -541,6 +568,31 @@ class ExpedienteController extends Controller
                             $request->numero_oficio_conformidad_coordinador,
                             $request->numero_oficio_conformidad_facultad
                         );
+                    }
+                }
+            }
+
+            // Sync Expediente with Google Sheets
+            try {
+                $this->saveToGoogleSheets($expediente, true);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error updating Expediente in Sheets: ' . $e->getMessage());
+            }
+
+            // Sync with Google Sheets if a PagoDocente is linked
+            if ($expediente->pago_docente_id) {
+                $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])
+                    ->find($expediente->pago_docente_id);
+
+                if ($pago) {
+                    // Refrescar el modelo y FORZAR recarga de relaciones
+                    $pago->refresh();
+                    $pago->load(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+
+                    try {
+                        $this->googleSheetsService->updatePagoDocente($pago);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('Error sending PagoDocente to Sheets on update: ' . $e->getMessage());
                     }
                 }
             }

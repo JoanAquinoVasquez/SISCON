@@ -234,6 +234,18 @@ class PagoDocenteController extends Controller
 
         $pago->save();
 
+        // Sync with Google Sheets
+        try {
+            // Refrescar el modelo y FORZAR recarga de relaciones (no loadMissing)
+            // Esto es importante cuando se cambia docente_id, curso_id, etc.
+            $pago->refresh();
+            $pago->load(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+
+            $this->googleSheetsService->updatePagoDocente($pago);
+        } catch (\Exception $e) {
+            Log::error('Error updating Google Sheets from PagoDocenteController: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Pago actualizado exitosamente',
             'data' => $pago
@@ -545,5 +557,37 @@ class PagoDocenteController extends Controller
         $fileName = 'pagos_docentes_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         return Excel::download(new PagoDocenteExport($filters), $fileName);
+    }
+
+    protected $googleSheetsService;
+
+    public function __construct(\App\Services\GoogleSheetsService $googleSheetsService)
+    {
+        $this->googleSheetsService = $googleSheetsService;
+    }
+
+    /**
+     * Enviar pago a Google Sheets
+     */
+    /**
+     * Enviar pago a Google Sheets
+     */
+    public function enviarASheets(string $id)
+    {
+        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago no encontrado'], 404);
+        }
+
+        try {
+            $this->googleSheetsService->appendPagoDocente($pago);
+            return response()->json(['message' => 'Enviado a Google Sheets exitosamente'], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al enviar a Google Sheets',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -41,6 +41,14 @@ Route::get('/', function () {
 Route::get('auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
+
+
+
+
+
+
+
+
 // Protected Routes (Require Sanctum Authentication)
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -127,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('pagos-docentes/{id}/generar-resolucion-aceptacion', [PagoDocenteController::class, 'generateResolucionAceptacion']);
     Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
     Route::get('pagos-docentes/exportar-excel', [PagoDocenteController::class, 'exportExcel']);
+    Route::post('pagos-docentes/{id}/enviar-sheets', [PagoDocenteController::class, 'enviarASheets']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 
     // File Upload

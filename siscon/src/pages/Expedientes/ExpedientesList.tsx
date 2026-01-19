@@ -232,7 +232,7 @@ export default function ExpedientesList() {
                     </TableCell>
                     <TableCell>
                       {exp.curso_nombre}
-                      <div className="text-xs text-muted-foreground">{exp.grado_nombre} en {exp.programa_nombre} {exp.periodo}</div>
+                      <div className="text-xs text-muted-foreground">{exp.grado_nombre ? exp.grado_nombre : ''} {exp.grado_nombre ? 'en' : '-'} {exp.programa_nombre ? exp.programa_nombre : ''} {exp.periodo ? exp.periodo : ''}</div>
                     </TableCell>
                     <TableCell>{getEstadoPagoBadge(exp.estado_pago)}</TableCell>
                     <TableCell className="text-right">

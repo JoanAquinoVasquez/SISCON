@@ -33,7 +33,6 @@ class DocenteController extends Controller
         }
 
         $perPage = $request->query('per_page', 10);
-        $perPage = $request->query('per_page', 10);
         $docentes = $query->with(['pagos.curso.semestres.programa.grado'])
             ->withCount('pagos')
             ->orderBy('pagos_count', 'desc')

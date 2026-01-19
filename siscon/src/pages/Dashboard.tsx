@@ -9,61 +9,61 @@ export function Dashboard() {
   const { data: usersData } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const response = await api.get<{ data: any[] }>('/users');
-      return response.data;
+      const response = await api.get<any>('/users');
+      return response;
     },
   });
 
   const { data: programasData } = useQuery({
     queryKey: ['programas'],
     queryFn: async () => {
-      const response = await api.get<{ data: any[] }>('/programas');
-      return response.data;
+      const response = await api.get<any>('/programas');
+      return response;
     },
   });
 
   const { data: cursosData } = useQuery({
     queryKey: ['cursos'],
     queryFn: async () => {
-      const response = await api.get<{ data: any[] }>('/cursos');
-      return response.data;
+      const response = await api.get<any>('/cursos');
+      return response;
     },
   });
 
   const { data: docentesData } = useQuery({
     queryKey: ['docentes'],
     queryFn: async () => {
-      const response = await api.get<{ data: any[] }>('/docentes');
-      return response.data;
+      const response = await api.get<any>('/docentes');
+      return response;
     },
   });
 
   const stats = [
-    { 
-      title: 'Usuarios', 
-      value: usersData?.length?.toString() || '0', 
-      icon: Users, 
+    {
+      title: 'Usuarios',
+      value: usersData?.total?.toString() || usersData?.data?.length?.toString() || '0',
+      icon: Users,
       gradient: 'from-blue-500 to-cyan-500',
       bgGradient: 'from-blue-50 to-cyan-50'
     },
-    { 
-      title: 'Programas', 
-      value: programasData?.length?.toString() || '0', 
-      icon: Building2, 
+    {
+      title: 'Programas',
+      value: programasData?.total?.toString() || programasData?.data?.length?.toString() || '0',
+      icon: Building2,
       gradient: 'from-purple-500 to-pink-500',
       bgGradient: 'from-purple-50 to-pink-50'
     },
-    { 
-      title: 'Cursos', 
-      value: cursosData?.length?.toString() || '0', 
-      icon: BookOpen, 
+    {
+      title: 'Cursos',
+      value: cursosData?.total?.toString() || cursosData?.data?.length?.toString() || '0',
+      icon: BookOpen,
       gradient: 'from-green-500 to-emerald-500',
       bgGradient: 'from-green-50 to-emerald-50'
     },
-    { 
-      title: 'Docentes', 
-      value: docentesData?.length?.toString() || '0', 
-      icon: GraduationCap, 
+    {
+      title: 'Docentes',
+      value: docentesData?.total?.toString() || docentesData?.data?.length?.toString() || '0',
+      icon: GraduationCap,
       gradient: 'from-orange-500 to-red-500',
       bgGradient: 'from-orange-50 to-red-50'
     },

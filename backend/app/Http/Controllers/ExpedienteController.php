@@ -745,77 +745,57 @@ class ExpedienteController extends Controller
      */
     public function buscarDirectores(Request $request)
     {
-        $search = $request->get('q', '');
+        $search = trim($request->get('q', ''));
+        if (empty($search))
+            return response()->json(['data' => []]);
 
         $directores = [];
 
-        // Buscar en facultades
-        $facultades = \App\Models\Facultad::query()
-            ->when($search && $search !== 'all', function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('director_nombre', 'LIKE', "%{$search}%")
-                        ->orWhere('nombre', 'LIKE', "%{$search}%")
-                        ->orWhere('codigo', 'LIKE', "%{$search}%");
-                });
-            })
-            ->get();
-
-        foreach ($facultades as $facultad) {
-            if ($facultad->director_nombre) {
-                if ($facultad->director_genero == 'M') {
-                    $directores[] = [
-                        'id' => 'facultad_' . $facultad->id,
-                        'label' => $facultad->director_nombre . ' - Director de ' . $facultad->nombre,
-                        'nombre' => $facultad->director_nombre,
-                        'codigo' => $facultad->codigo,
-                    ];
-                } else {
-                    $directores[] = [
-                        'id' => 'facultad_' . $facultad->id,
-                        'label' => $facultad->director_nombre . ' - Directora de ' . $facultad->nombre,
-                        'nombre' => $facultad->director_nombre,
-                        'codigo' => $facultad->codigo,
-                    ];
-                }
-            }
-        }
-
-        // Agregar Director de EPG (hardcoded)
-        if (
-            empty($search) ||
-            stripos('Dr. Leandro Agapito Aznarán Castillo', $search) !== false ||
-            stripos('EPG', $search) !== false ||
-            stripos('Posgrado', $search) !== false
-        ) {
-            $directores[] = [
-                'id' => 'epg_director',
-                'label' => 'Dr. Leandro Agapito Aznarán Castillo - Director de Escuela de Posgrado (EPG)',
-                'nombre' => 'Dr. Leandro Agapito Aznarán Castillo',
-            ];
-        } elseif (
-            empty($search) ||
-            stripos('Mg. José Luis Carranza García', $search) !== false ||
-            stripos('DGA-UNPRG', $search) !== false ||
-            stripos('Dirección General de Administración', $search) !== false
-        ) {
-            $directores[] = [
-                'id' => 'mg_carranza',
-                'label' => 'Mg. José Luis Carranza García - Director de Dirección General de Administración (DGA)',
-                'nombre' => 'Mg. José Luis Carranza García',
-            ];
-        } elseif (
-            empty($search) ||
-            stripos('Mg. Juan Fernando Yalta Vallejos', $search) !== false ||
-            stripos('DGA/UA', $search) !== false ||
-            stripos('Unidad de Abastecimiento', $search) !== false
-        ) {
+        // Usamos un Switch o If/Else estrictos para los casos especiales
+        // Esto evita que "DGA/UA" active también a "DGA-UNPRG"
+        if (stripos($search, 'DGA/UA') !== false || stripos($search, 'Abastecimiento') !== false) {
             $directores[] = [
                 'id' => 'mg_yalta',
                 'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',
                 'nombre' => 'Mg. Juan Fernando Yalta Vallejos',
             ];
+        } elseif (stripos($search, 'DGA-UNPRG') !== false || stripos($search, 'DGA') !== false) {
+            // Al ser un ELSEIF, si ya entró en DGA/UA, no entrará aquí
+            $directores[] = [
+                'id' => 'mg_carranza',
+                'label' => 'Mg. José Luis Carranza García - Director de Dirección General de Administración (DGA)',
+                'nombre' => 'Mg. José Luis Carranza García',
+            ];
+        } elseif (stripos($search, 'URH') !== false || stripos($search, 'Recursos') !== false) {
+            $directores[] = [
+                'id' => 'ing_castanieda',
+                'label' => 'Ing. Ángel Castañeda Castañeda - Unidad de Recursos Humanos (URH)',
+                'nombre' => 'Ing. Ángel Castañeda Castañeda',
+            ];
+        } elseif (stripos($search, 'EPG') !== false || stripos($search, 'Posgrado') !== false) {
+            $directores[] = [
+                'id' => 'epg_director',
+                'label' => 'Dr. Leandro Agapito Aznarán Castillo - Director de Escuela de Posgrado (EPG)',
+                'nombre' => 'Dr. Leandro Agapito Aznarán Castillo',
+            ];
         }
 
-        return response()->json(['data' => $directores], 200);
+        // Solo si no es un caso especial, buscamos en Facultades
+        if (empty($directores)) {
+            $facultades = \App\Models\Facultad::where('codigo', 'LIKE', "%{$search}%")
+                ->orWhere('nombre', 'LIKE', "%{$search}%")
+                ->get();
+
+            foreach ($facultades as $f) {
+                $directores[] = [
+                    'id' => 'facultad_' . $f->id,
+                    'label' => $f->director_nombre . ' - Director(a) de ' . $f->nombre,
+                    'nombre' => $f->director_nombre,
+                    'codigo' => $f->codigo,
+                ];
+            }
+        }
+
+        return response()->json(['data' => $directores]);
     }
 }

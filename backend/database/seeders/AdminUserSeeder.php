@@ -52,5 +52,11 @@ class AdminUserSeeder extends Seeder
             'role' => 'user',
             'is_active' => true,
         ]);
+        User::create([
+            'name' => 'Usuario Demo',
+            'email' => 'contabilidad_epg@unprg.edu.pe',
+            'role' => 'user',
+            'is_active' => true,
+        ]);
     }
 }

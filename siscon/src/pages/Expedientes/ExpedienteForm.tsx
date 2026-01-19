@@ -124,82 +124,31 @@ export default function ExpedienteForm() {
   }, [tipoAsunto, usarMultiple, docentesCursos, numeroDocumento]);
 
   const searchDirectorByCode = async () => {
+    // 1. Limpieza y validación inicial
+    const busqueda = numeroDocumento.trim();
+    if (busqueda.length < 3) return;
+
     try {
-      // Primero verificar si contiene "EPG" o "Posgrado"
-      const epgRegex = /\b(EPG|POSGRADO)\b/i;
-      if (epgRegex.test(numeroDocumento)) {
-        // Buscar específicamente el director de EPG
-        const response = await axios.get('/expedientes/buscar-directores?q=EPG');
-        const directors = response.data.data || [];
-        const epgDirector = directors.find((d: any) => d.id === 'epg_director');
+      // 2. UNA SOLA PETICIÓN. El Backend decidirá qué devolver.
+      // Usamos encodeURIComponent porque DGA/UA tiene una barra "/" que rompe la URL
+      const response = await axios.get(`/expedientes/buscar-directores?q=${encodeURIComponent(busqueda)}`);
 
-        if (epgDirector && !remitente) {
-          setRemitente(epgDirector);
-          return; // Salir temprano si encontramos EPG
-        }
-      }
+      const directors = response.data.data || [];
 
-      //Verificar si tiene DGA-UA
-      const dgaRegex = /\b(DGA|UA)\b/i;
-      if (dgaRegex.test(numeroDocumento)) {
-        // Buscar específicamente el director de EPG
-        const response = await axios.get('/expedientes/buscar-directores?q=DGA-UNPRG');
-        const directors = response.data.data || [];
-        const epgDirector = directors.find((d: any) => d.id === 'mg_carranza');
-
-        if (epgDirector && !remitente) {
-          setRemitente(epgDirector);
-          return; // Salir temprano si encontramos EPG
-        }
-      }
-
-      //Verificar si tiene DGA/UA
-      const dgaUaRegex = /\b(DGA|UA)\b/i;
-      if (dgaUaRegex.test(numeroDocumento)) {
-        // Buscar específicamente el director de EPG
-        const response = await axios.get('/expedientes/buscar-directores?q=DGA/UA');
-        const directors = response.data.data || [];
-        const epgDirector = directors.find((d: any) => d.id === 'mg_yalta');
-
-        if (epgDirector && !remitente) {
-          setRemitente(epgDirector);
-          return; // Salir temprano si encontramos EPG
-        }
-      }
-
-
-      // Si no es EPG, buscar por código de facultad
-      const response = await axios.get('/expedientes/buscar-directores?q=all');
-      const allDirectors = response.data.data || [];
-
-      // Try to find a director whose faculty code appears in the document number
-      // Look for the code as a separate word or surrounded by delimiters
-      const matchedDirector = allDirectors.find((director: any) => {
-        if (director.codigo) {
-          // Match codigo as a whole word or surrounded by non-letter characters
-          const regex = new RegExp(`(^|[^A-Za-z])${director.codigo}([^A-Za-z]|$)`, 'i');
-          const match = regex.test(numeroDocumento);
-
-          if (match) {
-
-            setFacultadCodigo(director.codigo);
-            return true;
-          }
-        }
-        return false;
-      });
-
-      if (matchedDirector && !remitente) {
-        setRemitente(matchedDirector);
-      } else if (!matchedDirector) {
-
+      if (directors.length > 0) {
+        // Priorizamos el primer resultado que devuelva el servidor
+        const encontrado = directors[0];
+        setRemitente(encontrado);
+        setFacultadCodigo(encontrado.codigo || '');
+      } else {
+        setRemitente(null);
         setFacultadCodigo('');
       }
     } catch (error) {
-      console.error('Error searching director by faculty code:', error);
+      console.error('Error en la petición:', error);
     }
   };
-
+  
   const fetchExpediente = async () => {
     try {
       const response = await axios.get(`/expedientes/${id}`);

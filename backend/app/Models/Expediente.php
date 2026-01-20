@@ -39,6 +39,7 @@ class Expediente extends Model
         'tipo_devolucion',
         'importe_devolucion',
         'numero_voucher',
+        'user_id',
     ];
 
     protected $casts = [
@@ -49,6 +50,11 @@ class Expediente extends Model
     ];
 
     // Relaciones
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function docente()
     {
         return $this->belongsTo(Docente::class);

@@ -146,6 +146,7 @@ class ExpedienteController extends Controller
                         'curso_id' => $dc['curso_id'],
                         'semestre_id' => $dc['semestre_id'],
                         'fechas_ensenanza' => $dc['fechas_ensenanza'],
+                        'user_id' => auth()->id(),
                     ];
 
                     // Agregar campos específicos según tipo
@@ -206,9 +207,10 @@ class ExpedienteController extends Controller
                 $data = $request->except([
                     'numero_oficio_presentacion_coordinador',
                     'numero_oficio_conformidad_coordinador',
-                    'numero_oficio_conformidad_facultad',
                     'docentes_cursos'
                 ]);
+
+                $data['user_id'] = auth()->id();
 
                 $expediente = Expediente::create($data);
 
@@ -270,7 +272,8 @@ class ExpedienteController extends Controller
             'curso',
             'pagoDocente',
             'semestre.programa.grado',
-            'devolucion'
+            'devolucion',
+            'user'
         ]);
 
         $estado = 'PENDIENTE';
@@ -284,6 +287,7 @@ class ExpedienteController extends Controller
         $numeroDocumento = $expediente->numero_documento;
         $fechaRecepcion = $expediente->fecha_recepcion_contabilidad ? $expediente->fecha_recepcion_contabilidad->format('d/m/Y') : '';
         $nombre = $expediente->remitente;
+        $usuarioRegistro = $expediente->user->name ?? 'Sistema';
 
         $asunto = $this->generarAsunto($expediente);
 
@@ -296,6 +300,7 @@ class ExpedienteController extends Controller
             $fechaRecepcion,
             $nombre,
             $asunto,
+            $usuarioRegistro,
         ];
 
         if ($isUpdate) {

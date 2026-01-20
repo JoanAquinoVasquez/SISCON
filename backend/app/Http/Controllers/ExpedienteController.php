@@ -182,7 +182,9 @@ class ExpedienteController extends Controller
                     // Guardar en Google Sheets (Pago Docente) si corresponde
                     if ($pago) {
                         try {
-                            $this->googleSheetsService->appendPagoDocente($pago);
+                            // Usar updatePagoDocente para que busque si ya existe (por ID) y actualice, 
+                            // o agregue si es nuevo. Esto evita duplicados en 'conformidad'.
+                            $this->googleSheetsService->updatePagoDocente($pago);
                         } catch (\Exception $e) {
                             // Log error but don't fail the request
                             \Illuminate\Support\Facades\Log::error('Error sending PagoDocente to Sheets: ' . $e->getMessage());
@@ -238,7 +240,8 @@ class ExpedienteController extends Controller
                 // Guardar en Google Sheets (Pago Docente) si corresponde
                 if ($pago) {
                     try {
-                        $this->googleSheetsService->appendPagoDocente($pago);
+                        // Usar updatePagoDocente para manejar actualizaciones (conformidad) y nuevos (presentación)
+                        $this->googleSheetsService->updatePagoDocente($pago);
                     } catch (\Exception $e) {
                         \Illuminate\Support\Facades\Log::error('Error sending PagoDocente to Sheets: ' . $e->getMessage());
                     }
@@ -759,14 +762,14 @@ class ExpedienteController extends Controller
                 'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',
                 'nombre' => 'Mg. Juan Fernando Yalta Vallejos',
             ];
-        } elseif (stripos($search, 'DGA-UNPRG') !== false || stripos($search, 'DGA') !== false) {
+        } elseif (stripos($search, 'DGA-UNPRG') !== false) {
             // Al ser un ELSEIF, si ya entró en DGA/UA, no entrará aquí
             $directores[] = [
                 'id' => 'mg_carranza',
                 'label' => 'Mg. José Luis Carranza García - Director de Dirección General de Administración (DGA)',
                 'nombre' => 'Mg. José Luis Carranza García',
             ];
-        } elseif (stripos($search, 'URH') !== false || stripos($search, 'Recursos') !== false) {
+        } elseif (stripos($search, 'DGA-URH') !== false || stripos($search, 'Recursos') !== false) {
             $directores[] = [
                 'id' => 'ing_castanieda',
                 'label' => 'Ing. Ángel Castañeda Castañeda - Unidad de Recursos Humanos (URH)',
@@ -782,7 +785,10 @@ class ExpedienteController extends Controller
 
         // Solo si no es un caso especial, buscamos en Facultades
         if (empty($directores)) {
-            $facultades = \App\Models\Facultad::where('codigo', 'LIKE', "%{$search}%")
+            $facultades = \App\Models\Facultad::where(function ($query) use ($search) {
+                $query->where('codigo', 'LIKE', "%{$search}%") // Mantiene la búsqueda normal (si usuario escribe solo "FICSA")
+                    ->orWhereRaw("? LIKE CONCAT('%', codigo, '%')", [$search]); // Búsqueda inversa (si usuario pega el Oficio completo)
+            })
                 ->orWhere('nombre', 'LIKE', "%{$search}%")
                 ->get();
 

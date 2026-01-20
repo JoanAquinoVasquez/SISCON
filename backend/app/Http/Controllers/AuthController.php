@@ -47,6 +47,7 @@ class AuthController extends Controller
             // Update user info
             $user->update([
                 'google_id' => $googleUser->getId(),
+                'name' => $googleUser->getName(),
                 'avatar' => $googleUser->getAvatar(),
             ]);
 

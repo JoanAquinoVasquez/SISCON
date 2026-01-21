@@ -58,6 +58,7 @@ export default function ExpedienteForm() {
   const [personaDevolucion, setPersonaDevolucion] = useState('');
   const [dniDevolucion, setDniDevolucion] = useState('');
   const [programaDevolucion, setProgramaDevolucion] = useState<any>(null);
+  const [procesoAdmision, setProcesoAdmision] = useState('');
   const [tipoDevolucion, setTipoDevolucion] = useState('');
   const [importeDevolucion, setImporteDevolucion] = useState('');
   const [numeroVoucher, setNumeroVoucher] = useState('');
@@ -88,6 +89,15 @@ export default function ExpedienteForm() {
       setImporteDevolucion(importes[tipoDevolucion] || '');
     }
   }, [tipoDevolucion]);
+
+  // Auto-fill proceso_admision from programaDevolucion
+  useEffect(() => {
+    if (programaDevolucion?.periodo) {
+      setProcesoAdmision(programaDevolucion.periodo);
+    } else {
+      setProcesoAdmision('');
+    }
+  }, [programaDevolucion]);
 
   // Auto-detect faculty code from numeroDocumento and fill remitente
   useEffect(() => {
@@ -148,12 +158,11 @@ export default function ExpedienteForm() {
       console.error('Error en la petición:', error);
     }
   };
-  
+
   const fetchExpediente = async () => {
     try {
       const response = await axios.get(`/expedientes/${id}`);
       const data = response.data.data;
-      console.log(data);
       setNumeroExpedienteMP(data.numero_expediente_mesa_partes || '');
       setNumeroDocumento(data.numero_documento);
 
@@ -207,6 +216,7 @@ export default function ExpedienteForm() {
           label: data.programa.nombre,
         });
       }
+      setProcesoAdmision(data.proceso_admision || '');
       setTipoDevolucion(data.tipo_devolucion || '');
       setImporteDevolucion(data.importe_devolucion || '');
       setNumeroVoucher(data.numero_voucher || '');
@@ -307,7 +317,7 @@ export default function ExpedienteForm() {
       }
     }
 
-    if (tipoAsunto === 'devolucion' && (!personaDevolucion || !dniDevolucion || !programaDevolucion || !tipoDevolucion || !importeDevolucion || !numeroVoucher)) {
+    if (tipoAsunto === 'devolucion' && (!personaDevolucion || !dniDevolucion || !tipoDevolucion || !importeDevolucion || !numeroVoucher)) {
       showToast('Por favor complete todos los campos de devolución', 'warning');
       return;
     }
@@ -379,6 +389,7 @@ export default function ExpedienteForm() {
         payload.persona_devolucion = personaDevolucion;
         payload.dni_devolucion = dniDevolucion;
         payload.programa_id = programaDevolucion?.id;
+        payload.proceso_admision = procesoAdmision;
         payload.tipo_devolucion = tipoDevolucion;
         payload.importe_devolucion = importeDevolucion;
         payload.numero_voucher = numeroVoucher;
@@ -688,15 +699,16 @@ export default function ExpedienteForm() {
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <Label>Programa *</Label>
+                        <Label>Programa (Opcional)</Label>
                         <SelectConBusqueda
                           label=""
-                          searchEndpoint="/programas"
+                          searchEndpoint="/pagos-docentes/buscar-programa"
                           value={programaDevolucion}
                           onChange={setProgramaDevolucion}
                           placeholder="Buscar programa..."
                         />
                       </div>
+                      {/* Proceso de admisión se llena automáticamente del programa */}
                       <div>
                         <Label>Tipo de Devolución *</Label>
                         <select

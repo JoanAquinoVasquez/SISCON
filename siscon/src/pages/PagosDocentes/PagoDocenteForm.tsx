@@ -452,8 +452,6 @@ export default function PagoDocenteForm() {
         } : {}),
       };
 
-      console.log('Enviando payload:', payload);
-
       if (id) {
         await axios.put(`/pagos-docentes/${id}`, payload);
         showToast('Pago actualizado exitosamente', 'success');

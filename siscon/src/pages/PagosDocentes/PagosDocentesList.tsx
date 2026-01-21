@@ -394,7 +394,6 @@ export default function PagosDocentesList() {
   };
 
   const handleViewOficioPagoContabilidad = (numero_expediente_nota_pago_url: string) => {
-    console.log(numero_expediente_nota_pago_url);
     // Redirigir al link donde está subido el archivo numero_expediente_nota_pago_url
     window.open(numero_expediente_nota_pago_url, '_blank');
   };

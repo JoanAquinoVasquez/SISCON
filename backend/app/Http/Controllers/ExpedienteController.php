@@ -786,6 +786,18 @@ class ExpedienteController extends Controller
                 'label' => 'Dr. Leandro Agapito Aznarán Castillo - Director de Escuela de Posgrado (EPG)',
                 'nombre' => 'Dr. Leandro Agapito Aznarán Castillo',
             ];
+        } elseif (stripos($search, 'UNPRG-UC') !== false || stripos($search, 'Unidad de Contabilidad') !== false) {
+            $directores[] = [
+                'id' => 'uc_jefa',
+                'label' => 'CPC. Gisela Oliva Vasquez - Jefa de la Unidad de Contabilidad (UC)',
+                'nombre' => 'CPC. Gisela Oliva Vasquez',
+            ];
+        } elseif (stripos($search, 'UPP') !== false || stripos($search, 'Unidad de Planeamiento y Presupuesto') !== false) {
+            $directores[] = [
+                'id' => 'opp_jefe',
+                'label' => 'Msc. Richar Néstor Piscoya Olivos - Jefe de la Unidad de Planeamiento y Presupuesto (UPP)',
+                'nombre' => 'Msc. Richar Néstor Piscoya Olivos',
+            ];
         }
 
         // Solo si no es un caso especial, buscamos en Facultades

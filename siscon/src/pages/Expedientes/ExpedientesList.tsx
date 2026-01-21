@@ -104,6 +104,7 @@ export default function ExpedientesList() {
       presentacion: { variant: 'default', label: 'Presentación' },
       conformidad: { variant: 'tertiary', label: 'Conformidad' },
       resolucion: { variant: 'success', label: 'Resolución' },
+      devolucion: { variant: 'destructive', label: 'Devolución' },
     };
     const config = variants[tipo] || variants.descripcion;
     return <Badge variant={config.variant}>{config.label}</Badge>;

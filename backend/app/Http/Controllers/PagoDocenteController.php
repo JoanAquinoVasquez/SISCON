@@ -372,7 +372,10 @@ class PagoDocenteController extends Controller
         $cursosQuery = Curso::with(['semestres.programa.grado', 'semestres.programa.facultad'])
             ->where(function ($q) use ($query) {
                 $q->where('nombre', 'LIKE', "%{$query}%")
-                    ->orWhere('codigo', 'LIKE', "%{$query}%");
+                    ->orWhere('codigo', 'LIKE', "%{$query}%")
+                    ->orWhereHas('semestres.programa', function ($q2) use ($query) {
+                        $q2->where('nombre', 'LIKE', "%{$query}%");
+                    });
             });
 
         // Filter by faculty code if provided
@@ -382,7 +385,7 @@ class PagoDocenteController extends Controller
             });
         }
 
-        $cursos = $cursosQuery->limit(10)->get();
+        $cursos = $cursosQuery->limit(50)->get();
         $resultados = [];
 
         foreach ($cursos as $curso) {

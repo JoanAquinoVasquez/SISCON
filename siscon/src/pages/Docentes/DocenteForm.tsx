@@ -29,7 +29,7 @@ const docenteSchema = z.object({
   apellido_materno: z.string().min(2, 'El apellido materno debe tener al menos 2 caracteres'),
   titulo_profesional: z.string().optional(),
   genero: z.enum(['M', 'F']),
-  dni: z.string().length(8, 'El DNI debe tener 8 dígitos'),
+  dni: z.string().length(8, 'El DNI debe tener 8 dígitos').or(z.literal('')),
   numero_telefono: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   fecha_nacimiento: z.string().optional(),
@@ -67,6 +67,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
           apellido_materno: docente.apellido_materno,
           titulo_profesional: docente.titulo_profesional || '',
           genero: docente.genero,
+          dni: docente.dni || '',
           numero_telefono: docente.numero_telefono || '',
           email: docente.email || '',
           fecha_nacimiento: docente.fecha_nacimiento || '',
@@ -169,7 +170,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dni">DNI *</Label>
+              <Label htmlFor="dni">DNI</Label>
               <Input
                 id="dni"
                 {...register('dni')}

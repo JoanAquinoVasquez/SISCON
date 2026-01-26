@@ -103,7 +103,7 @@ class ExpedienteController extends Controller
             'fecha_mesa_partes' => 'required|date',
             'fecha_recepcion_contabilidad' => 'required|date',
             'remitente' => 'required|string',
-            'tipo_asunto' => 'required|in:descripcion,presentacion,conformidad,devolucion',
+            'tipo_asunto' => 'required|in:descripcion,presentacion,conformidad,devolucion,certificado_estudios,otros',
             'descripcion_asunto' => 'nullable|string',
             // Validación para flujo normal (un solo docente-curso)
             'docente_id' => 'nullable|exists:docentes,id',
@@ -414,7 +414,7 @@ class ExpedienteController extends Controller
             'fecha_mesa_partes' => 'sometimes|date',
             'fecha_recepcion_contabilidad' => 'sometimes|date',
             'remitente' => 'sometimes|string',
-            'tipo_asunto' => 'sometimes|in:descripcion,presentacion,conformidad,devolucion',
+            'tipo_asunto' => 'sometimes|in:descripcion,presentacion,conformidad,devolucion,certificado_estudios,otros',
             'descripcion_asunto' => 'sometimes|nullable|string',
             'docente_id' => 'sometimes|nullable|exists:docentes,id',
             'curso_id' => 'sometimes|nullable|exists:cursos,id',

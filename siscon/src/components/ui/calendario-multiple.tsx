@@ -81,12 +81,16 @@ export function CalendarioMultiple({
     }
   };
 
+  const removeDate = (dateToRemove: string) => {
+    onChange(selectedDates.filter(date => date !== dateToRemove));
+  };
 
 
 
 
-  const formatearFechasLegibles = (fechas: string[]): string => {
-    if (!fechas || fechas.length === 0) return '';
+
+  const renderFechasInteractivas = (fechas: string[]) => {
+    if (!fechas || fechas.length === 0) return null;
 
     const meses = [
       'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -94,56 +98,52 @@ export function CalendarioMultiple({
     ];
 
     // Agrupar fechas por mes y año
-    const fechasPorMesAnio: Record<string, number[]> = {};
+    const fechasPorMesAnio: Record<string, { year: number, month: number, days: { day: number, fullDate: string }[] }> = {};
 
     fechas.forEach(fecha => {
       const [year, month, day] = fecha.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      const mes = date.getMonth();
-      const anio = date.getFullYear();
-      const dia = date.getDate();
-      const key = `${mes}-${anio}`;
+      const key = `${month - 1}-${year}`;
 
       if (!fechasPorMesAnio[key]) {
-        fechasPorMesAnio[key] = [];
+        fechasPorMesAnio[key] = { year, month: month - 1, days: [] };
       }
-      fechasPorMesAnio[key].push(dia);
+      fechasPorMesAnio[key].days.push({ day, fullDate: fecha });
     });
 
-    // Construir el texto formateado
-    const grupos = Object.entries(fechasPorMesAnio).map(([key, dias]) => {
-      const [mes, anio] = key.split('-').map(Number);
-      dias.sort((a, b) => a - b);
-
-      // Formatear los días con "y" antes del último
-      let diasTexto = '';
-      if (dias.length === 1) {
-        diasTexto = dias[0].toString();
-      } else if (dias.length === 2) {
-        diasTexto = `${dias[0]} y ${dias[1]}`;
-      } else {
-        const ultimos = dias.slice(-1)[0];
-        const anteriores = dias.slice(0, -1).join(', ');
-        diasTexto = `${anteriores} y ${ultimos}`;
-      }
-
-      return { diasTexto, mes: meses[mes], anio };
+    const sortedKeys = Object.keys(fechasPorMesAnio).sort((a, b) => {
+      const [m1, y1] = a.split('-').map(Number);
+      const [m2, y2] = b.split('-').map(Number);
+      return y1 !== y2 ? y1 - y2 : m1 - m2;
     });
 
-    // Si todas las fechas son del mismo año
-    const anioUnico = grupos.every(g => g.anio === grupos[0].anio) ? grupos[0].anio : null;
+    return (
+      <div className="flex flex-wrap gap-x-1 gap-y-1 items-center">
+        {sortedKeys.map((key, groupIndex) => {
+          const group = fechasPorMesAnio[key];
+          group.days.sort((a, b) => a.day - b.day);
 
-    if (grupos.length === 1) {
-      return `${grupos[0].diasTexto} de ${grupos[0].mes} de ${grupos[0].anio}`;
-    } else {
-      const partes = grupos.map((g, i) => {
-        if (i === grupos.length - 1 && anioUnico) {
-          return `${g.diasTexto} de ${g.mes} de ${anioUnico}`;
-        }
-        return `${g.diasTexto} de ${g.mes}`;
-      });
-      return partes.join(' y ');
-    }
+          return (
+            <span key={key}>
+              {group.days.map((d, dayIndex) => (
+                <span key={d.fullDate}>
+                  <button
+                    type="button"
+                    onClick={() => removeDate(d.fullDate)}
+                    className="hover:text-red-600 hover:bg-red-50 px-1 rounded transition-all cursor-pointer font-bold text-blue-600 underline decoration-dotted underline-offset-2"
+                    title="Click para eliminar"
+                  >
+                    {d.day}
+                  </button>
+                  {dayIndex < group.days.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+              {` de ${meses[group.month]}`}
+              {groupIndex < sortedKeys.length - 1 ? ', ' : ''}
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -211,10 +211,9 @@ export function CalendarioMultiple({
               </div>
 
               <div className="flex-1">
-                {/* Usamos un leading-tight para que el texto multilínea no se separe demasiado */}
-                <p className="text-[13px] leading-tight text-slate-600 font-medium">
-                  {formatearFechasLegibles(selectedDates)}
-                </p>
+                <div className="text-[13px] leading-tight text-slate-600 font-medium">
+                  {renderFechasInteractivas(selectedDates)}
+                </div>
               </div>
 
               <button

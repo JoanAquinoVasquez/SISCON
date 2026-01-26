@@ -85,6 +85,8 @@ export default function ExpedienteForm() {
         'inscripcion': '250.00',
         'idiomas': '120.00',
         'grados_titulos': '850.00',
+        'certificado_estudios': '100.00',
+        'otros': '0.00',
       };
       setImporteDevolucion(importes[tipoDevolucion] || '');
     }
@@ -721,6 +723,8 @@ export default function ExpedienteForm() {
                           <option value="inscripcion">Derecho de Inscripción</option>
                           <option value="idiomas">Idiomas</option>
                           <option value="grados_titulos">Grados y Títulos</option>
+                          <option value="certificado_estudios">Certificado de Estudios</option>
+                          <option value="otros">Otros</option>
                         </select>
                       </div>
                       <div>

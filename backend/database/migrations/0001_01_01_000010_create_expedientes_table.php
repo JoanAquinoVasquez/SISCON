@@ -38,7 +38,7 @@ return new class extends Migration {
             $table->string('dni_devolucion')->nullable();
             $table->foreignId('programa_id')->nullable()->constrained('programas')->onDelete('set null');
             $table->string('proceso_admision')->nullable();
-            $table->enum('tipo_devolucion', ['inscripcion', 'idiomas', 'grados_titulos'])->nullable();
+            $table->enum('tipo_devolucion', ['inscripcion', 'idiomas', 'grados_titulos', 'certificado_estudios', 'otros'])->nullable();
             $table->decimal('importe_devolucion', 10, 2)->nullable();
             $table->string('numero_voucher')->nullable();
             $table->foreignId('devolucion_id')->nullable()->constrained('devoluciones')->onDelete('set null');

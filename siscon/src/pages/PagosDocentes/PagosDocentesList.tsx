@@ -63,52 +63,28 @@ const formatearFechasLegibles = (fechas: string[]): string => {
 
   fechas.forEach(fecha => {
     const [year, month, day] = fecha.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    const mes = date.getMonth();
-    const anio = date.getFullYear();
-    const dia = date.getDate();
-    const key = `${mes}-${anio}`;
+    const key = `${month - 1}-${year}`;
 
     if (!fechasPorMesAnio[key]) {
       fechasPorMesAnio[key] = [];
     }
-    fechasPorMesAnio[key].push(dia);
+    fechasPorMesAnio[key].push(day);
   });
 
   // Construir el texto formateado
-  const grupos = Object.entries(fechasPorMesAnio).map(([key, dias]) => {
-    const [mes, anio] = key.split('-').map(Number);
-    dias.sort((a, b) => a - b);
-
-    // Formatear los días con "y" antes del último
-    let diasTexto = '';
-    if (dias.length === 1) {
-      diasTexto = dias[0].toString();
-    } else if (dias.length === 2) {
-      diasTexto = `${dias[0]} y ${dias[1]}`;
-    } else {
-      const ultimos = dias.slice(-1)[0];
-      const anteriores = dias.slice(0, -1).join(', ');
-      diasTexto = `${anteriores} y ${ultimos}`;
-    }
-
-    return { diasTexto, mes: meses[mes], anio };
-  });
-
-  // Si todas las fechas son del mismo año
-  const anioUnico = grupos.every(g => g.anio === grupos[0].anio) ? grupos[0].anio : null;
-
-  if (grupos.length === 1) {
-    return `${grupos[0].diasTexto} de ${grupos[0].mes} de ${grupos[0].anio}`;
-  } else {
-    const partes = grupos.map((g, i) => {
-      if (i === grupos.length - 1 && anioUnico) {
-        return `${g.diasTexto} de ${g.mes} de ${anioUnico}`;
-      }
-      return `${g.diasTexto} de ${g.mes}`;
+  const grupos = Object.entries(fechasPorMesAnio)
+    .sort(([keyA], [keyB]) => {
+      const [mA, yA] = keyA.split('-').map(Number);
+      const [mB, yB] = keyB.split('-').map(Number);
+      return yA !== yB ? yA - yB : mA - mB;
+    })
+    .map(([key, dias]) => {
+      const [mes] = key.split('-').map(Number);
+      dias.sort((a, b) => a - b);
+      return `${dias.join(', ')} de ${meses[mes]}`;
     });
-    return partes.join(' y ');
-  }
+
+  return grupos.join(', ');
 };
 
 interface PagoDocente {

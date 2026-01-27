@@ -798,6 +798,12 @@ class ExpedienteController extends Controller
                 'label' => 'Msc. Richar Néstor Piscoya Olivos - Jefe de la Unidad de Planeamiento y Presupuesto (UPP)',
                 'nombre' => 'Msc. Richar Néstor Piscoya Olivos',
             ];
+        } elseif (stripos($search, 'SG') !== false || stripos($search, 'Secretaría General') !== false) {
+            $directores[] = [
+                'id' => 'sg_jefa',
+                'label' => 'Dra. Diana Elizabeth Guerrero López - Secretaría General (SG)',
+                'nombre' => 'Dra. Diana Elizabeth Guerrero López',
+            ];
         }
 
         // Solo si no es un caso especial, buscamos en Facultades

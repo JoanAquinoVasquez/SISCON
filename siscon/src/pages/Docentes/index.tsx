@@ -36,7 +36,7 @@ export function DocentesPage() {
   const [genero, setGenero] = useState<string>('todos');
   const [page, setPage] = useState(1);
 
-  const { data: response, isLoading, error } = useQuery({
+  const { data: response, isLoading } = useQuery({
     queryKey: ['docentes', page, search, tipo, genero],
     queryFn: async () => {
       const params: any = { page, per_page: 10 };

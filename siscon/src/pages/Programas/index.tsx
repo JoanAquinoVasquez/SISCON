@@ -84,16 +84,7 @@ export default function ProgramasPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando programas...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (
@@ -136,36 +127,53 @@ export default function ProgramasPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.map((programa) => (
-                <TableRow key={programa.id}>
-                  <TableCell className="font-medium">{programa.id}</TableCell>
-                  <TableCell>{programa.nombre}</TableCell>
-                  <TableCell>{programa.descripcion || '-'}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => handleEdit(programa)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => handleDelete(programa)}
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Eliminar
-                      </Button>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+                      Cargando programas...
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : data?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                    No hay programas registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data?.map((programa) => (
+                  <TableRow key={programa.id}>
+                    <TableCell className="font-medium">{programa.id}</TableCell>
+                    <TableCell>{programa.nombre}</TableCell>
+                    <TableCell>{programa.descripcion || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => handleEdit(programa)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => handleDelete(programa)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Eliminar
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
 

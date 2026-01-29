@@ -15,7 +15,7 @@ import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
 
 const menuItems = [
-  { icon: Home, label: 'Dashboard', path: '/dashboard' },
+  { icon: Home, label: 'Inicio', path: '/dashboard' },
   { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
   { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
   { icon: ClipboardList, label: 'Coordinadores', path: '/coordinadores' },

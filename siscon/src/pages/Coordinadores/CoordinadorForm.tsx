@@ -244,8 +244,8 @@ export function CoordinadorForm({ coordinador, open, onClose, onSubmit, isLoadin
                   <SelectValue placeholder="Selecciona género" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Femenino</SelectItem>
+                  <SelectItem value="M"><span>Masculino</span></SelectItem>
+                  <SelectItem value="F"><span>Femenino</span></SelectItem>
                 </SelectContent>
               </Select>
               {errors.genero && (
@@ -263,8 +263,8 @@ export function CoordinadorForm({ coordinador, open, onClose, onSubmit, isLoadin
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interno">Interno</SelectItem>
-                  <SelectItem value="externo">Externo</SelectItem>
+                  <SelectItem value="interno"><span>Interno</span></SelectItem>
+                  <SelectItem value="externo"><span>Externo</span></SelectItem>
                 </SelectContent>
               </Select>
               {errors.tipo_coordinador && (

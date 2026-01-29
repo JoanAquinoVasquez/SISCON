@@ -767,6 +767,13 @@ class ExpedienteController extends Controller
                 'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',
                 'nombre' => 'Mg. Juan Fernando Yalta Vallejos',
             ];
+        } elseif (stripos($search, '-I-EPG') !== false) {
+            // Al ser un ELSEIF, si ya entró en DGA/UA, no entrará aquí
+            $directores[] = [
+                'id' => 'lic_gloria',
+                'label' => 'Lic. Gloria Margot Arévalo Luna - Unidad de Idiomas EPG',
+                'nombre' => 'Lic. Gloria Margot Arévalo Luna',
+            ];
         } elseif (stripos($search, 'DGA-UNPRG') !== false) {
             // Al ser un ELSEIF, si ya entró en DGA/UA, no entrará aquí
             $directores[] = [
@@ -780,7 +787,7 @@ class ExpedienteController extends Controller
                 'label' => 'Ing. Ángel Castañeda Castañeda - Unidad de Recursos Humanos (URH)',
                 'nombre' => 'Ing. Ángel Castañeda Castañeda',
             ];
-        } elseif (stripos($search, 'EPG') !== false || stripos($search, 'Posgrado') !== false) {
+        } elseif (stripos($search, '-EPG') !== false || stripos($search, 'Posgrado') !== false) {
             $directores[] = [
                 'id' => 'epg_director',
                 'label' => 'Dr. Leandro Agapito Aznarán Castillo - Director de Escuela de Posgrado (EPG)',

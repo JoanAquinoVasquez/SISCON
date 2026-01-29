@@ -20,11 +20,9 @@ import ResolucionesList from './pages/Documentos/ResolucionesList';
 import DevolucionesList from './pages/Devoluciones/DevolucionesList';
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
-  }
+
 
   return (
     <>

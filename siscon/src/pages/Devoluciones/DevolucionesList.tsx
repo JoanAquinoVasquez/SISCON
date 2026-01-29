@@ -235,10 +235,10 @@ export default function DevolucionesList() {
                         <SelectValue placeholder="Tipo Devolución" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="inscripcion">Inscripción</SelectItem>
-                        <SelectItem value="idiomas">Idiomas</SelectItem>
-                        <SelectItem value="grados_titulos">Grados y Títulos</SelectItem>
+                        <SelectItem value="todos"><span>Todos</span></SelectItem>
+                        <SelectItem value="inscripcion"><span>Inscripción</span></SelectItem>
+                        <SelectItem value="idiomas"><span>Idiomas</span></SelectItem>
+                        <SelectItem value="grados_titulos"><span>Grados y Títulos</span></SelectItem>
                     </SelectContent>
                 </Select>
                 <Select
@@ -249,11 +249,11 @@ export default function DevolucionesList() {
                         <SelectValue placeholder="Estado" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="pendiente">Pendiente</SelectItem>
-                        <SelectItem value="aprobado">Aprobado</SelectItem>
-                        <SelectItem value="rechazado">Rechazado</SelectItem>
-                        <SelectItem value="procesado">Procesado</SelectItem>
+                        <SelectItem value="todos"><span>Todos</span></SelectItem>
+                        <SelectItem value="pendiente"><span>Pendiente</span></SelectItem>
+                        <SelectItem value="aprobado"><span>Aprobado</span></SelectItem>
+                        <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
+                        <SelectItem value="procesado"><span>Procesado</span></SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -263,7 +263,7 @@ export default function DevolucionesList() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[50px]">ID</TableHead>
+                            <TableHead className="w-[50px]">Cód.</TableHead>
                             <TableHead>Persona</TableHead>
                             <TableHead>Programa</TableHead>
                             <TableHead>Tipo</TableHead>
@@ -385,10 +385,10 @@ export default function DevolucionesList() {
                                     <SelectValue placeholder="Seleccionar estado" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="pendiente">Pendiente</SelectItem>
-                                    <SelectItem value="aprobado">Aprobado</SelectItem>
-                                    <SelectItem value="rechazado">Rechazado</SelectItem>
-                                    <SelectItem value="procesado">Procesado</SelectItem>
+                                    <SelectItem value="pendiente"><span>Pendiente</span></SelectItem>
+                                    <SelectItem value="aprobado"><span>Aprobado</span></SelectItem>
+                                    <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
+                                    <SelectItem value="procesado"><span>Procesado</span></SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -470,9 +470,9 @@ export default function DevolucionesList() {
                                     <SelectValue placeholder="Seleccionar tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="inscripcion">Inscripción</SelectItem>
-                                    <SelectItem value="idiomas">Idiomas</SelectItem>
-                                    <SelectItem value="grados_titulos">Grados y Títulos</SelectItem>
+                                    <SelectItem value="inscripcion"><span>Inscripción</span></SelectItem>
+                                    <SelectItem value="idiomas"><span>Idiomas</span></SelectItem>
+                                    <SelectItem value="grados_titulos"><span>Grados y Títulos</span></SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>

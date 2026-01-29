@@ -36,7 +36,7 @@ export function DocentesPage() {
   const [genero, setGenero] = useState<string>('todos');
   const [page, setPage] = useState(1);
 
-  const { data: response, isLoading, isFetching, error } = useQuery({
+  const { data: response, isLoading, error } = useQuery({
     queryKey: ['docentes', page, search, tipo, genero],
     queryFn: async () => {
       const params: any = { page, per_page: 10 };
@@ -174,26 +174,13 @@ export function DocentesPage() {
           <div key={index} className="text-xs">
             <span className="font-medium text-slate-700">{item.curso}</span>
             <div className="text-slate-500 ml-1">
-            {item.grado} en {item.programa} ({item.periodo})
+              {item.grado} en {item.programa} ({item.periodo})
             </div>
           </div>
         ))}
       </div>
     );
   };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-muted-foreground">Cargando docentes...</p>
-      </div>
-    </div>;
-  }
-
-  if (error) {
-    return <div className="p-8 text-red-600">Error al cargar docentes</div>;
-  }
 
   return (
     <div className="space-y-6">
@@ -258,15 +245,11 @@ export function DocentesPage() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {isFetching && (
-              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            )}
+
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead className="w-[50px]">Cod.</TableHead>
                   <TableHead className="min-w-[250px]">Nombre Completo</TableHead>
                   <TableHead className="min-w-[300px]">Curso Asignado</TableHead>
                   <TableHead>DNI</TableHead>
@@ -276,88 +259,101 @@ export function DocentesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {docentes.map((docente: Docente) => (
-                  <TableRow key={docente.id}>
-                    <TableCell className="font-medium text-slate-500">
-                      {docente.id}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {getFullName(docente)}
-                    </TableCell>
-                    <TableCell>
-                      {getCursosAsignados(docente)}
-                    </TableCell>
-                    <TableCell>{docente.dni}</TableCell>
-                    <TableCell>{docente.numero_telefono || '-'}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${docente.tipo_docente.includes('interno')
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
-                        }`}>
-                        {getTipoDocenteLabel(docente.tipo_docente)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(docente)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(docente.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+                        Cargando docentes...
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : docentes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      No hay docentes registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  docentes.map((docente: Docente) => (
+                    <TableRow key={docente.id}>
+                      <TableCell className="font-medium text-slate-500">
+                        {docente.id}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {getFullName(docente)}
+                      </TableCell>
+                      <TableCell>
+                        {getCursosAsignados(docente)}
+                      </TableCell>
+                      <TableCell>{docente.dni}</TableCell>
+                      <TableCell>{docente.numero_telefono || '-'}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${docente.tipo_docente.includes('interno')
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-purple-100 text-purple-700'
+                          }`}>
+                          {getTipoDocenteLabel(docente.tipo_docente)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(docente)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(docente.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {docentes.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No hay docentes registrados</p>
-            </div>
-          )}
-
           {/* Pagination */}
-          {pagination && pagination.last_page > 1 && (
-            <div className="flex items-center justify-between mt-4 border-t pt-4">
-              <div className="text-sm text-muted-foreground">
-                Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+          {
+            pagination && pagination.last_page > 1 && (
+              <div className="flex items-center justify-between mt-4 border-t pt-4">
+                <div className="text-sm text-muted-foreground">
+                  Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
+                    disabled={page === pagination.last_page}
+                  >
+                    Siguiente
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-                  disabled={page === pagination.last_page}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )
+          }
+        </CardContent >
+      </Card >
 
       <DocenteForm
         docente={selectedDocente}
@@ -369,6 +365,6 @@ export function DocentesPage() {
         onSubmit={handleSubmit}
         isLoading={createMutation.isPending || updateMutation.isPending}
       />
-    </div>
+    </div >
   );
 }

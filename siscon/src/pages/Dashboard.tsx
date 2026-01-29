@@ -72,7 +72,7 @@ export function Dashboard() {
   return (
     <div className="space-y-8">
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white shadow-xl">
-        <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-2">Panel de Control</h1>
         <p className="text-blue-100">Bienvenido al Sistema de Contabilidad SISCON</p>
       </div>
 

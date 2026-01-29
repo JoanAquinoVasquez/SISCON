@@ -438,9 +438,9 @@ export default function PagosDocentesList() {
             <SelectValue placeholder="Tipo Docente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="interno">Interno</SelectItem>
-            <SelectItem value="externo">Externo</SelectItem>
+            <SelectItem value="todos"><span>Todos</span></SelectItem>
+            <SelectItem value="interno"><span>Interno</span></SelectItem>
+            <SelectItem value="externo"><span>Externo</span></SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -450,7 +450,7 @@ export default function PagosDocentesList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[50px]">ID</TableHead>
+              <TableHead className="w-[50px]">Cód.</TableHead>
               <TableHead className="text-center min-w-[175px]">Docente</TableHead>
               <TableHead className="text-center min-w-[300px]">Curso</TableHead>
               <TableHead className="text-center min-w-[250px]">Presentación</TableHead>

@@ -43,7 +43,7 @@ export function CoordinadoresPage() {
   const [genero, setGenero] = useState<string>('todos');
   const [page, setPage] = useState(1);
 
-  const { data: response, isLoading, isFetching, error } = useQuery({
+  const { data: response, isLoading, error } = useQuery({
     queryKey: ['coordinadores', page, search, tipo, genero],
     queryFn: async () => {
       const params: any = { page, per_page: 10 };
@@ -165,14 +165,7 @@ export function CoordinadoresPage() {
     );
   };
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-        <p className="mt-4 text-muted-foreground">Cargando coordinadores...</p>
-      </div>
-    </div>;
-  }
+
 
   if (error) {
     return <div className="p-8 text-red-600">Error al cargar coordinadores</div>;
@@ -210,9 +203,9 @@ export function CoordinadoresPage() {
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="interno">Interno</SelectItem>
-            <SelectItem value="externo">Externo</SelectItem>
+            <SelectItem value="todos"><span>Todos</span></SelectItem>
+            <SelectItem value="interno"><span>Interno</span></SelectItem>
+            <SelectItem value="externo"><span>Externo</span></SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -223,9 +216,9 @@ export function CoordinadoresPage() {
             <SelectValue placeholder="Género" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="M">Masculino</SelectItem>
-            <SelectItem value="F">Femenino</SelectItem>
+            <SelectItem value="todos"><span>Todos</span></SelectItem>
+            <SelectItem value="M"><span>Masculino</span></SelectItem>
+            <SelectItem value="F"><span>Femenino</span></SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -239,15 +232,11 @@ export function CoordinadoresPage() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {isFetching && (
-              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            )}
+
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[50px]">ID</TableHead>
+                  <TableHead className="w-[50px]">Cód.</TableHead>
                   <TableHead className="min-w-[250px]">Nombre Completo</TableHead>
                   <TableHead className="min-w-[300px]">Programa Asignado</TableHead>
                   <TableHead>DNI</TableHead>
@@ -257,63 +246,74 @@ export function CoordinadoresPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coordinadores.map((coordinador: Coordinador) => (
-                  <TableRow key={coordinador.id}>
-                    <TableCell className="font-medium text-slate-500">
-                      {coordinador.id}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {getFullName(coordinador)}
-                    </TableCell>
-                    <TableCell>
-                      {getProgramasAsignados(coordinador)}
-                    </TableCell>
-                    <TableCell>{coordinador.dni || '-'}</TableCell>
-                    <TableCell>{coordinador.numero_telefono || '-'}</TableCell>
-                    <TableCell className="capitalize">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${coordinador.tipo_coordinador === 'interno'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-purple-100 text-purple-700'
-                        }`}>
-                        {coordinador.tipo_coordinador}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Abrir menú</span>
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white">
-                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleEdit(coordinador)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(coordinador.id)}
-                            className="text-red-600 focus:text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+                        Cargando coordinadores...
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : coordinadores.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      No hay coordinadores registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  coordinadores.map((coordinador: Coordinador) => (
+                    <TableRow key={coordinador.id}>
+                      <TableCell className="font-medium text-slate-500">
+                        {coordinador.id}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {getFullName(coordinador)}
+                      </TableCell>
+                      <TableCell>
+                        {getProgramasAsignados(coordinador)}
+                      </TableCell>
+                      <TableCell>{coordinador.dni || '-'}</TableCell>
+                      <TableCell>{coordinador.numero_telefono || '-'}</TableCell>
+                      <TableCell className="capitalize">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${coordinador.tipo_coordinador === 'interno'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-purple-100 text-purple-700'
+                          }`}>
+                          {coordinador.tipo_coordinador}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menú</span>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="bg-white">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleEdit(coordinador)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(coordinador.id)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
-
-          {coordinadores.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No hay coordinadores registrados</p>
-            </div>
-          )}
 
           {/* Pagination */}
           {pagination && pagination.last_page > 1 && (

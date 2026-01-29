@@ -30,7 +30,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(1);
 
   // Fetch users with params
-  const { data: response, isLoading, isFetching, error } = useQuery({
+  const { data: response, isLoading, error } = useQuery({
     queryKey: ['users', page, search, role, isActive],
     queryFn: async () => {
       const params: any = { page, per_page: 10 };
@@ -119,16 +119,7 @@ export default function UsersPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Cargando usuarios...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (
@@ -172,9 +163,9 @@ export default function UsersPage() {
             <SelectValue placeholder="Rol" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos los roles</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="user">User</SelectItem>
+            <SelectItem value="todos"><span>Todos los roles</span></SelectItem>
+            <SelectItem value="admin"><span>Administrador</span></SelectItem>
+            <SelectItem value="user"><span>Usuario</span></SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -185,9 +176,9 @@ export default function UsersPage() {
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos los estados</SelectItem>
-            <SelectItem value="activos">Activos</SelectItem>
-            <SelectItem value="inactivos">Inactivos</SelectItem>
+            <SelectItem value="todos"><span>Todos los estados</span></SelectItem>
+            <SelectItem value="activos"><span>Activos</span></SelectItem>
+            <SelectItem value="inactivos"><span>Inactivos</span></SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -201,84 +192,92 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {isFetching && (
-              <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            )}
+
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead>Cód.</TableHead>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Correo</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user: User) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.id}</TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin'
-                        ? 'bg-purple-100 text-purple-800'
-                        : 'bg-blue-100 text-blue-800'
-                        }`}>
-                        {user.role}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {user.is_active ? (
-                        <span className="inline-flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          Activo
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-red-600">
-                          <XCircle className="h-4 w-4" />
-                          Inactivo
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => handleEdit(user)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => handleDelete(user)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Eliminar
-                        </Button>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-2"></div>
+                        Cargando usuarios...
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      No hay usuarios registrados
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user: User) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.id}</TableCell>
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.role === 'admin'
+                          ? 'bg-purple-100 text-purple-800'
+                          : 'bg-blue-100 text-blue-800'
+                          }`}>
+                          {user.role}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        {user.is_active ? (
+                          <span className="inline-flex items-center gap-1 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            Activo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-red-600">
+                            <XCircle className="h-4 w-4" />
+                            Inactivo
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => handleEdit(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => handleDelete(user)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {users.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No hay usuarios registrados</p>
-            </div>
-          )}
-
+      
           {/* Pagination */}
           {pagination && pagination.last_page > 1 && (
             <div className="flex items-center justify-between mt-4 border-t pt-4">

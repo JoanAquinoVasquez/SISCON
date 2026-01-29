@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useToast } from "./ToastContext";
 import axios from "../lib/axios";
+import { LoadingScreen } from "../components/ui/LoadingScreen";
 
 interface User {
   id: number;
@@ -72,7 +73,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, loading, logout, signInWithGoogle, loginWithToken }}>
-      {!loading && children}
+      {loading ? <LoadingScreen /> : children}
     </AuthContext.Provider>
   );
 };

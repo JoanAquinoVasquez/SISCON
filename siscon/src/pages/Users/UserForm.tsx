@@ -112,7 +112,7 @@ export function UserForm({ user, open, onClose, onSubmit, isLoading }: UserFormP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Correo</Label>
             <Input
               id="email"
               type="email"
@@ -134,8 +134,8 @@ export function UserForm({ user, open, onClose, onSubmit, isLoading }: UserFormP
                 <SelectValue placeholder="Selecciona un rol" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="user">Usuario</SelectItem>
-                <SelectItem value="admin">Administrador</SelectItem>
+                <SelectItem value="user"><span>Usuario</span></SelectItem>
+                <SelectItem value="admin"><span>Administrador</span></SelectItem>
               </SelectContent>
             </Select>
             {errors.role && (

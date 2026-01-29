@@ -209,7 +209,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Correo</Label>
               <Input
                 id="email"
                 type="email"
@@ -233,8 +233,8 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
                   <SelectValue placeholder="Selecciona género" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Femenino</SelectItem>
+                  <SelectItem value="M"><span>Masculino</span></SelectItem>
+                  <SelectItem value="F"><span>Femenino</span></SelectItem>
                 </SelectContent>
               </Select>
               {errors.genero && (
@@ -252,10 +252,10 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
                   <SelectValue placeholder="Selecciona tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interno">Interno</SelectItem>
-                  <SelectItem value="externo">Externo</SelectItem>
-                  <SelectItem value="interno_enfermeria">Interno Enfermería</SelectItem>
-                  <SelectItem value="externo_enfermeria">Externo Enfermería</SelectItem>
+                  <SelectItem value="interno"><span>Interno</span></SelectItem>
+                  <SelectItem value="externo"><span>Externo</span></SelectItem>
+                  <SelectItem value="interno_enfermeria"><span>Interno Enfermería</span></SelectItem>
+                  <SelectItem value="externo_enfermeria"><span>Externo Enfermería</span></SelectItem>
                 </SelectContent>
               </Select>
               {errors.tipo_docente && (

@@ -761,7 +761,13 @@ class ExpedienteController extends Controller
 
         // Usamos un Switch o If/Else estrictos para los casos especiales
         // Esto evita que "DGA/UA" active también a "DGA-UNPRG"
-        if (stripos($search, 'DGA/UA') !== false || stripos($search, 'Abastecimiento') !== false) {
+          if (stripos($search, '-R') !== false || stripos($search, 'Rectorado') !== false) {
+            $directores[] = [
+                'id' => 'dr_carpena',
+                'label' => 'Dr. Enrique Wilfredo Carpena Velasquez - Rector',
+                'nombre' => 'Dr. Enrique Wilfredo Carpena Velasquez',
+            ];
+        } elseif (stripos($search, 'DGA/UA') !== false || stripos($search, 'Abastecimiento') !== false) {
             $directores[] = [
                 'id' => 'mg_yalta',
                 'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',

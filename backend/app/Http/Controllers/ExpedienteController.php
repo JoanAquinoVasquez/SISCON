@@ -200,7 +200,6 @@ class ExpedienteController extends Controller
                     'data' => $expedientes,
                     'multiple' => true
                 ], 201);
-
             } else {
                 // Flujo normal: un solo expediente
                 // Filtrar datos que no son del modelo Expediente
@@ -761,7 +760,7 @@ class ExpedienteController extends Controller
 
         // Usamos un Switch o If/Else estrictos para los casos especiales
         // Esto evita que "DGA/UA" active también a "DGA-UNPRG"
-          if (stripos($search, '-R') !== false || stripos($search, 'Rectorado') !== false) {
+        if (stripos($search, '-R') !== false || stripos($search, 'Rectorado') !== false) {
             $directores[] = [
                 'id' => 'dr_carpena',
                 'label' => 'Dr. Enrique Wilfredo Carpena Velasquez - Rector',
@@ -772,6 +771,24 @@ class ExpedienteController extends Controller
                 'id' => 'mg_yalta',
                 'label' => 'Mg. Juan Fernando Yalta Vallejos - Director de Unidad de Abastecimiento (UA)',
                 'nombre' => 'Mg. Juan Fernando Yalta Vallejos',
+            ];
+        } elseif (stripos($search, 'FCCBB/D') !== false || stripos($search, 'Ciencias Biológicas') !== false) {
+            $directores[] = [
+                'id' => 'dr_vargas',
+                'label' => 'Dr. César Alfredo Vargas Rosado - Decano de la Facultad de Ciencias Biológicas y Ambientales (FCCBB)',
+                'nombre' => 'Dr. César Alfredo Vargas Rosado',
+            ];
+        } elseif (stripos($search, 'OTI-UNPRG') !== false || stripos($search, 'OTI') !== false) {
+            $directores[] = [
+                'id' => 'ing_ruiz',
+                'label' => 'Ing. Carlos Heriberto Ruiz Oliva - Jefe de la Oficina de Tecnologías de la Información (OTI)',
+                'nombre' => 'Ing. Carlos Heriberto Ruiz Oliva',
+            ];
+        } elseif (stripos($search, 'OPP-UM') !== false || stripos($search, 'Modernización') !== false) {
+            $directores[] = [
+                'id' => 'mg_horna',
+                'label' => 'Mg. Milagros del Pilar Horna Oliva - Jefa de la Unidad de Modernización (UM)',
+                'nombre' => 'Mg. Milagros del Pilar Horna Oliva',
             ];
         } elseif (stripos($search, '-I-EPG') !== false) {
             // Al ser un ELSEIF, si ya entró en DGA/UA, no entrará aquí

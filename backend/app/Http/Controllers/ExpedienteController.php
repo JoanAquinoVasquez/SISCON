@@ -766,6 +766,12 @@ class ExpedienteController extends Controller
                 'label' => 'Dr. Enrique Wilfredo Carpena Velasquez - Rector',
                 'nombre' => 'Dr. Enrique Wilfredo Carpena Velasquez',
             ];
+        } elseif (stripos($search, '-UT') !== false || stripos($search, 'Unidad de Tesorería') !== false) {
+            $directores[] = [
+                'id' => 'mg_damian',
+                'label' => 'Mg. José Damían Sandoval - Jefe de la Unidad de Tesorería (UT)',
+                'nombre' => 'Mg. José Damían Sandoval',
+            ];
         } elseif (stripos($search, 'DGA/UA') !== false || stripos($search, 'Abastecimiento') !== false) {
             $directores[] = [
                 'id' => 'mg_yalta',

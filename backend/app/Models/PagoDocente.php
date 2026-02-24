@@ -16,7 +16,6 @@ class PagoDocente extends Model
         'docente_id',
         'curso_id',
         'periodo',
-        'estado',
         'facultad_nombre',
         'director_nombre',
         'coordinador_nombre',
@@ -32,6 +31,7 @@ class PagoDocente extends Model
         'numero_oficio_presentacion_facultad_url',
         'numero_oficio_presentacion_coordinador',
         'numero_oficio_presentacion_coordinador_url',
+        'numero_oficio_presentacion_direccion',
         'numero_oficio_conformidad_facultad',
         'numero_oficio_conformidad_facultad_url',
         'numero_oficio_conformidad_coordinador',
@@ -126,5 +126,17 @@ class PagoDocente extends Model
     public function expedientes()
     {
         return $this->hasMany(Expediente::class);
+    }
+
+    // Accessors for consolidated state
+    public function getEstadoAttribute()
+    {
+        return $this->expedientes()->first()?->estado ?? 'pendiente';
+    }
+
+    public function setEstadoAttribute($value)
+    {
+        // When setting state on PagoDocente, update all its related expedientes
+        $this->expedientes()->update(['estado' => $value]);
     }
 }

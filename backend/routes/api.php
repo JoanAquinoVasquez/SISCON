@@ -135,6 +135,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('pagos-docentes/{id}/generar-resolucion-aceptacion', [PagoDocenteController::class, 'generateResolucionAceptacion']);
     Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
     Route::get('pagos-docentes/exportar-excel', [PagoDocenteController::class, 'exportExcel']);
+    Route::post('pagos-docentes/{id}/actualizar-estado', [PagoDocenteController::class, 'actualizarEstado']);
     Route::post('pagos-docentes/{id}/enviar-sheets', [PagoDocenteController::class, 'enviarASheets']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 
@@ -150,13 +151,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('expedientes/buscar-docente', [ExpedienteController::class, 'buscarDocentes']);
     Route::get('expedientes/buscar-curso', [ExpedienteController::class, 'buscarCursos']);
     Route::get('expedientes/buscar-directores', [ExpedienteController::class, 'buscarDirectores']);
+    Route::post('expedientes/{id}/estado', [ExpedienteController::class, 'cambiarEstado']);
     Route::apiResource('expedientes', ExpedienteController::class);
 
     // ========================================
     // Devoluciones (Refunds)
     // ========================================
 
-    Route::patch('devoluciones/{id}/estado', [DevolucionController::class, 'actualizarEstado']);
+    Route::post('devoluciones/{id}/estado', [DevolucionController::class, 'actualizarEstado']);
     Route::apiResource('devoluciones', DevolucionController::class);
 
     // ========================================

@@ -148,6 +148,8 @@ export default function PagoDocenteForm() {
     numero_oficio_presentacion_facultad_url: '',
     numero_oficio_presentacion_coordinador: '',
     numero_oficio_presentacion_coordinador_url: '',
+    numero_oficio_presentacion_direccion: '',
+    numero_oficio_presentacion_direccion_url: '',
     numero_oficio_conformidad_facultad: '',
     numero_oficio_conformidad_facultad_url: '',
     numero_oficio_conformidad_coordinador: '',
@@ -179,6 +181,8 @@ export default function PagoDocenteForm() {
     numero_oficio_presentacion_facultad_url: '',
     numero_oficio_presentacion_coordinador: '',
     numero_oficio_presentacion_coordinador_url: '',
+    numero_oficio_presentacion_direccion: '',
+    numero_oficio_presentacion_direccion_url: '',
     numero_oficio_conformidad_facultad: '',
     numero_oficio_conformidad_facultad_url: '',
     numero_oficio_conformidad_coordinador: '',
@@ -267,6 +271,8 @@ export default function PagoDocenteForm() {
             numero_oficio_presentacion_facultad_url: data.numero_oficio_presentacion_facultad_url || '',
             numero_oficio_presentacion_coordinador: data.numero_oficio_presentacion_coordinador || '',
             numero_oficio_presentacion_coordinador_url: data.numero_oficio_presentacion_coordinador_url || '',
+            numero_oficio_presentacion_direccion: data.numero_oficio_presentacion_direccion || '',
+            numero_oficio_presentacion_direccion_url: data.numero_oficio_presentacion_direccion_url || '',
             numero_oficio_conformidad_facultad: data.numero_oficio_conformidad_facultad || '',
             numero_oficio_conformidad_facultad_url: data.numero_oficio_conformidad_facultad_url || '',
             numero_oficio_conformidad_coordinador: data.numero_oficio_conformidad_coordinador || '',
@@ -298,6 +304,8 @@ export default function PagoDocenteForm() {
               numero_oficio_presentacion_facultad_url: data.numero_oficio_presentacion_facultad_url || '',
               numero_oficio_presentacion_coordinador: data.numero_oficio_presentacion_coordinador || '',
               numero_oficio_presentacion_coordinador_url: data.numero_oficio_presentacion_coordinador_url || '',
+              numero_oficio_presentacion_direccion: data.numero_oficio_presentacion_direccion || '',
+              numero_oficio_presentacion_direccion_url: data.numero_oficio_presentacion_direccion_url || '',
               numero_oficio_conformidad_facultad: data.numero_oficio_conformidad_facultad || '',
               numero_oficio_conformidad_facultad_url: data.numero_oficio_conformidad_facultad_url || '',
               numero_oficio_conformidad_coordinador: data.numero_oficio_conformidad_coordinador || '',
@@ -631,7 +639,7 @@ export default function PagoDocenteForm() {
                 <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4">
                   📂 Documentos de Presentación
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
                   <DocumentField
                     label="Oficio Presentación Facultad"
                     placeholder="001-VIRTUAL-2026-DUPG-FICSA"
@@ -655,6 +663,18 @@ export default function PagoDocenteForm() {
                     onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
                       ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador_url: v })}
+                  />
+                  <DocumentField
+                    label="Oficio Presentación Dirección (Opcional)"
+                    placeholder="001-D-2026-EPG"
+                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_direccion : docExterno.numero_oficio_presentacion_direccion}
+                    onChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_direccion: v })}
+                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_direccion_url : docExterno.numero_oficio_presentacion_direccion_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion_url: v })
+                      : setDocExterno({ ...docExterno, numero_oficio_presentacion_direccion_url: v })}
                   />
                 </div>
               </section>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from '../../lib/axios';
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   Select,
   SelectContent,
@@ -47,6 +48,10 @@ import {
   Loader2,
   MoreVertical,
   Download,
+  Upload,
+  FileIcon,
+  X,
+  CheckCircle,
 } from 'lucide-react';
 
 // Función para formatear fechas en formato legible
@@ -108,6 +113,7 @@ interface PagoDocente {
   numero_recibo_honorario_url?: string;
   numero_oficio_presentacion_facultad?: string;
   numero_oficio_presentacion_coordinador?: string;
+  numero_oficio_presentacion_direccion?: string;
   numero_oficio_conformidad_facultad?: string;
   numero_oficio_conformidad_coordinador?: string;
   numero_oficio_conformidad_direccion?: string;
@@ -145,31 +151,49 @@ interface PaginationData {
 
 export default function PagosDocentesList() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialSearch = queryParams.get('search') || '';
+  const exactId = queryParams.get('highlight_id') || '';
+
   const [pagos, setPagos] = useState<PagoDocente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(initialSearch);
+  const [exactIdFilter, setExactIdFilter] = useState(exactId);
   const [filters, setFilters] = useState({
     periodo: '',
     tipo_docente: '',
-    programa_id: ''
+    programa_id: '',
+    estado: ''
   });
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
   const [totalImporte, setTotalImporte] = useState(0);
 
-  // Modal de detalle
+  const debouncedSearch = useDebounce(search, 500);
+
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [selectedPago, setSelectedPago] = useState<PagoDocente | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  // Modal de Cambio de Estado
+  const [isEstadoOpen, setIsEstadoOpen] = useState(false);
+  const [loadingEstado, setLoadingEstado] = useState(false);
+  const [estadoForm, setEstadoForm] = useState({
+    id: 0,
+    estado: 'pendiente',
+    file: null as File | null
+  });
 
   const fetchPagos = async () => {
     try {
       setLoading(true);
-      const params = {
+      const params: any = {
         page,
-        search,
         ...filters
       };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (exactIdFilter) params.id = exactIdFilter;
 
       const response = await axios.get('/pagos-docentes', { params });
       setPagos(response.data.data.data);
@@ -191,7 +215,7 @@ export default function PagosDocentesList() {
 
   useEffect(() => {
     fetchPagos();
-  }, [page, search, filters]);
+  }, [page, debouncedSearch, filters, exactIdFilter]);
 
   const handleDelete = async (id: number) => {
     if (confirm('¿Está seguro de eliminar este registro?')) {
@@ -217,6 +241,31 @@ export default function PagosDocentesList() {
       setIsDetailOpen(false);
     } finally {
       setLoadingDetail(false);
+    }
+  };
+
+  const handleSaveEstado = async () => {
+    try {
+      setLoadingEstado(true);
+      const formData = new FormData();
+      formData.append('estado', estadoForm.estado);
+      if (estadoForm.file) {
+        formData.append('file', estadoForm.file);
+      }
+
+      await axios.post(`/pagos-docentes/${estadoForm.id}/actualizar-estado`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      toast.success('Estado actualizado correctamente');
+      setIsEstadoOpen(false);
+      setEstadoForm({ id: 0, estado: 'pendiente', file: null });
+      fetchPagos();
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.message || 'Error al actualizar el estado');
+    } finally {
+      setLoadingEstado(false);
     }
   };
 
@@ -377,13 +426,18 @@ export default function PagosDocentesList() {
   const getEstadoBadge = (estado: string) => {
     switch (estado) {
       case 'pendiente':
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pendiente</Badge>;
+        return <Badge variant="warning">Pendiente</Badge>;
       case 'en_proceso':
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">En Proceso</Badge>;
+        return <Badge variant="secondary">En Proceso</Badge>;
       case 'observado':
-        return <Badge variant="destructive">Observado</Badge>;
+        return <Badge variant="tertiary">Observado</Badge>;
+      case 'aprobado':
+        return <Badge variant="default">Aprobado</Badge>;
       case 'completado':
-        return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Completado</Badge>;
+      case 'finalizado':
+        return <Badge variant="success">Finalizado</Badge>;
+      case 'rechazado':
+        return <Badge variant="destructive">Rechazado</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
@@ -421,18 +475,18 @@ export default function PagosDocentesList() {
             placeholder="Buscar por docente, DNI o curso..."
             className="pl-8"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
         <Input
           placeholder="Periodo (ej. 2024-I)"
           className="w-full md:w-40"
           value={filters.periodo}
-          onChange={(e) => setFilters({ ...filters, periodo: e.target.value })}
+          onChange={(e) => { setFilters({ ...filters, periodo: e.target.value }); setPage(1); }}
         />
         <Select
           value={filters.tipo_docente}
-          onValueChange={(value) => setFilters({ ...filters, tipo_docente: value })}
+          onValueChange={(value) => { setFilters({ ...filters, tipo_docente: value }); setPage(1); }}
         >
           <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Tipo Docente" />
@@ -443,7 +497,42 @@ export default function PagosDocentesList() {
             <SelectItem value="externo"><span>Externo</span></SelectItem>
           </SelectContent>
         </Select>
+        <Select
+          value={filters.estado}
+          onValueChange={(value) => { setFilters({ ...filters, estado: value === 'todos' ? '' : value }); setPage(1); }}
+        >
+          <SelectTrigger className="w-full md:w-40">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos"><span>Todos</span></SelectItem>
+            <SelectItem value="pendiente"><span>Pendiente</span></SelectItem>
+            <SelectItem value="en_proceso"><span>En Proceso</span></SelectItem>
+            <SelectItem value="completado"><span>Completado</span></SelectItem>
+            <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      {exactIdFilter && (
+        <div className="bg-amber-100/80 border border-amber-300 text-amber-800 px-4 py-3 rounded-md flex items-center justify-between mt-4">
+          <div className="flex items-center">
+            <span className="font-semibold mr-2">Filtro Exacto:</span>
+            <span>Mostrando únicamente el registro asociado al expediente.</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hover:bg-amber-200/50"
+            onClick={() => {
+              setExactIdFilter('');
+              navigate('/pagos-docentes', { replace: true });
+            }}
+          >
+            Quitar filtro y ver todos
+          </Button>
+        </div>
+      )}
 
       {/* Tabla */}
       <div className="rounded-md border bg-white shadow-sm overflow-x-auto">
@@ -466,9 +555,9 @@ export default function PagosDocentesList() {
             {loading ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8">
-                  <div className="flex justify-center items-center">
-                    <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                    Cargando datos...
+                  <div className="flex justify-center items-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <span>Cargando datos...</span>
                   </div>
                 </TableCell>
               </TableRow>
@@ -480,7 +569,10 @@ export default function PagosDocentesList() {
               </TableRow>
             ) : (
               pagos.map((pago) => (
-                <TableRow key={pago.id}>
+                <TableRow
+                  key={pago.id}
+                  className={exactIdFilter && pago.id.toString() === exactIdFilter ? "bg-amber-50" : ""}
+                >
                   <TableCell>{pago.id}</TableCell>
                   <TableCell>
                     <div className="font-medium">{pago.docente_nombre}</div>
@@ -492,6 +584,8 @@ export default function PagosDocentesList() {
                     {pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
                     <div className="text-xs text-muted-foreground" title={pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}>Cord. Ofic.{' '}
                       {pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}</div>
+                    <div className="text-xs text-muted-foreground" title={pago.numero_oficio_presentacion_direccion ? `N° ${pago.numero_oficio_presentacion_direccion}` : 'Pendiente'}>Ofic. Pres.{' '}
+                      {pago.numero_oficio_presentacion_direccion ? `${pago.numero_oficio_presentacion_direccion}` : ''}</div>
                   </TableCell>
                   <TableCell className='text-center'>
                     {/* Si el docente es externo, que muestre la resolucion de aprobacion si es que hay, y si no hay, salga pendiente, pero si es docente interno, me salga no acto */}
@@ -539,6 +633,12 @@ export default function PagosDocentesList() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setEstadoForm({ id: pago.id, estado: pago.estado, file: null });
+                          setIsEstadoOpen(true);
+                        }}>
+                          <CheckCircle className="mr-2 h-4 w-4" /> Cambiar estado
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDelete(pago.id)}>
                           <Trash2 className="mr-2 h-4 w-4" /> Eliminar
@@ -590,8 +690,11 @@ export default function PagosDocentesList() {
             <DialogDescription>Información completa del expediente de pago</DialogDescription>
           </DialogHeader>
           {loadingDetail ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
+            <div className="flex justify-center py-12">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="text-muted-foreground animate-pulse">Cargando detalles...</span>
+              </div>
             </div>
           ) : selectedPago ? (
             <div className="space-y-6">
@@ -654,6 +757,11 @@ export default function PagosDocentesList() {
                     {
                       label: "Pres. Coordinador",
                       value: selectedPago.numero_oficio_presentacion_coordinador,
+                      show: true
+                    },
+                    {
+                      label: "Pres. Dirección",
+                      value: selectedPago.numero_oficio_presentacion_direccion,
                       show: true
                     },
                     {
@@ -765,6 +873,115 @@ export default function PagosDocentesList() {
               No se pudo cargar la información
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Cambio de Estado - Premium Design */}
+      <Dialog open={isEstadoOpen} onOpenChange={setIsEstadoOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar Estado de Pago</DialogTitle>
+            <DialogDescription className="text-sm">
+              Seleccione el nuevo estado para este pago docente. Al marcarlo como <strong>Completado</strong>, deberá adjuntar el documento de sustento final.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <label htmlFor="estado" className="text-sm font-semibold text-gray-700">
+                Nuevo Estado
+              </label>
+              <select
+                id="estado"
+                value={estadoForm.estado}
+                onChange={(e) => setEstadoForm({ ...estadoForm, estado: e.target.value })}
+                className="flex h-11 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="en_proceso">En Proceso</option>
+                <option value="completado">Completado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+
+            {estadoForm.estado === 'completado' && (
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700">
+                  Documento de Sustento (Opcional)
+                </label>
+
+                {!estadoForm.file ? (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500', 'bg-blue-50'); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50'); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                      const file = e.dataTransfer.files?.[0];
+                      if (file) setEstadoForm({ ...estadoForm, file });
+                    }}
+                    onClick={() => document.getElementById('file-upload-pago')?.click()}
+                    className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 hover:bg-gray-50 transition-all group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-gray-700">Haz clic o arrastra un archivo</p>
+                      <p className="text-xs text-gray-500 mt-1">PDF, DOCX o Imágenes (máx. 10MB)</p>
+                    </div>
+                    <input
+                      id="file-upload-pago"
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => setEstadoForm({ ...estadoForm, file: e.target.files?.[0] || null })}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                      <FileIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-blue-900 truncate">{estadoForm.file.name}</p>
+                      <p className="text-xs text-blue-600">{(estadoForm.file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEstadoForm({ ...estadoForm, file: null })}
+                      className="text-blue-400 hover:text-red-500 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-gray-500 flex items-start gap-1.5 px-1">
+                  <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 shrink-0" />
+                  El archivo se subirá automáticamente a Google Drive y se vinculará al pago.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => { setIsEstadoOpen(false); setEstadoForm({ ...estadoForm, file: null }); }}
+              disabled={loadingEstado}
+              className="px-6 rounded-lg"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSaveEstado}
+              disabled={loadingEstado}
+              className="px-6 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
+            >
+              {loadingEstado ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Actualizar Estado
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

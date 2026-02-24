@@ -16,17 +16,23 @@ export class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<T> {
     const token = await this.getAuthToken();
 
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      ...((options.headers as Record<string, string>) || {}),
+    };
+
+    // Only set Content-Type if it's not already set and we're not sending FormData
+    if (!headers["Content-Type"] && !(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -41,7 +47,10 @@ export class ApiService {
 
   async get<T>(
     endpoint: string,
-    options?: { params?: Record<string, any> }
+    options?: {
+      params?: Record<string, any>;
+      headers?: Record<string, string>;
+    },
   ): Promise<T> {
     let url = endpoint;
     if (options?.params) {
@@ -55,27 +64,42 @@ export class ApiService {
         url += `?${queryString}`;
       }
     }
-    return this.request<T>(url);
+    return this.request<T>(url, { headers: options?.headers });
   }
 
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(
+    endpoint: string,
+    data: any,
+    options: RequestInit = {},
+  ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
+      ...options,
     });
   }
 
-  async put<T>(endpoint: string, data: any): Promise<T> {
+  async put<T>(
+    endpoint: string,
+    data: any,
+    options: RequestInit = {},
+  ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
+      ...options,
     });
   }
 
-  async patch<T>(endpoint: string, data: any): Promise<T> {
+  async patch<T>(
+    endpoint: string,
+    data: any,
+    options: RequestInit = {},
+  ): Promise<T> {
     return this.request<T>(endpoint, {
       method: "PATCH",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
+      ...options,
     });
   }
 

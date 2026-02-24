@@ -22,7 +22,8 @@ class DevolucionController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('persona', 'LIKE', "%{$search}%")
                     ->orWhere('dni', 'LIKE', "%{$search}%")
-                    ->orWhere('numero_voucher', 'LIKE', "%{$search}%");
+                    ->orWhere('numero_voucher', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_direccion', 'LIKE', "%{$search}%");
             });
         }
 
@@ -31,9 +32,11 @@ class DevolucionController extends Controller
             $query->where('tipo_devolucion', $request->tipo_devolucion);
         }
 
-        // Filter by estado
+        // Filter by estado (via related expedientes)
         if ($request->has('estado') && $request->estado) {
-            $query->where('estado', $request->estado);
+            $query->whereHas('expedientes', function ($q) use ($request) {
+                $q->where('estado', $request->estado);
+            });
         }
 
         // Filter by programa
@@ -41,7 +44,12 @@ class DevolucionController extends Controller
             $query->where('programa_id', $request->programa_id);
         }
 
-        $devoluciones = $query->latest()->paginate(15);
+        // Exact ID match
+        if ($request->has('id') && $request->id) {
+            $query->where('devoluciones.id', $request->id);
+        }
+
+        $devoluciones = $query->latest('devoluciones.id')->paginate(15);
 
         // Format response
         $devoluciones->getCollection()->transform(function ($devolucion) {
@@ -58,6 +66,7 @@ class DevolucionController extends Controller
                 'tipo_devolucion_label' => $devolucion->tipo_devolucion_label,
                 'importe' => $devolucion->importe,
                 'numero_voucher' => $devolucion->numero_voucher,
+                'numero_oficio_direccion' => $devolucion->numero_oficio_direccion,
                 'estado' => $devolucion->estado,
                 'estado_label' => $devolucion->estado_label,
                 'observaciones' => $devolucion->observaciones,
@@ -79,10 +88,11 @@ class DevolucionController extends Controller
             'dni' => 'required|string',
             'programa_id' => 'required|exists:programas,id',
             'proceso_admision' => 'required|string',
-            'tipo_devolucion' => 'required|in:inscripcion,idiomas,grados_titulos',
+            'tipo_devolucion' => 'required|in:inscripcion,idiomas,grados_titulos,certificado_estudios,otros',
             'importe' => 'required|numeric|min:0',
             'numero_voucher' => 'required|string',
-            'estado' => 'sometimes|in:pendiente,aprobado,rechazado,procesado',
+            'numero_oficio_direccion' => 'nullable|string',
+            'estado' => 'sometimes|in:pendiente,aprobado,rechazado,observado',
             'observaciones' => 'nullable|string',
         ]);
 
@@ -91,6 +101,11 @@ class DevolucionController extends Controller
         }
 
         $devolucion = Devolucion::create($request->all());
+
+        // Manually set estado if provided (since it's not in $fillable)
+        if ($request->has('estado')) {
+            $devolucion->estado = $request->estado;
+        }
 
         return response()->json([
             'message' => 'Devolución registrada exitosamente',
@@ -124,10 +139,11 @@ class DevolucionController extends Controller
             'dni' => 'sometimes|string',
             'programa_id' => 'sometimes|exists:programas,id',
             'proceso_admision' => 'sometimes|string',
-            'tipo_devolucion' => 'sometimes|in:inscripcion,idiomas,grados_titulos',
+            'tipo_devolucion' => 'sometimes|in:inscripcion,idiomas,grados_titulos,certificado_estudios,otros',
             'importe' => 'sometimes|numeric|min:0',
             'numero_voucher' => 'sometimes|string',
-            'estado' => 'sometimes|in:pendiente,aprobado,rechazado,procesado',
+            'numero_oficio_direccion' => 'sometimes|nullable|string',
+            'estado' => 'sometimes|in:pendiente,aprobado,rechazado,observado',
             'observaciones' => 'sometimes|nullable|string',
         ]);
 
@@ -135,7 +151,14 @@ class DevolucionController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $devolucion->update($request->all());
+        $devolucion->fill($request->except('estado'));
+
+        // Update state manually to trigger mutator
+        if ($request->has('estado')) {
+            $devolucion->estado = $request->estado;
+        }
+
+        $devolucion->save();
 
         return response()->json([
             'message' => 'Devolución actualizada exitosamente',
@@ -171,18 +194,35 @@ class DevolucionController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'estado' => 'required|in:pendiente,aprobado,rechazado,procesado',
+            'estado' => 'required|in:pendiente,en_proceso,completado,rechazado',
             'observaciones' => 'nullable|string',
+            'file' => 'nullable|file|max:10240'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $devolucion->update([
-            'estado' => $request->estado,
-            'observaciones' => $request->observaciones ?? $devolucion->observaciones,
-        ]);
+        $devolucion->estado = $request->estado;
+        if ($request->has('observaciones')) {
+            $devolucion->observaciones = $request->observaciones;
+        }
+        $devolucion->save();
+
+        // If file is provided, update the related expediente's document_respuesta_url
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $driveService = new \App\Services\GoogleDriveService();
+            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+            $link = $driveService->uploadFile($file, $folderId);
+
+            if ($link) {
+                // Update all associated expedientes
+                foreach ($devolucion->expedientes as $expediente) {
+                    $expediente->update(['documento_respuesta_url' => $link]);
+                }
+            }
+        }
 
         return response()->json([
             'message' => 'Estado actualizado exitosamente',

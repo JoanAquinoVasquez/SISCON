@@ -20,7 +20,7 @@ class Devolucion extends Model
         'tipo_devolucion',
         'importe',
         'numero_voucher',
-        'estado',
+        'numero_oficio_direccion',
         'observaciones',
     ];
 
@@ -51,13 +51,25 @@ class Devolucion extends Model
         return $labels[$this->tipo_devolucion] ?? $this->tipo_devolucion;
     }
 
+    // Accessors for consolidated state
+    public function getEstadoAttribute()
+    {
+        return $this->expedientes()->first()?->estado ?? 'pendiente';
+    }
+
+    public function setEstadoAttribute($value)
+    {
+        // When setting state on Devolucion, update all its related expedientes
+        $this->expedientes()->update(['estado' => $value]);
+    }
+
     public function getEstadoLabelAttribute()
     {
         $labels = [
             'pendiente' => 'Pendiente',
-            'aprobado' => 'Aprobado',
+            'en_proceso' => 'En Proceso',
+            'completado' => 'Completado',
             'rechazado' => 'Rechazado',
-            'procesado' => 'Procesado',
         ];
 
         return $labels[$this->estado] ?? $this->estado;

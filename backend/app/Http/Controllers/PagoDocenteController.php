@@ -32,6 +32,8 @@ class PagoDocenteController extends Controller
                     $q->where('nombres', 'LIKE', "%{$search}%")
                         ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
                         ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
+                        ->orWhereRaw("CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) LIKE ?", ["%{$search}%"])
+                        ->orWhereRaw("CONCAT_WS(' ', apellido_paterno, apellido_materno, nombres) LIKE ?", ["%{$search}%"])
                         ->orWhere('dni', 'LIKE', "%{$search}%");
                 })
                     // Curso
@@ -39,9 +41,12 @@ class PagoDocenteController extends Controller
                         $q->where('nombre', 'LIKE', "%{$search}%")
                             ->orWhere('codigo', 'LIKE', "%{$search}%");
                     })
-                    // Programa (via Curso -> Semestres -> Programa)
+                    // Programa (via Curso -> Semestres -> Programa) and Grado
                     ->orWhereHas('curso.semestres.programa', function ($q) use ($search) {
-                        $q->where('nombre', 'LIKE', "%{$search}%");
+                        $q->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhereHas('grado', function ($qGrado) use ($search) {
+                                $qGrado->where('nombre', 'LIKE', "%{$search}%");
+                            });
                     })
                     // Direct fields
                     ->orWhere('periodo', 'LIKE', "%{$search}%")
@@ -50,6 +55,7 @@ class PagoDocenteController extends Controller
                     // Document Numbers
                     ->orWhere('numero_oficio_presentacion_facultad', 'LIKE', "%{$search}%")
                     ->orWhere('numero_oficio_presentacion_coordinador', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_presentacion_direccion', 'LIKE', "%{$search}%")
                     ->orWhere('numero_resolucion_aprobacion', 'LIKE', "%{$search}%")
                     ->orWhere('numero_oficio_conformidad_facultad', 'LIKE', "%{$search}%")
                     ->orWhere('numero_oficio_conformidad_coordinador', 'LIKE', "%{$search}%")
@@ -78,10 +84,22 @@ class PagoDocenteController extends Controller
             });
         }
 
+        // Exact ID Match
+        if ($request->has('id') && $request->id) {
+            $query->where('pagos_docentes.id', $request->id);
+        }
+
+        // Filter by estado (via related expedientes)
+        if ($request->has('estado') && $request->estado && $request->estado !== 'todos') {
+            $query->whereHas('expedientes', function ($q) use ($request) {
+                $q->where('estado', $request->estado);
+            });
+        }
+
         // Clone query to calculate total sum without pagination
         $totalImporte = $query->clone()->sum('importe_total');
 
-        $pagos = $query->latest()->paginate(15);
+        $pagos = $query->latest('pagos_docentes.id')->paginate(15);
 
         // Format response with computed fields
         $pagos->getCollection()->transform(function ($pago) {
@@ -106,6 +124,7 @@ class PagoDocenteController extends Controller
                 'importe_letras' => $pago->importe_letras,
                 'numero_oficio_presentacion_facultad' => $pago->numero_oficio_presentacion_facultad,
                 'numero_oficio_presentacion_coordinador' => $pago->numero_oficio_presentacion_coordinador,
+                'numero_oficio_presentacion_direccion' => $pago->numero_oficio_presentacion_direccion,
                 'numero_oficio_conformidad_facultad' => $pago->numero_oficio_conformidad_facultad,
                 'numero_oficio_conformidad_coordinador' => $pago->numero_oficio_conformidad_coordinador,
                 'numero_oficio_conformidad_direccion' => $pago->numero_oficio_conformidad_direccion,
@@ -151,13 +170,21 @@ class PagoDocenteController extends Controller
             'fecha_nota_pago_2' => 'nullable|date',
             'oficio_direccion_exp_docentes' => 'nullable|string',
             'oficio_direccion_exp_docentes_url' => 'nullable|url',
+            'numero_oficio_presentacion_direccion' => 'nullable|string',
+            'numero_oficio_presentacion_direccion_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $pago = PagoDocente::create($request->all());
+        $pago = PagoDocente::create($request->except('estado'));
+
+        // Update state manually if provided (since it is not in $fillable)
+        if ($request->has('estado')) {
+            $pago->estado = $request->estado;
+            $pago->save();
+        }
 
         return response()->json([
             'message' => 'Pago registrado exitosamente',
@@ -212,13 +239,20 @@ class PagoDocenteController extends Controller
             'coordinador_nombre' => 'nullable|string',
             'oficio_direccion_exp_docentes' => 'nullable|string',
             'oficio_direccion_exp_docentes_url' => 'nullable|url',
+            'numero_oficio_presentacion_direccion' => 'nullable|string',
+            'numero_oficio_presentacion_direccion_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $pago->fill($request->all());
+        $pago->fill($request->except('estado'));
+
+        // Update state manually as part of normal field updates
+        if ($request->has('estado')) {
+            $pago->estado = $request->estado;
+        }
 
         // Verificar si todos los campos requeridos para completar el pago están presentes
         if (
@@ -592,5 +626,55 @@ class PagoDocenteController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Update estado of pago docente
+     */
+    public function actualizarEstado(Request $request, string $id)
+    {
+        $pago = \App\Models\PagoDocente::find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago docente no encontrado'], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'estado' => 'required|in:pendiente,en_proceso,completado,rechazado',
+            'file' => 'nullable|file|max:10240'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $pago->estado = $request->estado;
+        $pago->save();
+
+        // If file is provided, update the related expedientes
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $driveService = new \App\Services\GoogleDriveService();
+            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+            $link = $driveService->uploadFile($file, $folderId);
+
+            if ($link) {
+                foreach ($pago->expedientes as $expediente) {
+                    $expediente->update(['documento_respuesta_url' => $link]);
+                }
+            }
+        }
+
+        // Sync with Google Sheets
+        try {
+            $this->googleSheetsService->updatePagoDocente($pago);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating PagoDocente in Sheets: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Estado actualizado exitosamente',
+            'data' => $pago
+        ]);
     }
 }

@@ -29,13 +29,40 @@ class ExpedienteController extends Controller
     {
         $query = Expediente::with(['docente', 'curso', 'pagoDocente', 'semestre.programa.grado']);
 
-        // Search by numero_documento, remitente
+        // Search by multiple fields including relations (numero_documento, remitente, docente, curso, programa, etc.)
         if ($request->has('search') && $request->search) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
+                // Main table fields
                 $q->where('numero_documento', 'LIKE', "%{$search}%")
                     ->orWhere('numero_expediente_mesa_partes', 'LIKE', "%{$search}%")
-                    ->orWhere('remitente', 'LIKE', "%{$search}%");
+                    ->orWhere('remitente', 'LIKE', "%{$search}%")
+                    ->orWhere('tipo_asunto', 'LIKE', "%{$search}%")
+                    ->orWhere('descripcion_asunto', 'LIKE', "%{$search}%")
+                    // Related: Docente
+                    ->orWhereHas('docente', function ($qDocente) use ($search) {
+                        $qDocente->where('nombres', 'LIKE', "%{$search}%")
+                            ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
+                            ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
+                            ->orWhereRaw("CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) LIKE ?", ["%{$search}%"])
+                            ->orWhereRaw("CONCAT_WS(' ', apellido_paterno, apellido_materno, nombres) LIKE ?", ["%{$search}%"]);
+                    })
+                    // Related: Curso
+                    ->orWhereHas('curso', function ($qCurso) use ($search) {
+                        $qCurso->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhere('codigo', 'LIKE', "%{$search}%");
+                    })
+                    // Related: Programa/Grado
+                    ->orWhereHas('semestre.programa', function ($qPrograma) use ($search) {
+                        $qPrograma->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhereHas('grado', function ($qGrado) use ($search) {
+                                $qGrado->where('nombre', 'LIKE', "%{$search}%");
+                            });
+                    })
+                    // Related: Estado de Pago
+                    ->orWhereHas('pagoDocente', function ($qPago) use ($search) {
+                        $qPago->where('estado', 'LIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -52,11 +79,9 @@ class ExpedienteController extends Controller
             $query->where('fecha_mesa_partes', '<=', $request->fecha_hasta);
         }
 
-        // Filter by estado_pago (via pagoDocente relationship)
-        if ($request->has('estado_pago') && $request->estado_pago) {
-            $query->whereHas('pagoDocente', function ($q) use ($request) {
-                $q->where('estado', $request->estado_pago);
-            });
+        // Filter by estado (main table)
+        if ($request->has('estado') && $request->estado) {
+            $query->where('estado', $request->estado);
         }
 
         $expedientes = $query->latest()->paginate(15);
@@ -82,8 +107,18 @@ class ExpedienteController extends Controller
                 'programa_nombre' => $programa->nombre ?? null,
                 'grado_nombre' => $programa->grado->nombre ?? null,
                 'periodo' => $programa->periodo ?? null,
-                'estado_pago' => $expediente->pagoDocente->estado ?? null,
+                'estado' => $expediente->estado,
+                'documento_respuesta_url' => $expediente->documento_respuesta_url,
+                'estado_pago' => $expediente->tipo_asunto === 'devolucion'
+                    ? ($expediente->devolucion->estado ?? null)
+                    : ($expediente->pagoDocente->estado ?? null),
                 'pago_docente_id' => $expediente->pago_docente_id,
+                'devolucion_id' => $expediente->devolucion->id ?? null,
+                'persona_devolucion' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->persona ?? $expediente->persona_devolucion ?? null) : null,
+                'tipo_devolucion' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->tipo_devolucion ?? $expediente->tipo_devolucion ?? null) : null,
+                'importe_devolucion' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->importe ?? $expediente->importe_devolucion ?? null) : null,
+                'numero_voucher' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->numero_voucher ?? $expediente->numero_voucher ?? null) : null,
+                'numero_oficio_direccion' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->numero_oficio_direccion ?? null) : null,
                 'created_at' => $expediente->created_at,
                 'updated_at' => $expediente->updated_at,
             ];
@@ -275,12 +310,7 @@ class ExpedienteController extends Controller
             'user'
         ]);
 
-        $estado = 'PENDIENTE';
-        if ($expediente->tipo_asunto === 'devolucion') {
-            $estado = $expediente->devolucion->estado ?? 'PENDIENTE';
-        } else {
-            $estado = $expediente->pagoDocente->estado ?? 'PENDIENTE';
-        }
+        $estado = $expediente->estado ?? 'PENDIENTE';
         $numeroExpediente = $expediente->numero_expediente_mesa_partes;
         $fechaMP = $expediente->fecha_mesa_partes ? $expediente->fecha_mesa_partes->format('d/m/Y') : '';
         $numeroDocumento = $expediente->numero_documento;
@@ -391,7 +421,7 @@ class ExpedienteController extends Controller
      */
     public function show(string $id)
     {
-        $expediente = Expediente::with(['docente', 'curso', 'pagoDocente', 'semestre.programa.grado'])->findOrFail($id);
+        $expediente = Expediente::with(['docente', 'curso', 'pagoDocente', 'semestre.programa.grado', 'devolucion.programa.grado'])->findOrFail($id);
 
         return response()->json(['data' => $expediente], 200);
     }
@@ -632,6 +662,73 @@ class ExpedienteController extends Controller
         $expediente->delete();
 
         return response()->json(['message' => 'Expediente eliminado exitosamente'], 200);
+    }
+
+    /**
+     * Change the state of the expediente and optionally upload a response document link.
+     */
+    public function cambiarEstado(Request $request, string $id)
+    {
+        $expediente = Expediente::find($id);
+
+        if (!$expediente) {
+            return response()->json(['message' => 'Expediente no encontrado'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'estado' => 'required|string',
+            'documento_respuesta_url' => 'nullable|string',
+            'file' => 'nullable|file|max:10240'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $data = ['estado' => $request->estado];
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $driveService = new \App\Services\GoogleDriveService();
+
+            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+            $link = $driveService->uploadFile($file, $folderId);
+
+            if ($link) {
+                $data['documento_respuesta_url'] = $link;
+            } else {
+                return response()->json(['message' => 'Error al subir archivo a Google Drive'], 500);
+            }
+        } elseif ($request->filled('documento_respuesta_url')) {
+            $data['documento_respuesta_url'] = $request->documento_respuesta_url;
+        }
+
+        $expediente->update($data);
+
+        // Sync related Pago with Sheets if it exists
+        if ($expediente->pago_docente_id) {
+            $pago = \App\Models\PagoDocente::find($expediente->pago_docente_id);
+            if ($pago) {
+                try {
+                    $googleSheetsService = app(\App\Services\GoogleSheetsService::class);
+                    $googleSheetsService->updatePagoDocente($pago);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error updating PagoDocente in Sheets after estado sync: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Sync Expediente with Google Sheets
+        try {
+            $this->saveToGoogleSheets($expediente, true);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error updating Expediente in Sheets: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Estado actualizado exitosamente',
+            'data' => $expediente
+        ], 200);
     }
 
     /**

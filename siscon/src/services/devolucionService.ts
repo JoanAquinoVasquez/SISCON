@@ -7,11 +7,17 @@ export interface Devolucion {
   programa_id: number;
   programa_nombre?: string;
   proceso_admision: string;
-  tipo_devolucion: "inscripcion" | "idiomas" | "grados_titulos";
+  tipo_devolucion:
+    | "inscripcion"
+    | "idiomas"
+    | "grados_titulos"
+    | "certificado_estudios"
+    | "otros";
   tipo_devolucion_label?: string;
   importe: number;
   numero_voucher: string;
-  estado: "pendiente" | "aprobado" | "rechazado" | "procesado";
+  numero_oficio_direccion?: string;
+  estado: "pendiente" | "aprobado" | "rechazado" | "observado";
   estado_label?: string;
   observaciones?: string;
   created_at?: string;
@@ -20,6 +26,7 @@ export interface Devolucion {
 
 export interface DevolucionFilters {
   search?: string;
+  id?: string;
   tipo_devolucion?: string;
   estado?: string;
   programa_id?: number;
@@ -52,7 +59,7 @@ export const createDevolucion = async (data: Partial<Devolucion>) => {
 
 export const updateDevolucion = async (
   id: number,
-  data: Partial<Devolucion>
+  data: Partial<Devolucion>,
 ) => {
   const response = await api.put<any>(`/devoluciones/${id}`, data);
   return response.data;
@@ -65,12 +72,8 @@ export const deleteDevolucion = async (id: number) => {
 
 export const updateEstadoDevolucion = async (
   id: number,
-  estado: string,
-  observaciones?: string
+  data: FormData | { estado: string; observaciones?: string },
 ) => {
-  const response = await api.patch<any>(`/devoluciones/${id}/estado`, {
-    estado,
-    observaciones,
-  });
+  const response = await api.post<any>(`/devoluciones/${id}/estado`, data);
   return response.data;
 };

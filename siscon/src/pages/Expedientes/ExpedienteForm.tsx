@@ -9,9 +9,11 @@ import { Tabs, TabPanel } from '@/components/ui/tabs';
 import { SelectConBusqueda } from '@/components/ui/select-con-busqueda';
 import { ComboboxEditable } from '@/components/ui/combobox-editable';
 import { CalendarioMultiple } from '@/components/ui/calendario-multiple';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
 import DocenteCursoBlock from './DocenteCursoBlock';
 import { useToast } from '@/context/ToastContext';
+
+
 
 export default function ExpedienteForm() {
   const { showToast } = useToast();
@@ -425,8 +427,9 @@ export default function ExpedienteForm() {
 
   if (loadingData) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+        <p className="text-slate-500 animate-pulse font-medium">Cargando datos del expediente...</p>
       </div>
     );
   }

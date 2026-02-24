@@ -40,6 +40,8 @@ class Expediente extends Model
         'importe_devolucion',
         'numero_voucher',
         'user_id',
+        'estado',
+        'documento_respuesta_url',
     ];
 
     protected $casts = [
@@ -150,7 +152,6 @@ class Expediente extends Model
             'docente_id' => $this->docente_id,
             'curso_id' => $this->curso_id,
             'periodo' => $periodo,
-            'estado' => 'pendiente',
             'fechas_ensenanza' => $this->fechas_ensenanza,
             'facultad_nombre' => $facultadNombre,
             'director_nombre' => $directorNombre,
@@ -165,8 +166,9 @@ class Expediente extends Model
             'fecha_mesa_partes' => $this->fecha_mesa_partes,
         ]);
 
-        // Vincular expediente con pago
+        // Vincular expediente con pago y asegurar estado pendiente
         $this->pago_docente_id = $pago->id;
+        $this->estado = 'pendiente';
         $this->save();
 
         return $pago;
@@ -207,22 +209,24 @@ class Expediente extends Model
                     'numero_oficio_conformidad_direccion' => $this->numero_documento,
                     'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
                     'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
-                    'estado' => 'en_proceso',
                     // Actualizar nombres por si cambiaron
                     'facultad_nombre' => $facultadNombre,
                     'director_nombre' => $directorNombre,
                     'coordinador_nombre' => $coordinadorNombre,
                 ]);
+                $this->update(['estado' => 'en_proceso']);
                 return $pago;
             }
             // Si el pago fue eliminado, continuar con la búsqueda/creación
         }
 
-        // Buscar pago pendiente que coincida (incluyendo fechas)
+        // Buscar pago que tenga expedientes en estado pendiente
         $pagos = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
-            ->where('estado', 'pendiente')
+            ->whereHas('expedientes', function ($q) {
+                $q->where('estado', 'pendiente');
+            })
             ->get();
 
         // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)
@@ -245,15 +249,14 @@ class Expediente extends Model
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
                 'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
                 'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
-                'estado' => 'en_proceso',
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,
                 'coordinador_nombre' => $coordinadorNombre,
             ]);
 
-            // Force update using DB facade to ensure it's saved
-            \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $this->id)->update(['pago_docente_id' => $pago->id]);
+            $this->estado = 'en_proceso';
             $this->pago_docente_id = $pago->id;
+            $this->save();
 
             return $pago;
         } else {
@@ -269,12 +272,12 @@ class Expediente extends Model
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
                 'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
                 'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
-                'estado' => 'en_proceso',
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,
                 'coordinador_nombre' => $coordinadorNombre,
             ]);
 
+            $this->estado = 'en_proceso';
             $this->pago_docente_id = $nuevoPago->id;
             $this->save();
 

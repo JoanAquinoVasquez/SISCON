@@ -33,7 +33,11 @@ import {
     ChevronLeft,
     ChevronRight,
     Loader2,
-    MoreVertical
+    MoreVertical,
+    Upload,
+    FileIcon,
+    X,
+    CheckCircle,
 } from 'lucide-react';
 import {
     getDevoluciones,
@@ -53,6 +57,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useLocation } from 'react-router-dom';
+
 interface PaginationData {
     current_page: number;
     last_page: number;
@@ -63,9 +69,15 @@ interface PaginationData {
 }
 
 export default function DevolucionesList() {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialSearch = queryParams.get('search') || '';
+    const exactId = queryParams.get('highlight_id') || '';
+
     const [devoluciones, setDevoluciones] = useState<Devolucion[]>([]);
     const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState(initialSearch);
+    const [exactIdFilter] = useState(exactId);
     const [filters, setFilters] = useState({
         tipo_devolucion: '',
         estado: ''
@@ -78,6 +90,7 @@ export default function DevolucionesList() {
     const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [newStatus, setNewStatus] = useState('');
     const [observaciones, setObservaciones] = useState('');
+    const [file, setFile] = useState<File | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
     // Estado para modal de edición
@@ -91,6 +104,7 @@ export default function DevolucionesList() {
             const data = await getDevoluciones({
                 page,
                 search,
+                id: exactIdFilter,
                 ...filters
             });
             setDevoluciones(data.data);
@@ -112,7 +126,7 @@ export default function DevolucionesList() {
 
     useEffect(() => {
         fetchDevoluciones();
-    }, [page, search, filters]);
+    }, [page, search, filters, exactIdFilter]);
 
     const handleDelete = async (id: number) => {
         if (confirm('¿Está seguro de eliminar este registro?')) {
@@ -131,6 +145,7 @@ export default function DevolucionesList() {
         setSelectedDevolucion(devolucion);
         setNewStatus(devolucion.estado);
         setObservaciones(devolucion.observaciones || '');
+        setFile(null);
         setIsStatusModalOpen(true);
     };
 
@@ -141,6 +156,7 @@ export default function DevolucionesList() {
             dni: devolucion.dni,
             importe: devolucion.importe,
             numero_voucher: devolucion.numero_voucher,
+            numero_oficio_direccion: devolucion.numero_oficio_direccion,
             tipo_devolucion: devolucion.tipo_devolucion,
             observaciones: devolucion.observaciones
         });
@@ -152,9 +168,19 @@ export default function DevolucionesList() {
 
         try {
             setUpdatingStatus(true);
-            await updateEstadoDevolucion(selectedDevolucion.id, newStatus, observaciones);
+            const formData = new FormData();
+            formData.append('estado', newStatus);
+            if (newStatus === 'observado') {
+                formData.append('observaciones', observaciones);
+            }
+            if (file) {
+                formData.append('file', file);
+            }
+
+            await updateEstadoDevolucion(selectedDevolucion.id, formData);
             toast.success('Estado actualizado correctamente');
             setIsStatusModalOpen(false);
+            setFile(null);
             fetchDevoluciones();
         } catch (error) {
             console.error('Error al actualizar estado:', error);
@@ -184,13 +210,14 @@ export default function DevolucionesList() {
     const getEstadoBadge = (estado: string) => {
         switch (estado) {
             case 'pendiente':
-                return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">Pendiente</Badge>;
-            case 'procesado':
-                return <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">Procesado</Badge>;
+                return <Badge variant="warning">Pendiente</Badge>;
+            case 'en_proceso':
+                // Using secondary variant which is green-ish in this project's badge.tsx
+                return <Badge variant="secondary">En Proceso</Badge>;
             case 'rechazado':
                 return <Badge variant="destructive">Rechazado</Badge>;
-            case 'aprobado':
-                return <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">Aprobado</Badge>;
+            case 'completado':
+                return <Badge variant="success">Completado</Badge>;
             default:
                 return <Badge variant="outline">{estado}</Badge>;
         }
@@ -201,6 +228,8 @@ export default function DevolucionesList() {
             case 'inscripcion': return <Badge variant="outline" className="border-blue-200 text-blue-700">Inscripción</Badge>;
             case 'idiomas': return <Badge variant="outline" className="border-purple-200 text-purple-700">Idiomas</Badge>;
             case 'grados_titulos': return <Badge variant="outline" className="border-orange-200 text-orange-700">Grados y Títulos</Badge>;
+            case 'certificado_estudios': return <Badge variant="outline" className="border-green-200 text-green-700">Certificado de Estudios</Badge>;
+            case 'otros': return <Badge variant="outline" className="border-gray-200 text-gray-700">Otros</Badge>;
             default: return <Badge variant="outline">{tipo}</Badge>;
         }
     }
@@ -224,12 +253,12 @@ export default function DevolucionesList() {
                         placeholder="Buscar por persona, DNI o voucher..."
                         className="pl-8"
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     />
                 </div>
                 <Select
                     value={filters.tipo_devolucion}
-                    onValueChange={(value) => setFilters({ ...filters, tipo_devolucion: value === 'todos' ? '' : value })}
+                    onValueChange={(value) => { setFilters({ ...filters, tipo_devolucion: value === 'todos' ? '' : value }); setPage(1); }}
                 >
                     <SelectTrigger className="w-full md:w-48">
                         <SelectValue placeholder="Tipo Devolución" />
@@ -239,11 +268,13 @@ export default function DevolucionesList() {
                         <SelectItem value="inscripcion"><span>Inscripción</span></SelectItem>
                         <SelectItem value="idiomas"><span>Idiomas</span></SelectItem>
                         <SelectItem value="grados_titulos"><span>Grados y Títulos</span></SelectItem>
+                        <SelectItem value="certificado_estudios"><span>Certificado de Estudios</span></SelectItem>
+                        <SelectItem value="otros"><span>Otros</span></SelectItem>
                     </SelectContent>
                 </Select>
                 <Select
                     value={filters.estado}
-                    onValueChange={(value) => setFilters({ ...filters, estado: value === 'todos' ? '' : value })}
+                    onValueChange={(value) => { setFilters({ ...filters, estado: value === 'todos' ? '' : value }); setPage(1); }}
                 >
                     <SelectTrigger className="w-full md:w-40">
                         <SelectValue placeholder="Estado" />
@@ -251,9 +282,9 @@ export default function DevolucionesList() {
                     <SelectContent>
                         <SelectItem value="todos"><span>Todos</span></SelectItem>
                         <SelectItem value="pendiente"><span>Pendiente</span></SelectItem>
-                        <SelectItem value="aprobado"><span>Aprobado</span></SelectItem>
+                        <SelectItem value="en_proceso"><span>En Proceso</span></SelectItem>
+                        <SelectItem value="completado"><span>Completado</span></SelectItem>
                         <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
-                        <SelectItem value="procesado"><span>Procesado</span></SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -267,7 +298,7 @@ export default function DevolucionesList() {
                             <TableHead>Persona</TableHead>
                             <TableHead>Programa</TableHead>
                             <TableHead>Tipo</TableHead>
-                            <TableHead>Voucher</TableHead>
+                            <TableHead>Voucher / Oficio</TableHead>
                             <TableHead className="text-right">Importe</TableHead>
                             <TableHead className="text-center">Estado</TableHead>
                             <TableHead className="text-center">Acciones</TableHead>
@@ -291,7 +322,10 @@ export default function DevolucionesList() {
                             </TableRow>
                         ) : (
                             devoluciones.map((devolucion) => (
-                                <TableRow key={devolucion.id}>
+                                <TableRow
+                                    key={devolucion.id}
+                                    className={exactIdFilter && devolucion.id.toString() === exactIdFilter ? "bg-amber-50" : ""}
+                                >
                                     <TableCell>{devolucion.id}</TableCell>
                                     <TableCell>
                                         <div className="font-medium">{devolucion.persona}</div>
@@ -302,7 +336,12 @@ export default function DevolucionesList() {
                                         <div className="text-xs text-muted-foreground">Admisión: {devolucion.proceso_admision}</div>
                                     </TableCell>
                                     <TableCell>{getTipoBadge(devolucion.tipo_devolucion)}</TableCell>
-                                    <TableCell>{devolucion.numero_voucher}</TableCell>
+                                    <TableCell>
+                                        <div className="font-medium text-sm">V: {devolucion.numero_voucher}</div>
+                                        {devolucion.numero_oficio_direccion && (
+                                            <div className="text-xs text-muted-foreground mt-0.5">O: {devolucion.numero_oficio_direccion}</div>
+                                        )}
+                                    </TableCell>
                                     <TableCell className="text-right font-medium">
                                         S/ {Number(devolucion.importe).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
                                     </TableCell>
@@ -336,77 +375,153 @@ export default function DevolucionesList() {
                         )}
                     </TableBody>
                 </Table>
-            </div>
+            </div >
 
             {/* Paginación */}
-            {pagination && pagination.last_page > 1 && (
-                <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                        Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+            {
+                pagination && pagination.last_page > 1 && (
+                    <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted-foreground">
+                            Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Anterior
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
+                                disabled={page === pagination.last_page}
+                            >
+                                Siguiente
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Anterior
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-                            disabled={page === pagination.last_page}
-                        >
-                            Siguiente
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
-            {/* Modal de Cambio de Estado */}
+            {/* Modal de Cambio de Estado - Premium Design */}
             <Dialog open={isStatusModalOpen} onOpenChange={setIsStatusModalOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>Actualizar Estado</DialogTitle>
-                        <DialogDescription>
-                            Cambiar el estado de la devolución de {selectedDevolucion?.persona}
+                        <DialogTitle>Actualizar Estado de Devolución</DialogTitle>
+                        <DialogDescription className="text-sm">
+                            Cambiar el estado de la devolución de <strong>{selectedDevolucion?.persona}</strong>.
+                            Al marcarlo como <strong>Completado</strong>, se recomienda adjuntar el comprobante final.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4 py-4">
+                    <div className="space-y-6 py-4">
                         <div className="space-y-2">
-                            <Label>Estado</Label>
+                            <Label htmlFor="estado" className="text-sm font-semibold text-gray-700">Estado</Label>
                             <Select value={newStatus} onValueChange={setNewStatus}>
-                                <SelectTrigger>
+                                <SelectTrigger className="h-11 rounded-lg">
                                     <SelectValue placeholder="Seleccionar estado" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="pendiente"><span>Pendiente</span></SelectItem>
-                                    <SelectItem value="aprobado"><span>Aprobado</span></SelectItem>
+                                    <SelectItem value="en_proceso"><span>En Proceso</span></SelectItem>
+                                    <SelectItem value="completado"><span>Completado</span></SelectItem>
                                     <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
-                                    <SelectItem value="procesado"><span>Procesado</span></SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>Observaciones</Label>
-                            <Textarea
-                                value={observaciones}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObservaciones(e.target.value)}
-                                placeholder="Ingrese observaciones si es necesario..."
-                                rows={3}
-                            />
-                        </div>
+                        {newStatus === 'observado' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="observaciones" className="text-sm font-semibold text-gray-700">Observaciones</Label>
+                                <Textarea
+                                    id="observaciones"
+                                    value={observaciones}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObservaciones(e.target.value)}
+                                    placeholder="Ingrese el motivo de la observación..."
+                                    rows={3}
+                                    className="rounded-lg resize-none"
+                                />
+                            </div>
+                        )}
+
+                        {newStatus === 'completado' && (
+                            <div className="space-y-3">
+                                <Label className="text-sm font-semibold text-gray-700">Documento de Sustento (Opcional)</Label>
+
+                                {!file ? (
+                                    <div
+                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500', 'bg-blue-50'); }}
+                                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50'); }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                                            const droppedFile = e.dataTransfer.files?.[0];
+                                            if (droppedFile) setFile(droppedFile);
+                                        }}
+                                        onClick={() => document.getElementById('file-upload-devolucion')?.click()}
+                                        className="relative border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 hover:bg-gray-50 transition-all group"
+                                    >
+                                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                                            <Upload className="w-6 h-6" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-medium text-gray-700">Haz clic o arrastra un archivo</p>
+                                            <p className="text-xs text-gray-500 mt-1">PDF, DOCX o Imágenes (máx. 10MB)</p>
+                                        </div>
+                                        <input
+                                            id="file-upload-devolucion"
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                                        <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                                            <FileIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-blue-900 truncate">{file.name}</p>
+                                            <p className="text-xs text-blue-600">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setFile(null)}
+                                            className="text-blue-400 hover:text-red-500 hover:bg-red-50"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                )}
+                                <p className="text-[11px] text-gray-500 flex items-start gap-1.5 px-1">
+                                    <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 shrink-0" />
+                                    El archivo se subirá automáticamente a Google Drive y se vinculará a la devolución.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsStatusModalOpen(false)}>Cancelar</Button>
-                        <Button onClick={submitStatusChange} disabled={updatingStatus}>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsStatusModalOpen(false)}
+                            disabled={updatingStatus}
+                            className="rounded-lg px-6"
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={submitStatusChange}
+                            disabled={updatingStatus}
+                            className="rounded-lg px-6 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
+                        >
                             {updatingStatus ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Guardar Cambios
                         </Button>
@@ -452,12 +567,22 @@ export default function DevolucionesList() {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label>N° Voucher</Label>
-                            <Input
-                                value={editFormData.numero_voucher || ''}
-                                onChange={(e) => setEditFormData({ ...editFormData, numero_voucher: e.target.value })}
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>N° Voucher</Label>
+                                <Input
+                                    value={editFormData.numero_voucher || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, numero_voucher: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>N° Oficio Dirección</Label>
+                                <Input
+                                    value={editFormData.numero_oficio_direccion || ''}
+                                    onChange={(e) => setEditFormData({ ...editFormData, numero_oficio_direccion: e.target.value })}
+                                    placeholder="OFICIO N° 010-D-2026-EPG"
+                                />
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -473,6 +598,8 @@ export default function DevolucionesList() {
                                     <SelectItem value="inscripcion"><span>Inscripción</span></SelectItem>
                                     <SelectItem value="idiomas"><span>Idiomas</span></SelectItem>
                                     <SelectItem value="grados_titulos"><span>Grados y Títulos</span></SelectItem>
+                                    <SelectItem value="certificado_estudios"><span>Certificado de Estudios</span></SelectItem>
+                                    <SelectItem value="otros"><span>Otros</span></SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -496,6 +623,6 @@ export default function DevolucionesList() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

@@ -149,7 +149,7 @@ class ExpedienteController extends Controller
             'docentes_cursos' => 'nullable|array',
             'docentes_cursos.*.docente_id' => 'required_with:docentes_cursos|exists:docentes,id',
             'docentes_cursos.*.curso_id' => 'required_with:docentes_cursos|exists:cursos,id',
-            'docentes_cursos.*.semestre_id' => 'required_with:docentes_cursos|exists:semestres,id',
+            'docentes_cursos.*.semestre_id' => 'nullable|exists:semestres,id',
             'docentes_cursos.*.fechas_ensenanza' => 'required_with:docentes_cursos|array',
             'docentes_cursos.*.numero_oficio_presentacion_coordinador' => 'nullable|string',
             'docentes_cursos.*.numero_oficio_conformidad_coordinador' => 'nullable|string',
@@ -358,22 +358,33 @@ class ExpedienteController extends Controller
 
         $nombreDocente = $docente ? trim("{$docente->titulo_profesional} {$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}") : 'Docente no especificado';
         $nombreCurso = $curso ? $curso->nombre : 'Curso no especificado';
-        $nombrePrograma = $programa ? $programa->nombre : '';
+
+        $programaInfo = '';
+        if ($programa) {
+            $grado = $programa->grado->nombre ?? '';
+            $periodo = $programa->periodo ?? '';
+            $programaInfo = trim("del programa de {$grado} {$programa->nombre} {$periodo}");
+        }
 
         $fechasFormat = $this->formatearFechas($expediente->fechas_ensenanza);
 
         $texto = "";
 
         if ($expediente->tipo_asunto === 'presentacion') {
-            $texto = "Presentación del docente {$nombreDocente} para enseñar el curso {$nombreCurso} del programa de {$grado} {$nombrePrograma} {$periodo}.";
+            $texto = "Presentación del docente {$nombreDocente} para enseñar el curso {$nombreCurso}";
+            if ($programaInfo)
+                $texto .= " {$programaInfo}";
+            $texto .= ".";
 
-            // Agregar oficio de coordinador si existe (se guarda en PagoDocente o se pasó en el request,
-            // pero al guardar ya se procesó en procesarPresentacion y se guardó en PagoDocente)
+            // Agregar oficio de coordinador si existe
             if ($expediente->pagoDocente && $expediente->pagoDocente->numero_oficio_presentacion_coordinador) {
                 $texto .= " Con Oficio N° " . $expediente->pagoDocente->numero_oficio_presentacion_coordinador . ".";
             }
         } elseif ($expediente->tipo_asunto === 'conformidad') {
-            $texto = "Conformidad del docente {$nombreDocente} por la enseñanza del curso {$nombreCurso} del programa de {$grado} {$nombrePrograma} {$periodo}.";
+            $texto = "Conformidad del docente {$nombreDocente} por la enseñanza del curso {$nombreCurso}";
+            if ($programaInfo)
+                $texto .= " {$programaInfo}";
+            $texto .= ".";
 
             if ($expediente->pagoDocente) {
                 if ($expediente->pagoDocente->numero_oficio_conformidad_coordinador) {
@@ -813,8 +824,13 @@ class ExpedienteController extends Controller
 
         // Filter by faculty code if provided
         if ($facultadCodigo) {
-            $cursosQuery->whereHas('semestres.programa.facultad', function ($q) use ($facultadCodigo) {
-                $q->where('codigo', $facultadCodigo);
+            $cursosQuery->where(function ($q) use ($facultadCodigo) {
+                // Return if it matches the faculty
+                $q->whereHas('semestres.programa.facultad', function ($q2) use ($facultadCodigo) {
+                    $q2->where('codigo', $facultadCodigo);
+                })
+                    // OR if the course is global (has no semesters)
+                    ->orWhereDoesntHave('semestres');
             });
         }
 
@@ -824,7 +840,13 @@ class ExpedienteController extends Controller
                 $semestre = $curso->semestres->first();
 
                 if (!$semestre) {
-                    return null;
+                    return [
+                        'id' => $curso->id,
+                        'label' => "{$curso->nombre} (Curso Global)",
+                        'periodo' => 'Global',
+                        'programa_id' => null,
+                        'semestre_id' => null,
+                    ];
                 }
 
                 $programa = $semestre->programa;

@@ -414,8 +414,13 @@ class PagoDocenteController extends Controller
 
         // Filter by faculty code if provided
         if ($facultadCodigo) {
-            $cursosQuery->whereHas('semestres.programa.facultad', function ($q) use ($facultadCodigo) {
-                $q->where('codigo', $facultadCodigo);
+            $cursosQuery->where(function ($q) use ($facultadCodigo) {
+                // Return if it matches the faculty
+                $q->whereHas('semestres.programa.facultad', function ($q2) use ($facultadCodigo) {
+                    $q2->where('codigo', $facultadCodigo);
+                })
+                    // OR if the course is global (has no semesters)
+                    ->orWhereDoesntHave('semestres');
             });
         }
 
@@ -423,26 +428,38 @@ class PagoDocenteController extends Controller
         $resultados = [];
 
         foreach ($cursos as $curso) {
-            foreach ($curso->semestres as $semestre) {
-                $programa = $semestre->programa;
-
-                // If filtering by faculty, ensure this specific semester's program belongs to the faculty
-                if ($facultadCodigo && ($programa->facultad->codigo ?? '') !== $facultadCodigo) {
-                    continue;
-                }
-
-                $grado = $programa->grado->nombre ?? '';
-                $facultad = $programa->facultad->codigo ?? '';
-
+            if ($curso->semestres->isEmpty()) {
                 $resultados[] = [
-                    'id' => $curso->id . '-' . $semestre->id, // Composite ID
+                    'id' => $curso->id,
                     'original_id' => $curso->id,
-                    'label' => "{$curso->nombre} ({$grado} en {$programa->nombre} - {$semestre->programa->periodo})",
-                    'periodo' => $semestre->programa->periodo,
-                    'programa_id' => $semestre->programa_id,
-                    'semestre_id' => $semestre->id,
-                    'grado_nombre' => $grado,
+                    'label' => "{$curso->nombre} (Curso Global)",
+                    'periodo' => 'Global',
+                    'programa_id' => null,
+                    'semestre_id' => null,
+                    'grado_nombre' => '',
                 ];
+            } else {
+                foreach ($curso->semestres as $semestre) {
+                    $programa = $semestre->programa;
+
+                    // If filtering by faculty, ensure this specific semester's program belongs to the faculty
+                    if ($facultadCodigo && ($programa->facultad->codigo ?? '') !== $facultadCodigo) {
+                        continue;
+                    }
+
+                    $grado = $programa->grado->nombre ?? '';
+                    $facultad = $programa->facultad->codigo ?? '';
+
+                    $resultados[] = [
+                        'id' => $curso->id . '-' . $semestre->id, // Composite ID
+                        'original_id' => $curso->id,
+                        'label' => "{$curso->nombre} ({$grado} en {$programa->nombre} - {$semestre->programa->periodo})",
+                        'periodo' => $semestre->programa->periodo,
+                        'programa_id' => $semestre->programa_id,
+                        'semestre_id' => $semestre->id,
+                        'grado_nombre' => $grado,
+                    ];
+                }
             }
         }
         return response()->json(['data' => $resultados], 200);
@@ -473,7 +490,19 @@ class PagoDocenteController extends Controller
         $semestre = $curso->semestres->first();
 
         if (!$semestre) {
-            return response()->json(['message' => 'Curso sin semestre asignado'], 404);
+            return response()->json([
+                'data' => [
+                    'programa_id' => null,
+                    'programa_nombre' => 'Curso Global',
+                    'periodo' => 'Global',
+                    'semestre_id' => null,
+                    'facultad_nombre' => null,
+                    'director_nombre' => null,
+                    'coordinador_nombre' => null,
+                    'facultad_codigo' => null,
+                    'grado_nombre' => null,
+                ]
+            ], 200);
         }
 
         $programa = $semestre->programa;

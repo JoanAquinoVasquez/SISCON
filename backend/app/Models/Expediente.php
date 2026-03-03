@@ -129,23 +129,25 @@ class Expediente extends Model
             return null;
         }
 
-        // Obtener el periodo desde el semestre
         if (!$this->semestre_id) {
-            throw new \Exception('El expediente debe tener un semestre_id');
+            $periodo = 'Global';
+            $facultadNombre = null;
+            $directorNombre = null;
+            $coordinadorNombre = null;
+        } else {
+            $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
+            if (!$semestre || !$semestre->programa) {
+                throw new \Exception('No se encontró el semestre o programa asociado');
+            }
+
+            $periodo = $semestre->programa->periodo;
+            $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
+            $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
+
+            // Obtener coordinador (asumiendo el primero activo o el más reciente)
+            $coordinador = $semestre->programa->coordinadores->first();
+            $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
         }
-
-        $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
-        if (!$semestre || !$semestre->programa) {
-            throw new \Exception('No se encontró el semestre o programa asociado');
-        }
-
-        $periodo = $semestre->programa->periodo;
-        $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
-        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
-
-        // Obtener coordinador (asumiendo el primero activo o el más reciente)
-        $coordinador = $semestre->programa->coordinadores->first();
-        $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
 
         // Crear pago docente pendiente
         $pago = PagoDocente::create([
@@ -184,22 +186,24 @@ class Expediente extends Model
             return null;
         }
 
-        // Obtener el periodo desde el semestre
         if (!$this->semestre_id) {
-            throw new \Exception('El expediente debe tener un semestre_id');
+            $periodo = 'Global';
+            $facultadNombre = null;
+            $directorNombre = null;
+            $coordinadorNombre = null;
+        } else {
+            $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
+            if (!$semestre || !$semestre->programa) {
+                throw new \Exception('No se encontró el semestre o programa asociado');
+            }
+
+            $periodo = $semestre->programa->periodo;
+            $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
+            $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
+
+            $coordinador = $semestre->programa->coordinadores->first();
+            $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
         }
-
-        $semestre = \App\Models\Semestre::with(['programa.facultad', 'programa.coordinadores'])->find($this->semestre_id);
-        if (!$semestre || !$semestre->programa) {
-            throw new \Exception('No se encontró el semestre o programa asociado');
-        }
-
-        $periodo = $semestre->programa->periodo;
-        $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
-        $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
-
-        $coordinador = $semestre->programa->coordinadores->first();
-        $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
 
         // Si ya tiene un pago vinculado, actualizarlo
         if ($this->pago_docente_id) {
@@ -296,21 +300,20 @@ class Expediente extends Model
             return null;
         }
 
-        // Obtener el periodo desde el semestre si hay curso
-        if ($this->curso_id && !$this->semestre_id) {
-            throw new \Exception('El expediente debe tener un semestre_id');
-        }
-
         if (!$this->curso_id) {
             return null;
         }
 
-        $semestre = \App\Models\Semestre::with('programa')->find($this->semestre_id);
-        if (!$semestre || !$semestre->programa) {
-            throw new \Exception('No se encontró el semestre o programa asociado');
-        }
+        if (!$this->semestre_id) {
+            $periodo = 'Global';
+        } else {
+            $semestre = \App\Models\Semestre::with('programa')->find($this->semestre_id);
+            if (!$semestre || !$semestre->programa) {
+                throw new \Exception('No se encontró el semestre o programa asociado');
+            }
 
-        $periodo = $semestre->programa->periodo;
+            $periodo = $semestre->programa->periodo;
+        }
 
         // Buscar pago en proceso que coincida
         $pago = PagoDocente::where('docente_id', $this->docente_id)
@@ -356,6 +359,7 @@ class Expediente extends Model
             'tipo_devolucion' => $this->tipo_devolucion,
             'importe' => $this->importe_devolucion,
             'numero_voucher' => $this->numero_voucher,
+            'numero_oficio_direccion' => $this->numero_documento,
             'estado' => 'pendiente',
         ]);
 

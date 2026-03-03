@@ -14,7 +14,7 @@ class DevolucionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Devolucion::with(['programa.grado', 'programa.facultad']);
+        $query = Devolucion::with(['programa.grado', 'programa.facultad', 'expedientes']);
 
         // Search by persona, DNI, voucher
         if ($request->has('search') && $request->search) {

@@ -30,15 +30,7 @@ class GoogleSheetsService
             return;
         }
 
-        $sheetName = '2026-PAGOS DOCENTES-SISCON';
-        $tipo = strtolower($pago->docente->tipo_docente ?? '');
-
-        if (str_contains($tipo, 'interno')) {
-            $sheetName = 'INTERNOS';
-        } elseif (str_contains($tipo, 'externo')) {
-            $sheetName = 'EXTERNOS';
-        }
-
+        $sheetName = $this->resolveSheetName($pago);
         $this->appendData($sheetName, $data, $sheetId);
     }
 
@@ -55,16 +47,24 @@ class GoogleSheetsService
             return;
         }
 
-        $sheetName = '2026-PAGOS DOCENTES-SISCON';
+        $sheetName = $this->resolveSheetName($pago);
+        $this->updateData($sheetName, $data, $pago->id, $sheetId);
+    }
+
+    private function resolveSheetName(\App\Models\PagoDocente $pago): string
+    {
         $tipo = strtolower($pago->docente->tipo_docente ?? '');
+        $esFE = str_contains($pago->facultad_nombre ?? '', 'Enfermería');
 
         if (str_contains($tipo, 'interno')) {
-            $sheetName = 'INTERNOS';
-        } elseif (str_contains($tipo, 'externo')) {
-            $sheetName = 'EXTERNOS';
+            return $esFE ? 'INTERNOS FE' : 'INTERNOS';
         }
 
-        $this->updateData($sheetName, $data, $pago->id, $sheetId);
+        if (str_contains($tipo, 'externo')) {
+            return $esFE ? 'EXTERNOS FE' : 'EXTERNOS';
+        }
+
+        return '2026-PAGOS DOCENTES-SISCON'; // fallback
     }
 
     private function formatPagoDocenteData(\App\Models\PagoDocente $pago): array
@@ -118,13 +118,14 @@ class GoogleSheetsService
             $pago->importe_total, // 13. Importe
             $fechas, // 14. Fechas de enseñanza
             $pago->numero_resolucion_aprobacion, // 15. Resolución de aprobacion de pago
-            $pago->numero_oficio_conformidad_direccion, // 16. Oficio de Conformidad Direccion
-            $pago->numero_resolucion_pago, // 17. Resolución de pago
-            $pago->numero_oficio_presentacion_facultad, // 18. Oficio de presentación de facultad
-            $pago->numero_oficio_presentacion_coordinador, // 19. Oficio de presentación coordinador
-            $pago->numero_oficio_conformidad_facultad, // 20. Oficio de conformidad facultad
-            $pago->numero_oficio_conformidad_coordinador, // 21. Oficio de conformidad coordinador
-            $pago->numero_informe_final, // 22. Informe final
+            $pago->numero_oficio_conformidad_direccion, // 16. Oficio Conformidad Dirección
+            $pago->oficio_direccion_exp_docentes,       // 17. Oficio Dirección Exp. Docentes
+            $pago->numero_resolucion_pago,              // 18. Resolución de pago
+            $pago->numero_oficio_presentacion_facultad,   // 19. Oficio de presentación de facultad
+            $pago->numero_oficio_presentacion_coordinador, // 20. Oficio de presentación coordinador
+            $pago->numero_oficio_conformidad_facultad,     // 21. Oficio de conformidad facultad
+            $pago->numero_oficio_conformidad_coordinador,  // 22. Oficio de conformidad coordinador
+            $pago->numero_informe_final,                   // 23. Informe final
             $pago->docente->fecha_nacimiento,
             $pago->docente->dni,
             $pago->docente->numero_telefono,

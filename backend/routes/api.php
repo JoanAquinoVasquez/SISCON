@@ -18,6 +18,7 @@ use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\OficioController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,9 @@ Route::get('auth/google/callback', [AuthController::class, 'handleGoogleCallback
 
 // Protected Routes (Require Sanctum Authentication)
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Dashboard KPIs
+    Route::get('dashboard/stats', [DashboardController::class, 'stats']);
 
     // Auth Management
     Route::get('auth/me', [AuthController::class, 'me']);

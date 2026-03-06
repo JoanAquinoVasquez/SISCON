@@ -786,7 +786,7 @@ export default function PagosDocentesList() {
                       label: "Resol. Pago",
                       value: selectedPago.numero_resolucion_pago,
                       show: true,
-                      canGenerate: selectedPago.estado === 'proceso' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo !== 'FIQUIA'),
+                      canGenerate: selectedPago.estado === 'proceso' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo !== 'FIQIA'),
                       generateAction: () => handleGenerateResolucion(selectedPago.id),
                       isGenerating: isGeneratingResolucion
                     },

@@ -13,7 +13,7 @@ class FacultadSeeder extends Seeder
     public function run(): void
     {
         $facultades = [
-            ['nombre' => 'Facultad de Ingeniería Química e Industrias Alimentarias', 'codigo' => 'FIQUIA', 'director_nombre' => 'Dr. Luis Antonio Pozo Suclupe', 'director_genero' => 'M'],
+            ['nombre' => 'Facultad de Ingeniería Química e Industrias Alimentarias', 'codigo' => 'FIQIA', 'director_nombre' => 'Dr. Luis Antonio Pozo Suclupe', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Ingeniería Civil, Sistemas y Arquitectura', 'codigo' => 'FICSA', 'director_nombre' => 'Dra. Arq. Carla Rosario Escalante Medina', 'director_genero' => 'F'],
             ['nombre' => 'Facultad de Ciencias Económicas, Administrativas y Contables', 'codigo' => 'FACEAC', 'director_nombre' => 'Dr. Antonio Gilberto Escajadillo Durand', 'director_genero' => 'M'],
             ['nombre' => 'Facultad de Enfermería', 'codigo' => 'FE', 'director_nombre' => 'Dra. Clarivel De Fátima Diaz Olano', 'director_genero' => 'F'],

@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import {
-   GraduationCap,
+  GraduationCap,
   FileText, Clock, CheckCircle2, XCircle,
   AlertCircle, DollarSign, RotateCcw,
-  Activity, UserCheck, BarChart3, 
+  Activity, UserCheck, BarChart3,
 } from 'lucide-react';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
@@ -25,6 +25,7 @@ interface DashboardStats {
     total: number;
     por_estado: Record<string, number>;
     por_tipo_docente: Record<string, number>;
+    por_hoja: Record<string, number>;
     sin_expediente: number;
     importe_total: number;
     importe_pagado: number;
@@ -273,14 +274,14 @@ export function Dashboard() {
       </div>
 
       {/* ── Desglose adicional ────────────────────────────────────── */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
 
         {/* Expedientes por tipo de asunto */}
         {isLoading ? <Skeleton className="h-52" /> : (
           <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              <h3 className="font-semibold text-slate-800">Expedientes por Tipo de Asunto</h3>
+              <h3 className="font-semibold text-slate-800">Expedientes por Tipo</h3>
             </div>
             <div className="space-y-3">
               {Object.entries(data?.expedientes.por_tipo_asunto ?? {}).map(([tipo, count]) => {
@@ -296,6 +297,42 @@ export function Dashboard() {
                         style={{ width: `${pctVal}%` }} />
                     </div>
                     <span className="text-sm font-semibold text-slate-700 w-8 text-right">{count as number}</span>
+                  </div>
+                );
+              })}
+              {Object.keys(data?.expedientes.por_tipo_asunto ?? {}).length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">Sin datos</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Pagos por hoja (Internos / Internos FE / Externos / Externos FE) */}
+        {isLoading ? <Skeleton className="h-52" /> : (
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap className="h-5 w-5 text-violet-500" />
+              <h3 className="font-semibold text-slate-800">Pagos por Categoría</h3>
+            </div>
+            <div className="space-y-3">
+              {[
+                { key: 'Internos', color: 'from-violet-400 to-purple-500', dot: 'bg-violet-400' },
+                { key: 'Internos FE', color: 'from-fuchsia-400 to-pink-500', dot: 'bg-fuchsia-400' },
+                { key: 'Externos', color: 'from-blue-400 to-indigo-500', dot: 'bg-blue-400' },
+                { key: 'Externos FE', color: 'from-cyan-400 to-teal-500', dot: 'bg-cyan-400' },
+              ].map(({ key, color, dot }) => {
+                const count = (data?.pagos_docentes.por_hoja as Record<string, number>)?.[key] ?? 0;
+                const total = data?.pagos_docentes.total ?? 1;
+                const pctVal = total > 0 ? Math.round(count / total * 100) : 0;
+                return (
+                  <div key={key} className="flex items-center gap-3">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${dot}`} />
+                    <span className="text-sm text-slate-600 w-24 shrink-0">{key}</span>
+                    <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${color}`}
+                        style={{ width: `${pctVal}%` }} />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700 w-6 text-right">{count}</span>
                   </div>
                 );
               })}
@@ -316,7 +353,7 @@ export function Dashboard() {
                 const pctVal = Math.round((count as number) / total * 100);
                 return (
                   <div key={tipo} className="flex items-center gap-3">
-                    <span className="text-sm text-slate-600 w-40 shrink-0">
+                    <span className="text-sm text-slate-600 w-36 shrink-0">
                       {TIPO_DEVOLUCION_LABEL[tipo] ?? tipo}
                     </span>
                     <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">

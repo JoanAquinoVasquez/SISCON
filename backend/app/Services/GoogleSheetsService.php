@@ -104,32 +104,49 @@ class GoogleSheetsService
         return [
             $pago->id,
             strtoupper($pago->estado), // 2. ESTADO DE PAGO
-            $pago->periodo, // 2. PERIODO
+            $mesPago ? $mesPago : '', // 4. Tipo Docente
             $docenteNombre, // 3. Docente
-            $mesPago, // 4. Tipo Docente
-            $expedienteNumero, // 5. Expediente Siaf / Interno
-            $notaPago, // 6. Nota de pago
-            $pago->orden_servicio, // 7. Orden de servicio
-            $pago->numero_pedido_servicio, // 8. Pedido de servicio
-            $pago->numero_recibo_honorario, // 9. N° Recibo por honorario
-            $fechaRecibo, // 10. Fecha de Emisión del Recibo
+
+
+
+            $pago->numero_pedido_servicio ? $pago->numero_pedido_servicio : '', // 8. Pedido de servicio
+            $pago->orden_servicio ? $pago->orden_servicio : '', // 7. Orden de servicio
+            $expedienteNumero ? $expedienteNumero : '', // 5. Expediente Siaf / Interno
+            $pago->acta_conformidad ? $pago->acta_conformidad : '',
+            $notaPago ? $notaPago : '', // 6. Nota de pago
+
+            $programaNombre ? $programaNombre : '', // 12. Programa
+            $pago->periodo, // 2. PERIODO
             $pago->curso->nombre ?? '', // 11. Curso
-            $programaNombre, // 12. Programa
-            $pago->importe_total, // 13. Importe
-            $fechas, // 14. Fechas de enseñanza
-            $pago->numero_resolucion_aprobacion, // 15. Resolución de aprobacion de pago
-            $pago->numero_oficio_conformidad_direccion, // 16. Oficio Conformidad Dirección
-            $pago->oficio_direccion_exp_docentes,       // 17. Oficio Dirección Exp. Docentes
-            $pago->numero_resolucion_pago,              // 18. Resolución de pago
-            $pago->numero_oficio_presentacion_facultad,   // 19. Oficio de presentación de facultad
-            $pago->numero_oficio_presentacion_coordinador, // 20. Oficio de presentación coordinador
-            $pago->numero_oficio_conformidad_facultad,     // 21. Oficio de conformidad facultad
-            $pago->numero_oficio_conformidad_coordinador,  // 22. Oficio de conformidad coordinador
-            $pago->numero_informe_final,                   // 23. Informe final
-            $pago->docente->fecha_nacimiento,
-            $pago->docente->dni,
-            $pago->docente->numero_telefono,
-            $pago->docente->email,
+            $fechas ? $fechas : '', // 14. Fechas de enseñanza
+            $pago->numero_horas ? $pago->numero_horas : '',
+            $pago->costo_por_hora ? $pago->costo_por_hora : '',
+            $pago->importe_total ? $pago->importe_total : '',
+            $pago->numero_oficio_presentacion_facultad ? $pago->numero_oficio_presentacion_facultad : '',   // 19. Oficio de presentación de facultad
+            $pago->numero_oficio_presentacion_coordinador ? $pago->numero_oficio_presentacion_coordinador : '', // 20. Oficio de presentación coordinador
+            $pago->numero_resolucion_aprobacion ? $pago->numero_resolucion_aprobacion : '', // 15. Resolución de aprobacion de pago
+            $pago->numero_oficio_presentacion_direccion ? $pago->numero_oficio_presentacion_direccion : '',
+            $pago->numero_oficio_conformidad_facultad ? $pago->numero_oficio_conformidad_facultad : '',     // 21. Oficio de conformidad facultad
+            $pago->numero_oficio_conformidad_coordinador ? $pago->numero_oficio_conformidad_coordinador : '',  // 22. Oficio de conformidad coordinador
+            $pago->numero_informe_final ? $pago->numero_informe_final : '',                   // 23. Informe final
+
+            $pago->numero_resolucion_pago ? $pago->numero_resolucion_pago : '',              // 18. Resolución de pago
+            $pago->numero_oficio_contabilidad ? $pago->numero_oficio_contabilidad : '', // 16. Oficio Contabilidad
+            $pago->oficio_direccion_exp_docentes ? $pago->oficio_direccion_exp_docentes : '',       // 17. Oficio Dirección Exp. Docentes
+
+            $pago->tiene_retencion_8_porciento ? $pago->tiene_retencion_8_porciento : '', // 16. Oficio Contabilidad
+            $pago->numero_recibo_honorario ? $pago->numero_recibo_honorario : '', // 16. Oficio Contabilidad
+            $fechaRecibo ? $fechaRecibo : '', // 10. Fecha de Emisión del Recibo
+
+
+            $pago->numero_oficio_conformidad_direccion ? $pago->numero_oficio_conformidad_direccion : '', // 16. Oficio Conformidad Dirección
+
+
+
+            $pago->docente->dni ? $pago->docente->dni : '',
+            $pago->docente->fecha_nacimiento ? $pago->docente->fecha_nacimiento : '',
+            $pago->docente->numero_telefono ? $pago->docente->numero_telefono : '',
+            $pago->docente->email ? $pago->docente->email : '',
         ];
     }
 

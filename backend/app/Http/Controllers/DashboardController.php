@@ -88,6 +88,24 @@ class DashboardController extends Controller
             ->pluck('total', 'tipo_docente')
             ->toArray();
 
+        // Pagos agrupados por hoja de Google Sheets (Internos/Internos FE/Externos/Externos FE)
+        $pagosRaw = DB::table('pagos_docentes')
+            ->join('docentes', 'pagos_docentes.docente_id', '=', 'docentes.id')
+            ->select('docentes.tipo_docente', 'pagos_docentes.facultad_nombre')
+            ->whereNull('pagos_docentes.deleted_at')
+            ->get();
+
+        $pagosPorHoja = ['Internos' => 0, 'Internos FE' => 0, 'Externos' => 0, 'Externos FE' => 0];
+        foreach ($pagosRaw as $p) {
+            $tipo = strtolower($p->tipo_docente ?? '');
+            $esFE = str_contains($p->facultad_nombre ?? '', 'Enfermería');
+            if (str_contains($tipo, 'interno')) {
+                $esFE ? $pagosPorHoja['Internos FE']++ : $pagosPorHoja['Internos']++;
+            } elseif (str_contains($tipo, 'externo')) {
+                $esFE ? $pagosPorHoja['Externos FE']++ : $pagosPorHoja['Externos']++;
+            }
+        }
+
         // ─────────────────────────────────────────
         // 3. DEVOLUCIONES
         // ─────────────────────────────────────────
@@ -170,6 +188,7 @@ class DashboardController extends Controller
                 'total' => $pagosTotal,
                 'por_estado' => $pagosPorEstado,
                 'por_tipo_docente' => $pagosPorTipoDocente,
+                'por_hoja' => $pagosPorHoja,
                 'sin_expediente' => $pagosSinExpediente,
                 'importe_total' => $importeTotal,
                 'importe_pagado' => $importePagado,

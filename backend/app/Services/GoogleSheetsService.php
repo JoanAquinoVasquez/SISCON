@@ -197,11 +197,15 @@ class GoogleSheetsService
             $days = $group['days'];
 
             $daysStr = '';
-            if (count($days) === 1) {
-                $daysStr = $days[0];
+            if ($index === $lastIndex) {
+                if (count($days) === 1) {
+                    $daysStr = $days[0];
+                } else {
+                    $lastDay = array_pop($days);
+                    $daysStr = implode(', ', $days) . ' y ' . $lastDay;
+                }
             } else {
-                $lastDay = array_pop($days);
-                $daysStr = implode(', ', $days) . ' y ' . $lastDay;
+                $daysStr = implode(', ', $days);
             }
 
             $part = "{$daysStr} de {$meses[$group['month']]}";

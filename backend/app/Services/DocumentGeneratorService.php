@@ -409,10 +409,30 @@ class DocumentGeneratorService
         ];
 
         $resultado = [];
-        foreach ($fechasPorMes as $grupo) {
+        $grupos = array_values($fechasPorMes);
+        $totalGrupos = count($grupos);
+
+        foreach ($grupos as $index => $grupo) {
             sort($grupo['dias']);
-            $diasStr = $this->formatearListaDias($grupo['dias']);
-            $resultado[] = "{$diasStr} de {$meses[$grupo['mes']]} de {$grupo['anio']}";
+            $esUltimoGrupo = ($index === $totalGrupos - 1);
+
+            if ($esUltimoGrupo) {
+                $diasStr = $this->formatearListaDias($grupo['dias']);
+            } else {
+                // For non-last groups, just comma separation, no " y "
+                $diasStr = implode(', ', $grupo['dias']);
+            }
+
+            $part = "{$diasStr} de {$meses[$grupo['mes']]}";
+
+            $nextGrupo = $grupos[$index + 1] ?? null;
+            $nextAnio = $nextGrupo ? $nextGrupo['anio'] : null;
+
+            if ($esUltimoGrupo || $grupo['anio'] !== $nextAnio) {
+                $part .= " de {$grupo['anio']}";
+            }
+
+            $resultado[] = $part;
         }
 
         return implode(', ', $resultado);

@@ -51,7 +51,7 @@ class GoogleSheetsService
         $this->updateData($sheetName, $data, $pago->id, $sheetId);
     }
 
-    private function resolveSheetName(\App\Models\PagoDocente $pago): string
+    public function resolveSheetName(\App\Models\PagoDocente $pago): string
     {
         $tipo = strtolower($pago->docente->tipo_docente ?? '');
         $esFE = str_contains($pago->facultad_nombre ?? '', 'Enfermería');
@@ -349,6 +349,93 @@ class GoogleSheetsService
 
         } catch (\Exception $e) {
             Log::error('Error al actualizar en Google Sheets: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+        }
+    }
+
+    public function deleteDataRow(string $sheetName, $id, ?string $spreadsheetId = null)
+    {
+        try {
+            $spreadsheetId = $spreadsheetId ?? env('GOOGLE_SHEETS_ID');
+
+            if (!$spreadsheetId) {
+                Log::warning('GOOGLE_SHEETS_ID no está configurado en el .env');
+                return;
+            }
+
+            // Asegurar que tenemos el refresh token
+            $refreshToken = env('GOOGLE_SHEETS_REFRESH_TOKEN');
+            if (!$refreshToken) {
+                Log::warning('GOOGLE_SHEETS_REFRESH_TOKEN no está configurado en el .env');
+                return;
+            }
+
+            // Configurar cliente de Google manualmente para refrescar el token
+            $client = new \Google\Client();
+            $client->setClientId(config('google.client_id'));
+            $client->setClientSecret(config('google.client_secret'));
+            $client->setAccessType('offline');
+
+            // Refrescar el token de acceso usando el refresh token
+            $client->refreshToken($refreshToken);
+            $accessToken = $client->getAccessToken();
+
+            if (!$accessToken) {
+                Log::error('No se pudo obtener el access token usando el refresh token.');
+                return;
+            }
+
+            $sheets = Sheets::setAccessToken($accessToken)
+                ->spreadsheet($spreadsheetId)
+                ->sheet($sheetName);
+
+            // Obtener todos los IDs de la columna A
+            $rows = $sheets->range('A:A')->get();
+
+            // Buscar el índice de la fila que contiene el ID
+            $rowIndex = -1;
+            foreach ($rows as $index => $row) {
+                if (isset($row[0]) && $row[0] == $id) {
+                    $rowIndex = $index + 1; // Sheets es 1-indexed
+                    break;
+                }
+            }
+
+            if ($rowIndex !== -1) {
+                // To clear the row, we could write empty values or use the BatchUpdate API to actually delete it
+                // Google Sheets v4 API requires standard google service to delete rows physically
+                $service = new \Google_Service_Sheets($client);
+
+                // We need the sheet ID (gid) based on the sheet name
+                $spreadsheetInfo = $service->spreadsheets->get($spreadsheetId);
+                $sheetId = null;
+                foreach ($spreadsheetInfo->getSheets() as $s) {
+                    if ($s->getProperties()->getTitle() == $sheetName) {
+                        $sheetId = $s->getProperties()->getSheetId();
+                        break;
+                    }
+                }
+
+                if ($sheetId !== null) {
+                    $request = new \Google_Service_Sheets_Request([
+                        'deleteDimension' => [
+                            'range' => [
+                                'sheetId' => $sheetId,
+                                'dimension' => 'ROWS',
+                                'startIndex' => $rowIndex - 1,
+                                'endIndex' => $rowIndex
+                            ]
+                        ]
+                    ]);
+                    $batchUpdateRequest = new \Google_Service_Sheets_BatchUpdateSpreadsheetRequest([
+                        'requests' => [$request]
+                    ]);
+                    $service->spreadsheets->batchUpdate($spreadsheetId, $batchUpdateRequest);
+                    Log::info("Fila eliminada en Google Sheets: {$sheetName} - Row {$rowIndex}");
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar fila en Google Sheets: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
         }
     }

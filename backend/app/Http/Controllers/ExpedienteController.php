@@ -489,31 +489,113 @@ class ExpedienteController extends Controller
             if (in_array($expediente->tipo_asunto, ['presentacion', 'conformidad'])) {
 
                 if ($expediente->tipo_asunto === 'presentacion') {
-                    // Re-procesar presentación
+                    // Re-evaluar vinculación basada en fechas
                     if ($pagoAnterior) {
-                        // Si tenía un pago vinculado, intentar actualizarlo
-                        $pago = PagoDocente::find($pagoAnterior);
-                        if ($pago) {
-                            // Pago existe → Actualizarlo
+                        // Verificar si el pago anterior aún existe
+                        $pagoAnteriorObj = PagoDocente::find($pagoAnterior);
+
+                        if ($pagoAnteriorObj) {
                             $semestre = \App\Models\Semestre::with('programa')->find($expediente->semestre_id);
                             if ($semestre && $semestre->programa) {
-                                $pago->update([
-                                    'docente_id' => $expediente->docente_id,
-                                    'curso_id' => $expediente->curso_id,
-                                    'periodo' => $semestre->programa->periodo,
-                                    'fechas_ensenanza' => $expediente->fechas_ensenanza,
-                                    'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
-                                    'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
-                                ]);
+                                $periodo = $semestre->programa->periodo;
+
+                                // Verificar si el pago anterior aún coincide
+                                $monthsYearsPagoAnterior = $this->extractMonthsYearsFromArray($pagoAnteriorObj->fechas_ensenanza);
+                                $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
+                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id;
+
+                                if ($mismoDocenteCurso && $monthsYearsPagoAnterior === $monthsYearsExpediente) {
+                                    // Sigue siendo válido -> Actualizar
+                                    $pagoAnteriorObj->update([
+                                        'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
+                                        'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
+                                        'fecha_mesa_partes' => $expediente->fecha_mesa_partes,
+                                    ]);
+                                } else {
+                                    // Buscar otro coincidente
+                                    $pagos = PagoDocente::where('docente_id', $expediente->docente_id)
+                                        ->where('curso_id', $expediente->curso_id)
+                                        ->where('periodo', $periodo)
+                                        ->get();
+
+                                    $pagoCoincidente = null;
+                                    foreach ($pagos as $p) {
+                                        $monthsYearsPago = $this->extractMonthsYearsFromArray($p->fechas_ensenanza);
+                                        $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
+                                        if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
+                                            $pagoCoincidente = $p;
+                                            break;
+                                        }
+                                    }
+
+                                    if ($pagoCoincidente) {
+                                        // Limpiar anterior relacionado a presentacion
+                                        $pagoAnteriorObj->update([
+                                            'numero_oficio_presentacion_facultad' => null,
+                                            'numero_oficio_presentacion_coordinador' => null,
+                                            // TODO: si se quiere retroceder estado, verificar si tenia la conformidad. Por ahora no lo tocamos.
+                                            // 'estado' => 'pendiente',  
+                                        ]);
+
+                                        // Eliminar huérfano si no tiene expedientes
+                                        $countExp = DB::table('expedientes')->where('pago_docente_id', $pagoAnteriorObj->id)->where('id', '!=', $expediente->id)->count();
+                                        if ($countExp === 0) {
+                                            try {
+                                                $appSheet = app(\App\Services\GoogleSheetsService::class);
+                                                $otherFull = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->find($pagoAnteriorObj->id);
+                                                if ($otherFull) {
+                                                    $sheetName = $appSheet->resolveSheetName($otherFull);
+                                                    $appSheet->deleteDataRow($sheetName, $pagoAnteriorObj->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+                                                }
+                                            } catch (\Exception $e) {
+                                                \Illuminate\Support\Facades\Log::error('Error deleting orphaned row from sheets: ' . $e->getMessage());
+                                            }
+                                            $pagoAnteriorObj->delete();
+                                        }
+
+                                        // Vincular
+                                        $pagoCoincidente->update([
+                                            'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
+                                            'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
+                                        ]);
+
+                                        \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => $pagoCoincidente->id]);
+                                        $expediente->pago_docente_id = $pagoCoincidente->id;
+                                    } else {
+                                        // Ninguno coincide -> Limpiar anterior y crear nuevo (vía procesarPresentacion)
+                                        $pagoAnteriorObj->update([
+                                            'numero_oficio_presentacion_facultad' => null,
+                                            'numero_oficio_presentacion_coordinador' => null,
+                                        ]);
+
+                                        $countExp = DB::table('expedientes')->where('pago_docente_id', $pagoAnteriorObj->id)->where('id', '!=', $expediente->id)->count();
+                                        if ($countExp === 0) {
+                                            try {
+                                                $appSheet = app(\App\Services\GoogleSheetsService::class);
+                                                $otherFull = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->find($pagoAnteriorObj->id);
+                                                if ($otherFull) {
+                                                    $sheetName = $appSheet->resolveSheetName($otherFull);
+                                                    $appSheet->deleteDataRow($sheetName, $pagoAnteriorObj->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+                                                }
+                                            } catch (\Exception $e) {
+                                                \Illuminate\Support\Facades\Log::error('Error deleting orphaned row from sheets: ' . $e->getMessage());
+                                            }
+                                            $pagoAnteriorObj->delete();
+                                        }
+
+                                        \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => null]);
+                                        $expediente->pago_docente_id = null;
+                                        $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
+                                    }
+                                }
                             }
                         } else {
-                            // Pago fue eliminado → Crear nuevo y actualizar referencia
                             $expediente->pago_docente_id = null;
                             $expediente->save();
                             $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                         }
                     } else {
-                        // No tenía pago vinculado → Crear nuevo
+                        // No tenía pago vinculado -> Crear/Vincular
                         $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                     }
                 } elseif ($expediente->tipo_asunto === 'conformidad') {
@@ -544,11 +626,10 @@ class ExpedienteController extends Controller
                                     // No es necesario cambiar pago_docente_id
                                 } else {
                                     // El pago anterior ya no coincide -> Buscar otro
-                                    // Buscar pagos pendientes que coincidan
+                                    // Buscar pagos que coincidan, ignorando estado para permitir asociar también si el pago está completado/en proceso.
                                     $pagos = PagoDocente::where('docente_id', $expediente->docente_id)
                                         ->where('curso_id', $expediente->curso_id)
                                         ->where('periodo', $periodo)
-                                        ->where('estado', 'pendiente')
                                         ->get();
 
                                     $pagoCoincidente = null;
@@ -566,12 +647,26 @@ class ExpedienteController extends Controller
 
                                     if ($pagoCoincidente) {
                                         // Cambió de pago → Desvincular anterior
-                                        if ($pagoAnteriorObj->estado === 'en_proceso') {
-                                            $pagoAnteriorObj->update([
-                                                'numero_oficio_conformidad_direccion' => null,
-                                                'numero_oficio_conformidad_coordinador' => null,
-                                                'estado' => 'pendiente',
-                                            ]);
+                                        $pagoAnteriorObj->update([
+                                            'numero_oficio_conformidad_direccion' => null,
+                                            'numero_oficio_conformidad_coordinador' => null,
+                                            'numero_oficio_conformidad_facultad' => null,
+                                        ]);
+
+                                        // Eliminar huérfano si no tiene expedientes
+                                        $countExp = DB::table('expedientes')->where('pago_docente_id', $pagoAnteriorObj->id)->where('id', '!=', $expediente->id)->count();
+                                        if ($countExp === 0) {
+                                            try {
+                                                $appSheet = app(\App\Services\GoogleSheetsService::class);
+                                                $otherFull = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->find($pagoAnteriorObj->id);
+                                                if ($otherFull) {
+                                                    $sheetName = $appSheet->resolveSheetName($otherFull);
+                                                    $appSheet->deleteDataRow($sheetName, $pagoAnteriorObj->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+                                                }
+                                            } catch (\Exception $e) {
+                                                \Illuminate\Support\Facades\Log::error('Error deleting orphaned row from sheets: ' . $e->getMessage());
+                                            }
+                                            $pagoAnteriorObj->delete();
                                         }
 
                                         // Vincular al nuevo pago
@@ -587,17 +682,35 @@ class ExpedienteController extends Controller
                                         $expediente->pago_docente_id = $pagoCoincidente->id;
                                     } else {
                                         // No encontró coincidencia → Desvincular anterior
-                                        if ($pagoAnteriorObj->estado === 'en_proceso') {
-                                            $pagoAnteriorObj->update([
-                                                'numero_oficio_conformidad_direccion' => null,
-                                                'numero_oficio_conformidad_coordinador' => null,
-                                                'estado' => 'pendiente',
-                                            ]);
+                                        $pagoAnteriorObj->update([
+                                            'numero_oficio_conformidad_direccion' => null,
+                                            'numero_oficio_conformidad_coordinador' => null,
+                                            'numero_oficio_conformidad_facultad' => null,
+                                        ]);
+
+                                        $countExp = DB::table('expedientes')->where('pago_docente_id', $pagoAnteriorObj->id)->where('id', '!=', $expediente->id)->count();
+                                        if ($countExp === 0) {
+                                            try {
+                                                $appSheet = app(\App\Services\GoogleSheetsService::class);
+                                                $otherFull = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->find($pagoAnteriorObj->id);
+                                                if ($otherFull) {
+                                                    $sheetName = $appSheet->resolveSheetName($otherFull);
+                                                    $appSheet->deleteDataRow($sheetName, $pagoAnteriorObj->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+                                                }
+                                            } catch (\Exception $e) {
+                                                \Illuminate\Support\Facades\Log::error('Error deleting orphaned row from sheets: ' . $e->getMessage());
+                                            }
+                                            $pagoAnteriorObj->delete();
                                         }
 
                                         // Force update using DB facade to null
                                         \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => null]);
                                         $expediente->pago_docente_id = null;
+                                        // Esto creará uno nuevo o se asociará
+                                        $expediente->procesarConformidad(
+                                            $request->numero_oficio_conformidad_coordinador,
+                                            $request->numero_oficio_conformidad_facultad
+                                        );
                                     }
                                 }
                             }

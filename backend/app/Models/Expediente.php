@@ -121,7 +121,7 @@ class Expediente extends Model
 
     /**
      * Procesar expediente de tipo presentación
-     * Crea un nuevo pago docente en estado pendiente
+     * Crea un nuevo pago docente en estado pendiente (o lo asocia a uno existente)
      */
     public function procesarPresentacion($oficioPresentacionCoordinador = null)
     {
@@ -149,31 +149,86 @@ class Expediente extends Model
             $coordinadorNombre = $coordinador ? ($coordinador->titulo_profesional . ' ' . $coordinador->nombres . ' ' . $coordinador->apellido_paterno . ' ' . $coordinador->apellido_materno) : null;
         }
 
-        // Crear pago docente pendiente
-        $pago = PagoDocente::create([
-            'docente_id' => $this->docente_id,
-            'curso_id' => $this->curso_id,
-            'periodo' => $periodo,
-            'fechas_ensenanza' => $this->fechas_ensenanza,
-            'facultad_nombre' => $facultadNombre,
-            'director_nombre' => $directorNombre,
-            'coordinador_nombre' => $coordinadorNombre,
-            'numero_horas' => 0,
-            'costo_por_hora' => 0,
-            'importe_total' => 0,
-            'importe_letras' => '',
-            // Documentos de presentación (se llenarán desde el expediente)
-            'numero_oficio_presentacion_facultad' => $this->numero_documento,
-            'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
-            'fecha_mesa_partes' => $this->fecha_mesa_partes,
-        ]);
+        // Si ya tiene un pago vinculado, actualizarlo
+        if ($this->pago_docente_id) {
+            $pago = PagoDocente::find($this->pago_docente_id);
+            if ($pago) {
+                $pago->update([
+                    'numero_oficio_presentacion_facultad' => $this->numero_documento,
+                    'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
+                    'fecha_mesa_partes' => $this->fecha_mesa_partes,
+                    // Actualizar nombres por si cambiaron
+                    'facultad_nombre' => $facultadNombre,
+                    'director_nombre' => $directorNombre,
+                    'coordinador_nombre' => $coordinadorNombre,
+                ]);
+                $this->update(['estado' => 'en_proceso']);
+                return $pago;
+            }
+        }
 
-        // Vincular expediente con pago y asegurar estado pendiente
-        $this->pago_docente_id = $pago->id;
-        $this->estado = 'pendiente';
-        $this->save();
+        // Buscar pago que coincida en docente, curso, periodo
+        $pagos = PagoDocente::where('docente_id', $this->docente_id)
+            ->where('curso_id', $this->curso_id)
+            ->where('periodo', $periodo)
+            ->get();
 
-        return $pago;
+        // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)
+        $pago = null;
+        foreach ($pagos as $p) {
+            $monthsYearsPago = $this->extractMonthsYears($p->fechas_ensenanza);
+            $monthsYearsExpediente = $this->extractMonthsYears($this->fechas_ensenanza);
+
+            // Si los meses y años coinciden, vincular
+            if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
+                $pago = $p;
+                break;
+            }
+        }
+
+        if ($pago) {
+            // Encontró un pago coincidente -> Vincular
+            $pago->update([
+                'numero_oficio_presentacion_facultad' => $this->numero_documento,
+                'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
+                'fecha_mesa_partes' => $this->fecha_mesa_partes,
+                'facultad_nombre' => $facultadNombre,
+                'director_nombre' => $directorNombre,
+                'coordinador_nombre' => $coordinadorNombre,
+            ]);
+
+            $this->estado = 'en_proceso'; // Si encuentra uno (ej. conformidad estaba primero), en proceso
+            $this->pago_docente_id = $pago->id;
+            $this->save();
+
+            return $pago;
+        } else {
+            // Crear pago docente pendiente
+            $pago = PagoDocente::create([
+                'docente_id' => $this->docente_id,
+                'curso_id' => $this->curso_id,
+                'periodo' => $periodo,
+                'fechas_ensenanza' => $this->fechas_ensenanza,
+                'facultad_nombre' => $facultadNombre,
+                'director_nombre' => $directorNombre,
+                'coordinador_nombre' => $coordinadorNombre,
+                'numero_horas' => 0,
+                'costo_por_hora' => 0,
+                'importe_total' => 0,
+                'importe_letras' => '',
+                // Documentos de presentación (se llenarán desde el expediente)
+                'numero_oficio_presentacion_facultad' => $this->numero_documento,
+                'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
+                'fecha_mesa_partes' => $this->fecha_mesa_partes,
+            ]);
+
+            // Vincular expediente con pago y asegurar estado pendiente
+            $this->pago_docente_id = $pago->id;
+            $this->estado = 'pendiente';
+            $this->save();
+
+            return $pago;
+        }
     }
 
     /**
@@ -224,13 +279,10 @@ class Expediente extends Model
             // Si el pago fue eliminado, continuar con la búsqueda/creación
         }
 
-        // Buscar pago que tenga expedientes en estado pendiente
+        // Buscar pago que coincida en docente, curso y periodo
         $pagos = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
-            ->whereHas('expedientes', function ($q) {
-                $q->where('estado', 'pendiente');
-            })
             ->get();
 
         // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)

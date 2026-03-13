@@ -1,8 +1,8 @@
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { SelectConBusqueda } from '@/components/ui/select-con-busqueda';
-import { CalendarioMultiple } from '@/components/ui/calendario-multiple';
 import { X } from 'lucide-react';
+import { CalendarioMultiple } from '@/components/ui/calendario-multiple';
 
 interface DocenteCursoBlockProps {
   index: number;

@@ -116,29 +116,45 @@ export function CalendarioMultiple({
       return y1 !== y2 ? y1 - y2 : m1 - m2;
     });
 
+    // Agrupar por año
+    const gruposPorAnio: Record<number, typeof fechasPorMesAnio[string][]> = {};
+    sortedKeys.forEach(key => {
+      const group = fechasPorMesAnio[key];
+      if (!gruposPorAnio[group.year]) gruposPorAnio[group.year] = [];
+      gruposPorAnio[group.year].push(group);
+    });
+    const sortedYears = Object.keys(gruposPorAnio).map(Number).sort();
+
     return (
       <div className="flex flex-wrap gap-x-1 gap-y-1 items-center">
-        {sortedKeys.map((key, groupIndex) => {
-          const group = fechasPorMesAnio[key];
-          group.days.sort((a, b) => a.day - b.day);
-
+        {sortedYears.map((year, yearIndex) => {
+          const mesesDeEsteAnio = gruposPorAnio[year];
           return (
-            <span key={key}>
-              {group.days.map((d, dayIndex) => (
-                <span key={d.fullDate}>
-                  <button
-                    type="button"
-                    onClick={() => removeDate(d.fullDate)}
-                    className="hover:text-red-600 hover:bg-red-50 px-1 rounded transition-all cursor-pointer font-bold text-blue-600 underline decoration-dotted underline-offset-2"
-                    title="Click para eliminar"
-                  >
-                    {d.day}
-                  </button>
-                  {dayIndex < group.days.length - 1 ? ', ' : ''}
-                </span>
-              ))}
-              {` de ${meses[group.month]}`}
-              {groupIndex < sortedKeys.length - 1 ? ', ' : ''}
+            <span key={year}>
+              {mesesDeEsteAnio.map((group, groupIndex) => {
+                group.days.sort((a, b) => a.day - b.day);
+                return (
+                  <span key={`${group.month}-${year}`}>
+                    {group.days.map((d, dayIndex) => (
+                      <span key={d.fullDate}>
+                        <button
+                          type="button"
+                          onClick={() => removeDate(d.fullDate)}
+                          className="hover:text-red-600 hover:bg-red-50 px-1 rounded transition-all cursor-pointer font-bold text-blue-600 underline decoration-dotted underline-offset-2"
+                          title="Click para eliminar"
+                        >
+                          {d.day}
+                        </button>
+                        {dayIndex < group.days.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                    {` de ${meses[group.month]}`}
+                    {groupIndex < mesesDeEsteAnio.length - 1 ? ', ' : ''}
+                  </span>
+                );
+              })}
+              {` de ${year}`}
+              {yearIndex < sortedYears.length - 1 ? ', ' : ''}
             </span>
           );
         })}

@@ -63,33 +63,46 @@ const formatearFechasLegibles = (fechas: string[]): string => {
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
   ];
 
-  // Agrupar fechas por mes y año
-  const fechasPorMesAnio: Record<string, number[]> = {};
+  // Agrupar fechas por mes+año
+  const fechasPorMesAnio: Record<string, { year: number; mes: number; dias: number[] }> = {};
 
   fechas.forEach(fecha => {
     const [year, month, day] = fecha.split('-').map(Number);
     const key = `${month - 1}-${year}`;
-
     if (!fechasPorMesAnio[key]) {
-      fechasPorMesAnio[key] = [];
+      fechasPorMesAnio[key] = { year, mes: month - 1, dias: [] };
     }
-    fechasPorMesAnio[key].push(day);
+    fechasPorMesAnio[key].dias.push(day);
   });
 
-  // Construir el texto formateado
-  const grupos = Object.entries(fechasPorMesAnio)
-    .sort(([keyA], [keyB]) => {
-      const [mA, yA] = keyA.split('-').map(Number);
-      const [mB, yB] = keyB.split('-').map(Number);
-      return yA !== yB ? yA - yB : mA - mB;
-    })
-    .map(([key, dias]) => {
-      const [mes] = key.split('-').map(Number);
-      dias.sort((a, b) => a - b);
-      return `${dias.join(', ')} de ${meses[mes]}`;
-    });
+  // Ordenar las claves por año luego mes
+  const sortedKeys = Object.keys(fechasPorMesAnio).sort((a, b) => {
+    const [mA, yA] = a.split('-').map(Number);
+    const [mB, yB] = b.split('-').map(Number);
+    return yA !== yB ? yA - yB : mA - mB;
+  });
 
-  return grupos.join(', ');
+  // Agrupar por año
+  const gruposPorAnio: Record<number, { mes: number; dias: number[] }[]> = {};
+  sortedKeys.forEach(key => {
+    const { year, mes, dias } = fechasPorMesAnio[key];
+    if (!gruposPorAnio[year]) gruposPorAnio[year] = [];
+    gruposPorAnio[year].push({ mes, dias });
+  });
+
+  // Construir texto: año aparece solo al final de cada bloque anual
+  return Object.entries(gruposPorAnio)
+    .sort(([a], [b]) => Number(a) - Number(b))
+    .map(([year, grupos]) => {
+      const mesesStr = grupos
+        .map(({ mes, dias }) => {
+          dias.sort((a, b) => a - b);
+          return `${dias.join(', ')} de ${meses[mes]}`;
+        })
+        .join(', ');
+      return `${mesesStr} de ${year}`;
+    })
+    .join(', ');
 };
 
 interface PagoDocente {

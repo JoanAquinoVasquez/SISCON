@@ -145,13 +145,13 @@ class DocumentGeneratorService
 
         // Determinar artículos y títulos según género del director
         $directorGenero = 'M'; // Por defecto
-        $directorODirectora = 'Director';
+        $directorODirectora = 'director';
         $artDirectorFacultad = 'el';
 
         if ($programa && $programa->facultad && $programa->facultad->director_genero) {
             $directorGenero = strtoupper($programa->facultad->director_genero);
             if ($directorGenero === 'F') {
-                $directorODirectora = 'Directora';
+                $directorODirectora = 'directora';
                 $artDirectorFacultad = 'la';
             }
         }

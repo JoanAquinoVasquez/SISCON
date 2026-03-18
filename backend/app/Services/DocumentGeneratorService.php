@@ -27,8 +27,10 @@ class DocumentGeneratorService
             $templateName = 'Resoluciones Plantilla DI 2025.docx';
         } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
             $templateName = 'Resoluciones Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II') {
-            $templateName = 'Resolucion Plantilla 2024.docx';
+        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'interno') {
+            $templateName = 'Resolucion Plantilla DI 2024.docx';
+        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Resolucion Plantilla DE 2024.docx';
         }
 
         $templatePath = storage_path('templates/' . $templateName);
@@ -76,8 +78,10 @@ class DocumentGeneratorService
             $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
         } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
             $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II') {
-            $templateName = 'Ofic. Conta Plantilla 2024.docx';
+        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'interno') {
+            $templateName = 'Ofic. Conta Plantilla DI 2024.docx';
+        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Ofic. Conta Plantilla DE 2024.docx';
         }
 
         $templatePath = storage_path('templates/' . $templateName);

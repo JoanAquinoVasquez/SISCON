@@ -144,6 +144,7 @@ class GoogleSheetsService
 
 
             $pago->docente->dni ? $pago->docente->dni : '',
+            $pago->docente->ruc ? $pago->docente->ruc : '',
             $pago->docente->fecha_nacimiento ? $pago->docente->fecha_nacimiento : '',
             $pago->docente->numero_telefono ? $pago->docente->numero_telefono : '',
             $pago->docente->email ? $pago->docente->email : '',

@@ -8,6 +8,7 @@ export interface Docente {
   apellido_materno: string;
   genero: "M" | "F";
   dni: string;
+  ruc?: string;
   numero_telefono?: string;
   email?: string;
   tipo_docente:
@@ -29,6 +30,7 @@ export interface CreateDocenteDto {
   apellido_materno: string;
   genero: "M" | "F";
   dni?: string;
+  ruc?: string;
   numero_telefono?: string;
   email?: string;
   tipo_docente:

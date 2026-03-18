@@ -21,6 +21,7 @@ class Docente extends Model
         'genero',
         'fecha_nacimiento',
         'dni',
+        'ruc',
         'numero_telefono',
         'email',
         'tipo_docente',

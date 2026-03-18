@@ -30,6 +30,12 @@ const docenteSchema = z.object({
   titulo_profesional: z.string().optional(),
   genero: z.enum(['M', 'F']),
   dni: z.string().length(8, 'El DNI debe tener 8 dígitos').or(z.literal('')),
+  ruc: z
+    .string()
+    .refine((val) => val === '' || /^[0-9]{20}$/.test(val), {
+      message: 'El RUC debe tener exactamente 20 dígitos numéricos',
+    })
+    .optional(),
   numero_telefono: z.string().optional(),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   fecha_nacimiento: z.string().optional(),
@@ -68,6 +74,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
           titulo_profesional: docente.titulo_profesional || '',
           genero: docente.genero,
           dni: docente.dni || '',
+          ruc: docente.ruc || '',
           numero_telefono: docente.numero_telefono || '',
           email: docente.email || '',
           fecha_nacimiento: docente.fecha_nacimiento || '',
@@ -81,6 +88,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
           titulo_profesional: '',
           genero: 'M',
           dni: '',
+          ruc: '',
           numero_telefono: '',
           email: '',
           fecha_nacimiento: '',
@@ -193,6 +201,27 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
                 <p className="text-sm text-destructive">{errors.fecha_nacimiento.message}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="ruc">
+              RUC <span className="text-muted-foreground font-normal text-xs">(Opcional)</span>
+            </Label>
+            <Input
+              id="ruc"
+              {...register('ruc')}
+              placeholder="20 dígitos numéricos"
+              maxLength={20}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={(e) => {
+                const target = e.currentTarget;
+                target.value = target.value.replace(/\D/g, '').slice(0, 20);
+              }}
+            />
+            {errors.ruc && (
+              <p className="text-sm text-destructive">{errors.ruc.message}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -1,0 +1,32 @@
+name: Deploy Backend
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Ajusta la ruta a tu servidor (sin el / inicial si es relativo)
+          server-dir: siscon-backend/
+          # EXCLUIMOS carpetas pesadas y secretos para no romper producción
+          exclude: |
+            **/.git*
+            **/.env
+            **/vendor/**
+            **/node_modules/**
+            **/storage/**
+            **/tests/**
+            **/phpunit.xml
+            **/.editorconfig
+            **/.gitattributes
+          port: 21

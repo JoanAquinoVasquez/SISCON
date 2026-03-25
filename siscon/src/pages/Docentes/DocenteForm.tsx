@@ -32,8 +32,8 @@ const docenteSchema = z.object({
   dni: z.string().length(8, 'El DNI debe tener 8 dígitos').or(z.literal('')),
   ruc: z
     .string()
-    .refine((val) => val === '' || /^[0-9]{20}$/.test(val), {
-      message: 'El RUC debe tener exactamente 20 dígitos numéricos',
+    .refine((val) => val === '' || /^[0-9]{11}$|^[0-9]{20}$/.test(val), {
+      message: 'El RUC debe tener 11 o 20 dígitos numéricos',
     })
     .optional(),
   numero_telefono: z.string().optional(),
@@ -210,7 +210,7 @@ export function DocenteForm({ docente, open, onClose, onSubmit, isLoading }: Doc
             <Input
               id="ruc"
               {...register('ruc')}
-              placeholder="20 dígitos numéricos"
+              placeholder="11 o 20 dígitos numéricos"
               maxLength={20}
               inputMode="numeric"
               pattern="[0-9]*"

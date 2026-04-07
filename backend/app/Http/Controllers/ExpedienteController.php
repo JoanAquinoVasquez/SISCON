@@ -502,7 +502,7 @@ class ExpedienteController extends Controller
                                 // Verificar si el pago anterior aún coincide
                                 $monthsYearsPagoAnterior = $this->extractMonthsYearsFromArray($pagoAnteriorObj->fechas_ensenanza);
                                 $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
-                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id;
+                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
 
                                 if ($mismoDocenteCurso && $monthsYearsPagoAnterior === $monthsYearsExpediente) {
                                     // Sigue siendo válido -> Actualizar
@@ -613,7 +613,7 @@ class ExpedienteController extends Controller
                                 // Verificar si el pago anterior aún coincide con los nuevos datos
                                 $monthsYearsPagoAnterior = $this->extractMonthsYearsFromArray($pagoAnteriorObj->fechas_ensenanza);
                                 $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
-                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id;
+                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
 
                                 if ($mismoDocenteCurso && $monthsYearsPagoAnterior === $monthsYearsExpediente) {
                                     // El pago anterior sigue siendo válido -> Actualizarlo

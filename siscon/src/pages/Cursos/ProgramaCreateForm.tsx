@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { programaService } from '../../services/programaService';
+import { programaService, type Programa } from '../../services/programaService';
 import { cn } from '../../lib/utils';
 import { useToast } from '../../context/ToastContext';
 
@@ -44,21 +44,26 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const { showToast } = useToast();
 
   // ── Datos de BD
-  const { data: programasData } = useQuery({
+  const { data: respProgramas } = useQuery({
     queryKey: ['programas'],
     queryFn: () => programaService.getAll(),
     enabled: open,
   });
-  const { data: gradosData, isLoading: isLoadingGrados } = useQuery({
+  const { data: respGrados, isLoading: isLoadingGrados } = useQuery({
     queryKey: ['grados-list'],
     queryFn: () => programaService.getGrados(),
     enabled: open,
   });
-  const { data: facultadesData } = useQuery({
+  const { data: respFacultades } = useQuery({
     queryKey: ['facultades-list'],
     queryFn: () => programaService.getFacultades(),
     enabled: open,
   });
+
+  // Extraer arrays de forma segura (Laravel suele envolver en .data)
+  const programas = (respProgramas as any)?.data || [];
+  const grados = (respGrados as any)?.data || [];
+  const facultades = (respFacultades as any)?.data || [];
 
   // ── Estado del formulario
   const [gradoId, setGradoId] = useState<number>(0);
@@ -71,15 +76,18 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const comboRef = useRef<HTMLDivElement>(null);
 
   // ── Helpers
-  const gradoNombre = gradosData?.data?.find((g) => g.id === gradoId)?.nombre ?? '';
+  const gradoNombre = grados.find((g: any) => g.id === gradoId)?.nombre ?? '';
   const esNombreNuevo = !!nombreSearch && nombreSearch.length >= 3 && !nombreSeleccionado;
 
   // Programas únicos del grado seleccionado
   const programasFiltrados = (() => {
-    if (!programasData?.data || !gradoId) return [];
-    const seen = new Map<string, (typeof programasData.data)[0]>();
-    for (const p of programasData.data) {
-      if (p.grado_id === gradoId && !seen.has(p.nombre)) seen.set(p.nombre, p);
+    if (!programas || !gradoId) return [];
+    
+    const seen = new Map<string, Programa>();
+    for (const p of (programas as Programa[])) {
+      if (p.grado_id === gradoId && !seen.has(p.nombre)) {
+        seen.set(p.nombre, p);
+      }
     }
     return [...seen.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
   })();
@@ -93,7 +101,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     gradoId &&
     nombreSearch.length >= 3 &&
     periodoInput.length >= 6 &&
-    programasData?.data?.some(
+    (programas as Programa[]).some(
       (p) =>
         p.nombre.toLowerCase() === nombreSearch.toLowerCase() &&
         p.grado_id === gradoId &&
@@ -146,14 +154,14 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     setValue('periodo', '', { shouldValidate: true });
   };
 
-  const handleSelectSugerencia = (nombre: string, programa: any) => {
+  const handleSelectSugerencia = (nombre: string, programa: Programa) => {
     setNombreSeleccionado(nombre);
     setNombreSearch(nombre);
     setValue('nombre', nombre, { shouldValidate: true });
     if (programa.facultad_id) {
       setFacultadId(programa.facultad_id);
       setValue('facultad_id', programa.facultad_id, { shouldValidate: true });
-      const fac = facultadesData?.data?.find((f) => f.id === programa.facultad_id);
+      const fac = facultades.find((f: any) => f.id === programa.facultad_id);
       setFacultadAutoNombre(fac?.nombre ?? '');
     } else {
       setFacultadId(0);
@@ -169,21 +177,19 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     setValue('nombre', val, { shouldValidate: true });
 
     // Buscar si hay una coincidencia exacta con un programa existente (ignorando mayúsculas/minúsculas)
-    const programaExistente = programasData?.data?.find(
+    const programaExistente = (programas as Programa[]).find(
       (p) => p.grado_id === gradoId && p.nombre.trim().toLowerCase() === val.trim().toLowerCase()
     );
 
     if (programaExistente) {
-      // Si coincide exactamente, actuar como si lo hubiera seleccionado de la lista
       setNombreSeleccionado(programaExistente.nombre);
       if (programaExistente.facultad_id) {
         setFacultadId(programaExistente.facultad_id);
         setValue('facultad_id', programaExistente.facultad_id, { shouldValidate: true });
-        const fac = facultadesData?.data?.find((f) => f.id === programaExistente.facultad_id);
+        const fac = facultades.find((f: any) => f.id === programaExistente.facultad_id);
         setFacultadAutoNombre(fac?.nombre ?? '');
       }
     } else {
-      // Si no coincide, limpiar selección previa
       setNombreSeleccionado('');
       setFacultadId(0);
       setFacultadAutoNombre('');
@@ -231,7 +237,6 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const mostrarSeleccionFacultad = esNombreNuevo || (!!nombreSeleccionado && !facultadAutoNombre);
   const periodoHabilitado = nombreSearch.length >= 3;
 
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
@@ -263,7 +268,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
                     <span className="text-sm text-muted-foreground font-medium">Cargando grados...</span>
                   </div>
                 ) : (
-                  gradosData?.data?.map((g) => (
+                  grados.map((g: any) => (
                     <SelectItem key={g.id} value={String(g.id)}>
                       <span>{g.nombre}</span>
                     </SelectItem>
@@ -271,7 +276,6 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
                 )}
               </SelectContent>
             </Select>
-            {errors.grado_id && <p className="text-sm text-destructive">{errors.grado_id.message}</p>}
           </div>
 
           {/* PASO 2: Nombre del programa */}
@@ -297,7 +301,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
                   placeholder={
                     !nombreHabilitado
                       ? 'Primero selecciona un grado…'
-                      : `Busca o escribe el nombre del programa de ${gradoNombre}`
+                      : `Busca o escribe el nombre del programa ${gradoNombre ? `de ${gradoNombre}` : ''}`
                   }
                   className={cn(
                     'pr-10',
@@ -366,7 +370,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
                   <SelectValue placeholder="Selecciona la facultad" />
                 </SelectTrigger>
                 <SelectContent>
-                  {facultadesData?.data?.map((f) => (
+                  {facultades.map((f: any) => (
                     <SelectItem key={f.id} value={String(f.id)}>
                       <span>{f.nombre}</span>
                     </SelectItem>

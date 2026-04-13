@@ -529,12 +529,18 @@ class ExpedienteController extends Controller
                                     }
 
                                     if ($pagoCoincidente) {
+                                        // Capturar datos financieros antes de limpiar/borrar el anterior (solo si es presentacion)
+                                        $datosFinancieros = [
+                                            'numero_horas' => $pagoAnteriorObj->numero_horas,
+                                            'costo_por_hora' => $pagoAnteriorObj->costo_por_hora,
+                                            'importe_total' => $pagoAnteriorObj->importe_total,
+                                            'importe_letras' => $pagoAnteriorObj->importe_letras,
+                                        ];
+
                                         // Limpiar anterior relacionado a presentacion
                                         $pagoAnteriorObj->update([
                                             'numero_oficio_presentacion_facultad' => null,
                                             'numero_oficio_presentacion_coordinador' => null,
-                                            // TODO: si se quiere retroceder estado, verificar si tenia la conformidad. Por ahora no lo tocamos.
-                                            // 'estado' => 'pendiente',  
                                         ]);
 
                                         // Eliminar huérfano si no tiene expedientes
@@ -553,15 +559,30 @@ class ExpedienteController extends Controller
                                             $pagoAnteriorObj->delete();
                                         }
 
-                                        // Vincular
-                                        $pagoCoincidente->update([
+                                        // Vincular y transferir datos financieros
+                                        $updateData = [
                                             'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
                                             'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
-                                        ]);
+                                        ];
+
+                                        // Solo transferir si el coincidente tiene 0 y el anterior tenia algo (evita perder datos si ya habia algo en el nuevo)
+                                        if ($pagoCoincidente->importe_total == 0 && $datosFinancieros['importe_total'] > 0) {
+                                            $updateData = array_merge($updateData, $datosFinancieros);
+                                        }
+
+                                        $pagoCoincidente->update($updateData);
 
                                         \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => $pagoCoincidente->id]);
                                         $expediente->pago_docente_id = $pagoCoincidente->id;
                                     } else {
+                                        // Capturar datos financieros
+                                        $datosFinancieros = [
+                                            'numero_horas' => $pagoAnteriorObj->numero_horas,
+                                            'costo_por_hora' => $pagoAnteriorObj->costo_por_hora,
+                                            'importe_total' => $pagoAnteriorObj->importe_total,
+                                            'importe_letras' => $pagoAnteriorObj->importe_letras,
+                                        ];
+
                                         // Ninguno coincide -> Limpiar anterior y crear nuevo (vía procesarPresentacion)
                                         $pagoAnteriorObj->update([
                                             'numero_oficio_presentacion_facultad' => null,
@@ -585,7 +606,12 @@ class ExpedienteController extends Controller
 
                                         \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => null]);
                                         $expediente->pago_docente_id = null;
-                                        $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
+                                        $nuevoPago = $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
+
+                                        // Transferir datos financieros al nuevo pago
+                                        if ($nuevoPago && $datosFinancieros['importe_total'] > 0) {
+                                            $nuevoPago->update($datosFinancieros);
+                                        }
                                     }
                                 }
                             }

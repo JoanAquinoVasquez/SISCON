@@ -72,6 +72,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Grados Académicos
     Route::apiResource('grados', GradoController::class);
+    Route::get('grados-list', [ProgramaController::class, 'grados']);
+    Route::get('facultades-list', [ProgramaController::class, 'facultades']);
 
     // Programas
     Route::apiResource('programas', ProgramaController::class);
@@ -82,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Semestres
     Route::apiResource('semestres', SemestreController::class);
     Route::get('semestres/{id}/cursos', [SemestreController::class, 'cursos']);
+    Route::get('semestres/by-programa/{programa_id}', [SemestreController::class, 'byPrograma']);
 
     // Cursos
     Route::apiResource('cursos', CursoController::class);

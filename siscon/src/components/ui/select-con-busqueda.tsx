@@ -55,10 +55,7 @@ export function SelectConBusqueda({
           ...additionalParams,
         });
 
-      
-
         const response = await axios.get(`${searchEndpoint}?${params}`);
-       
         setOptions(response.data.data || []);
       } catch (err: any) {
         const errorMessage = err.response?.status === 401
@@ -68,11 +65,6 @@ export function SelectConBusqueda({
             : 'Error al buscar';
         setError(errorMessage);
         console.error('Error fetching options:', err);
-        console.error('Error details:', {
-          status: err.response?.status,
-          data: err.response?.data,
-          config: err.config
-        });
       } finally {
         setIsLoading(false);
       }
@@ -81,6 +73,15 @@ export function SelectConBusqueda({
     fetchOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, searchEndpoint, JSON.stringify(additionalParams)]);
+
+  // Sincronizar searchTerm con el valor cuando este cambia (desde fuera o por selección)
+  useEffect(() => {
+    if (value) {
+      setSearchTerm(value.label);
+    } else {
+      setSearchTerm('');
+    }
+  }, [value]);
 
   const handleSelect = (option: Option) => {
     onChange(option);
@@ -99,6 +100,9 @@ export function SelectConBusqueda({
       e.preventDefault();
       handleSelect(options[0]);
     }
+    if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -107,12 +111,15 @@ export function SelectConBusqueda({
       <div className="relative">
         <Input
           type="text"
-          value={value ? value.label : searchTerm}
+          value={searchTerm}
           onChange={(e) => {
-            setSearchTerm(e.target.value);
+            const newVal = e.target.value;
+            setSearchTerm(newVal);
             setIsOpen(true);
-            if (!e.target.value) {
-              handleClear();
+            
+            // Si el usuario edita el texto y ya no coincide con el valor seleccionado, lo limpiamos
+            if (value && newVal !== value.label) {
+              onChange(null);
             }
           }}
           onFocus={() => setIsOpen(true)}

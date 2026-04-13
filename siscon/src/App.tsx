@@ -5,6 +5,7 @@ import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import UsersPage from './pages/Users';
 import ProgramasPage from './pages/Programas';
+import CursosPage from './pages/Cursos';
 import { DocentesPage } from './pages/Docentes';
 import { CoordinadoresPage } from './pages/Coordinadores';
 import PagosDocentesList from './pages/PagosDocentes/PagosDocentesList';
@@ -59,6 +60,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="programas" element={<ProgramasPage />} />
+          <Route path="cursos" element={<ErrorBoundary><CursosPage /></ErrorBoundary>} />
           <Route path="docentes" element={<DocentesPage />} />
           <Route path="coordinadores" element={<CoordinadoresPage />} />
           <Route path="pagos-docentes" element={

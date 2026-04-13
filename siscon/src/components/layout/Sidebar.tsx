@@ -9,7 +9,8 @@ import {
   FolderOpen,
   Home,
   X,
-  FileCheck
+  FileCheck,
+  BookOpen,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -19,12 +20,14 @@ const menuItems = [
   { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
   { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
   { icon: ClipboardList, label: 'Coordinadores', path: '/coordinadores' },
+  { icon: BookOpen, label: 'Cursos', path: '/cursos' },
   { icon: Users, label: 'Usuarios', path: '/users' },
   { icon: UserCog, label: 'Docentes', path: '/docentes' },
   { icon: FileText, label: 'Oficios', path: '/documentos/oficios' },
   { icon: FileCheck, label: 'Resoluciones', path: '/documentos/resoluciones' },
   { icon: DollarSign, label: 'Devoluciones', path: '/devoluciones' },
 ];
+
 
 interface SidebarProps {
   isCollapsed: boolean;

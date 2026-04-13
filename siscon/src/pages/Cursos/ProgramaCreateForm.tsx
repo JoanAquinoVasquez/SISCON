@@ -60,10 +60,15 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     enabled: open,
   });
 
-  // Extraer arrays de forma segura (Laravel suele envolver en .data)
-  const programas = (respProgramas as any)?.data || [];
-  const grados = (respGrados as any)?.data || [];
-  const facultades = (respFacultades as any)?.data || [];
+  // Extraer arrays de forma segura (Maneja tanto JSON directo como envuelto en .data)
+  const listProgramas = respProgramas as any;
+  const programas = Array.isArray(listProgramas) ? listProgramas : (listProgramas?.data || []);
+
+  const listGrados = respGrados as any;
+  const grados = Array.isArray(listGrados) ? listGrados : (listGrados?.data || []);
+
+  const listFacultades = respFacultades as any;
+  const facultades = Array.isArray(listFacultades) ? listFacultades : (listFacultades?.data || []);
 
   // ── Estado del formulario
   const [gradoId, setGradoId] = useState<number>(0);
@@ -76,7 +81,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const comboRef = useRef<HTMLDivElement>(null);
 
   // ── Helpers
-  const gradoNombre = grados.find((g: any) => g.id === gradoId)?.nombre ?? '';
+  const gradoNombre = grados.find((g: any) => Number(g.id) === Number(gradoId))?.nombre ?? '';
   const esNombreNuevo = !!nombreSearch && nombreSearch.length >= 3 && !nombreSeleccionado;
 
   // Programas únicos del grado seleccionado
@@ -85,7 +90,8 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     
     const seen = new Map<string, Programa>();
     for (const p of (programas as Programa[])) {
-      if (p.grado_id === gradoId && !seen.has(p.nombre)) {
+      // FIX: Usamos Number() para asegurar compatibilidad entre entornos (Local vs Producción)
+      if (Number(p.grado_id) === Number(gradoId) && !seen.has(p.nombre)) {
         seen.set(p.nombre, p);
       }
     }
@@ -104,7 +110,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     (programas as Programa[]).some(
       (p) =>
         p.nombre.toLowerCase() === nombreSearch.toLowerCase() &&
-        p.grado_id === gradoId &&
+        Number(p.grado_id) === Number(gradoId) &&
         p.periodo === periodoInput,
     )
   );
@@ -143,6 +149,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const handleGradoChange = (v: string) => {
     const id = Number(v);
     setGradoId(id);
+    
     setValue('grado_id', id, { shouldValidate: true });
     setNombreSearch('');
     setNombreSeleccionado('');
@@ -159,9 +166,10 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     setNombreSearch(nombre);
     setValue('nombre', nombre, { shouldValidate: true });
     if (programa.facultad_id) {
-      setFacultadId(programa.facultad_id);
-      setValue('facultad_id', programa.facultad_id, { shouldValidate: true });
-      const fac = facultades.find((f: any) => f.id === programa.facultad_id);
+      const fId = Number(programa.facultad_id);
+      setFacultadId(fId);
+      setValue('facultad_id', fId, { shouldValidate: true });
+      const fac = facultades.find((f: any) => Number(f.id) === fId);
       setFacultadAutoNombre(fac?.nombre ?? '');
     } else {
       setFacultadId(0);
@@ -176,17 +184,17 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     setNombreSearch(val);
     setValue('nombre', val, { shouldValidate: true });
 
-    // Buscar si hay una coincidencia exacta con un programa existente (ignorando mayúsculas/minúsculas)
     const programaExistente = (programas as Programa[]).find(
-      (p) => p.grado_id === gradoId && p.nombre.trim().toLowerCase() === val.trim().toLowerCase()
+      (p) => Number(p.grado_id) === Number(gradoId) && p.nombre.trim().toLowerCase() === val.trim().toLowerCase()
     );
 
     if (programaExistente) {
       setNombreSeleccionado(programaExistente.nombre);
       if (programaExistente.facultad_id) {
-        setFacultadId(programaExistente.facultad_id);
-        setValue('facultad_id', programaExistente.facultad_id, { shouldValidate: true });
-        const fac = facultades.find((f: any) => f.id === programaExistente.facultad_id);
+        const fId = Number(programaExistente.facultad_id);
+        setFacultadId(fId);
+        setValue('facultad_id', fId, { shouldValidate: true });
+        const fac = facultades.find((f: any) => Number(f.id) === fId);
         setFacultadAutoNombre(fac?.nombre ?? '');
       }
     } else {

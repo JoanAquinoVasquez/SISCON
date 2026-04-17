@@ -508,6 +508,8 @@ export default function PagosDocentesList() {
             <SelectItem value="todos"><span>Todos</span></SelectItem>
             <SelectItem value="interno"><span>Interno</span></SelectItem>
             <SelectItem value="externo"><span>Externo</span></SelectItem>
+            <SelectItem value="interno_enfermeria"><span>Interno Enfermería</span></SelectItem>
+            <SelectItem value="externo_enfermeria"><span>Externo Enfermería</span></SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -603,7 +605,7 @@ export default function PagosDocentesList() {
                   <TableCell className='text-center'>
                     {/* Si el docente es externo, que muestre la resolucion de aprobacion si es que hay, y si no hay, salga pendiente, pero si es docente interno, me salga no acto */}
                     {
-                      pago.tipo_docente === 'externo' ? (
+                      pago.tipo_docente?.includes('externo') ? (
                         pago.numero_resolucion_aprobacion ? `RES N° ${pago.numero_resolucion_aprobacion}` : 'Pendiente'
                       ) : (
                         "-"
@@ -780,7 +782,7 @@ export default function PagosDocentesList() {
                     {
                       label: "Resol. Aprobación",
                       value: selectedPago.numero_resolucion_aprobacion ? `RES N° ${selectedPago.numero_resolucion_aprobacion}` : null,
-                      show: selectedPago.docente?.tipo_docente === 'externo',
+                      show: selectedPago.docente?.tipo_docente?.includes('externo'),
                       canGenerate: selectedPago.estado === 'pendiente' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo === 'FE'),
                       generateAction: () => handleGenerateResolucionAceptacion(selectedPago.id),
                       isGenerating: isGeneratingResolucionAceptacion

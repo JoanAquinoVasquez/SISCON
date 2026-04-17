@@ -23,6 +23,12 @@ class PagoDocenteExport implements WithMultipleSheets
         // Sheet for Externos
         $sheets[] = new PagoDocenteSheet('externo', $this->filters);
 
+        // Sheet for Internos Enfermeria
+        $sheets[] = new PagoDocenteSheet('interno_enfermeria', $this->filters);
+
+        // Sheet for Externos Enfermeria
+        $sheets[] = new PagoDocenteSheet('externo_enfermeria', $this->filters);
+
         return $sheets;
     }
 }

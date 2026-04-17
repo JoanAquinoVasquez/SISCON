@@ -23,13 +23,14 @@ class DocumentGeneratorService
         ]);
 
         // Determinar plantilla según tipo de docente
-        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'interno') {
+        $tipoDocente = $pago->docente->tipo_docente;
+        if ($pago->periodo === '2025-I' && $tipoDocente === 'interno') {
             $templateName = 'Resoluciones Plantilla DI 2025.docx';
-        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+        } elseif ($pago->periodo === '2025-I' && $tipoDocente === 'externo') {
             $templateName = 'Resoluciones Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'interno') {
+        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'interno') {
             $templateName = 'Resolucion Plantilla DI 2024.docx';
-        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
+        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'externo') {
             $templateName = 'Resolucion Plantilla DE 2024.docx';
         }
 
@@ -74,13 +75,14 @@ class DocumentGeneratorService
         ]);
 
         // Determinar plantilla según tipo de docente
-        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'interno') {
+        $tipoDocente = $pago->docente->tipo_docente;
+        if ($pago->periodo === '2025-I' && $tipoDocente === 'interno') {
             $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
-        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+        } elseif ($pago->periodo === '2025-I' && $tipoDocente === 'externo') {
             $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'interno') {
+        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'interno') {
             $templateName = 'Ofic. Conta Plantilla DI 2024.docx';
-        } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
+        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'externo') {
             $templateName = 'Ofic. Conta Plantilla DE 2024.docx';
         }
 
@@ -254,8 +256,8 @@ class DocumentGeneratorService
         $template->setValue('IMPORTE_EN_LETRAS', $importeLetras);
         $template->setValue('N_HORAS', number_format((float) $pago->numero_horas, 0));
 
-        // Variables solo para externos
-        if ($pago->docente->tipo_docente === 'externo') {
+        // Variables solo para externos (incluye enfermería)
+        if ($pago->docente->tipo_docente === 'externo' || $pago->docente->tipo_docente === 'externo_enfermeria') {
             $template->setValue('NUMERO_RECIBO_HONORARIO', $pago->numero_recibo_honorario ?? '');
             $template->setValue('FECHA_RECIBO_HONORARIO', $this->formatearFecha($pago->fecha_recibo_honorario));
             $template->setValue('PS', $pago->numero_pedido_servicio ?? ''); // PS = Pedido de Servicio
@@ -275,6 +277,7 @@ class DocumentGeneratorService
      */
     public function generateResolucionAceptacion(PagoDocente $pago): string
     {
+        Log::info('Pago docente: ' . $pago);
         // Cargar relaciones necesarias
         $pago->load([
             'docente',
@@ -283,10 +286,9 @@ class DocumentGeneratorService
             'curso.semestres.programa.coordinadores'
         ]);
 
-        if ($pago->docente->tipo_docente !== 'externo') {
+        if ($pago->docente->tipo_docente !== 'externo' && $pago->docente->tipo_docente !== 'externo_enfermeria') {
             throw new \Exception("Esta resolución solo es para docentes externos.");
         }
-
         // Determinar plantilla según periodo
         if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
             $templateName = 'Resolución Aceptacion DocExt 2025.docx';

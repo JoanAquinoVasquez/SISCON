@@ -53,7 +53,7 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
         $title = 'RELACIÓN DE DOCENTES ' . strtoupper($this->tipoDocente) . 'S' . $periodo;
 
         $headers = [];
-        if ($this->tipoDocente === 'externo') {
+        if (strpos($this->tipoDocente, 'externo') !== false) {
             $headers = [
                 'N°',
                 'MES DE PAGO',
@@ -75,7 +75,7 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 'R/H',
                 'F/E'
             ];
-        } elseif ($this->tipoDocente === 'interno') {
+        } elseif (strpos($this->tipoDocente, 'interno') !== false) {
             $headers = [
                 'N°',
                 'ESTADO DE PAGO',
@@ -114,7 +114,7 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
             $notaPago .= "\n" . $pago->nota_pago_2;
         }
 
-        if ($this->tipoDocente === 'externo') {
+        if (strpos($this->tipoDocente, 'externo') !== false) {
             $mesPago = '';
             if ($pago->fecha_constancia_pago) {
                 $meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -149,7 +149,7 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
             ];
         }
 
-        if ($this->tipoDocente === 'interno') {
+        if (strpos($this->tipoDocente, 'interno') !== false) {
             return [
                 $pago->id,
                 $pago->estado,
@@ -327,14 +327,14 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                     // Default center all, then override specific columns
                     $sheet->getStyle('A3:' . $highestColumn . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                    if ($this->tipoDocente === 'externo') {
+                    if (strpos($this->tipoDocente, 'externo') !== false) {
                         // Docente (G), Curso (H), Programa (I), Fechas (K), Oficio (L)
                         $sheet->getStyle('G3:G' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('H3:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('I3:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('K3:K' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('L3:L' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                    } elseif ($this->tipoDocente === 'interno') {
+                    } elseif (strpos($this->tipoDocente, 'interno') !== false) {
                         // Docente (C), Curso (D), Programa (E), Fechas (G), Oficio (H)
                         $sheet->getStyle('C3:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('D3:D' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
@@ -349,7 +349,7 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
     
                 // Calculate Total Importe
                 // Column J for Externo, F for Interno
-                $importeColumn = ($this->tipoDocente === 'externo') ? 'J' : 'F';
+                $importeColumn = (strpos($this->tipoDocente, 'externo') !== false) ? 'J' : 'F';
                 $totalImporteFormula = "=SUM({$importeColumn}3:{$importeColumn}{$highestRow})";
 
                 // Set values
@@ -399,13 +399,13 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
     {
         $currencyFormat = '"S/." #,##0.00';
 
-        if ($this->tipoDocente === 'externo') {
+        if (strpos($this->tipoDocente, 'externo') !== false) {
             return [
                 'J' => $currencyFormat,
             ];
         }
 
-        if ($this->tipoDocente === 'interno') {
+        if (strpos($this->tipoDocente, 'interno') !== false) {
             return [
                 'F' => $currencyFormat,
             ];

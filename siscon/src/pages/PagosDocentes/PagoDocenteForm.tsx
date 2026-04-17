@@ -15,7 +15,7 @@ import { useToast } from '@/context/ToastContext';
 interface Docente {
   id: number;
   label: string;
-  tipo_docente: 'interno' | 'externo';
+  tipo_docente: 'interno' | 'externo' | 'interno_enfermeria' | 'externo_enfermeria';
 }
 
 interface Curso {
@@ -446,13 +446,13 @@ export default function PagoDocenteForm() {
         fecha_constancia_pago: fechaConstanciaPago,
         fecha_nota_pago: fechaNotaPago,
         fecha_nota_pago_2: fechaNotaPago2,
-        ...(docente?.tipo_docente === 'interno' ? {
+        ...(docente?.tipo_docente?.includes('interno') ? {
           ...docInterno,
           numero_resolucion_pago: docInterno.numero_resolucion_pago,
           numero_resolucion_aprobacion: docInterno.numero_resolucion_aprobacion,
           fecha_resolucion_aprobacion: docInterno.fecha_resolucion_aprobacion
         } : {}),
-        ...(docente?.tipo_docente === 'externo' ? {
+        ...(docente?.tipo_docente?.includes('externo') ? {
           ...docExterno,
           numero_resolucion_pago: docExterno.numero_resolucion_pago,
           numero_resolucion_aprobacion: docExterno.numero_resolucion_aprobacion,
@@ -534,9 +534,9 @@ export default function PagoDocenteForm() {
                 <div>
                   <Label>Condición</Label>
                   <Input
-                    value={docente?.tipo_docente || ''}
+                    value={docente?.tipo_docente ? docente.tipo_docente.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : ''}
                     disabled
-                    className="capitalize bg-gray-50"
+                    className="bg-gray-50"
                   />
                 </div>
               </div>
@@ -643,43 +643,37 @@ export default function PagoDocenteForm() {
                   <DocumentField
                     label="Oficio Presentación Facultad"
                     placeholder="001-VIRTUAL-2026-DUPG-FICSA"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_facultad : docExterno.numero_oficio_presentacion_facultad}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_facultad : docExterno.numero_oficio_presentacion_facultad}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_facultad: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_facultad_url : docExterno.numero_oficio_presentacion_facultad_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_facultad_url : docExterno.numero_oficio_presentacion_facultad_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_facultad_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_facultad_url: v })}
                   />
                   <DocumentField
                     label="Oficio Presentación Coordinador"
                     placeholder="001-JEAV"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_coordinador : docExterno.numero_oficio_presentacion_coordinador}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_coordinador : docExterno.numero_oficio_presentacion_coordinador}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_coordinador_url : docExterno.numero_oficio_presentacion_coordinador_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_coordinador_url : docExterno.numero_oficio_presentacion_coordinador_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_coordinador_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_coordinador_url: v })}
                   />
                   <DocumentField
                     label="Oficio Presentación Dirección (Opcional)"
                     placeholder="001-D-2026-EPG"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_direccion : docExterno.numero_oficio_presentacion_direccion}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_direccion : docExterno.numero_oficio_presentacion_direccion}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_direccion: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_presentacion_direccion_url : docExterno.numero_oficio_presentacion_direccion_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_presentacion_direccion_url : docExterno.numero_oficio_presentacion_direccion_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_presentacion_direccion_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_presentacion_direccion_url: v })}
                   />
                 </div>
               </section>
               <hr className="border-gray-200" />
-              {docente?.tipo_docente === 'externo' && (
+              {docente?.tipo_docente?.includes('externo') && (
                 <>
                   <section>
                     <h3 className="text-lg font-semibold text-gray-700 mb-4">
@@ -744,30 +738,26 @@ export default function PagoDocenteForm() {
                   <DocumentField
                     label="Oficio Conformidad Facultad"
                     placeholder="002-VIRTUAL-2025-DUPG-FICSA"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_facultad : docExterno.numero_oficio_conformidad_facultad}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_conformidad_facultad : docExterno.numero_oficio_conformidad_facultad}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad: v })
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_facultad: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_facultad_url : docExterno.numero_oficio_conformidad_facultad_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_conformidad_facultad_url : docExterno.numero_oficio_conformidad_facultad_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_conformidad_facultad_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_facultad_url: v })}
                   />
                   <DocumentField
                     label="Oficio Conformidad Coordinador"
                     placeholder="002-JEAV"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_coordinador : docExterno.numero_oficio_conformidad_coordinador}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_conformidad_coordinador : docExterno.numero_oficio_conformidad_coordinador}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador: v })
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_conformidad_coordinador_url : docExterno.numero_oficio_conformidad_coordinador_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_conformidad_coordinador_url : docExterno.numero_oficio_conformidad_coordinador_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_oficio_conformidad_coordinador_url: v })
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador_url: v })}
                   />
 
                 </div>
-                {docente?.tipo_docente === 'externo' && (
+                {docente?.tipo_docente?.includes('externo') && (
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <DocumentField
                       label="Informe Final"
@@ -815,22 +805,19 @@ export default function PagoDocenteForm() {
                   <DocumentField
                     label="Resolución de Pago"
                     placeholder="005-2026-EPG-D"
-                    value={docente?.tipo_docente === 'interno' ? docInterno.numero_resolucion_pago : docExterno.numero_resolucion_pago}
-                    onChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_resolucion_pago: v })
+                    value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_resolucion_pago : docExterno.numero_resolucion_pago}
+                    onChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_resolucion_pago: v })
                       : setDocExterno({ ...docExterno, numero_resolucion_pago: v })}
-                    urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_resolucion_url : docExterno.numero_resolucion_url}
-                    onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
-                      ? setDocInterno({ ...docInterno, numero_resolucion_url: v })
+                    urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_resolucion_url : docExterno.numero_resolucion_url}
+                    onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, numero_resolucion_url: v })
                       : setDocExterno({ ...docExterno, numero_resolucion_url: v })}
                   />
                   <div>
                     <Label>Fecha Resolución</Label>
                     <Input
                       type="date"
-                      value={docente?.tipo_docente === 'interno' ? docInterno.fecha_resolucion : docExterno.fecha_resolucion}
-                      onChange={(e) => docente?.tipo_docente === 'interno'
-                        ? setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })
+                      value={docente?.tipo_docente?.includes('interno') ? docInterno.fecha_resolucion : docExterno.fecha_resolucion}
+                      onChange={(e) => docente?.tipo_docente?.includes('interno') ? setDocInterno({ ...docInterno, fecha_resolucion: e.target.value })
                         : setDocExterno({ ...docExterno, fecha_resolucion: e.target.value })}
                     />
                   </div>
@@ -840,11 +827,11 @@ export default function PagoDocenteForm() {
                       <DocumentField
                         label="Oficio Contabilidad"
                         placeholder="006-2026-UC-EPG-UNPRG"
-                        value={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad : docExterno.numero_oficio_contabilidad}
+                        value={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_contabilidad : docExterno.numero_oficio_contabilidad}
                         onChange={(v: string) => docente?.tipo_docente === 'interno'
                           ? setDocInterno({ ...docInterno, numero_oficio_contabilidad: v })
                           : setDocExterno({ ...docExterno, numero_oficio_contabilidad: v })}
-                        urlValue={docente?.tipo_docente === 'interno' ? docInterno.numero_oficio_contabilidad_url : docExterno.numero_oficio_contabilidad_url}
+                        urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.numero_oficio_contabilidad_url : docExterno.numero_oficio_contabilidad_url}
                         onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
                           ? setDocInterno({ ...docInterno, numero_oficio_contabilidad_url: v })
                           : setDocExterno({ ...docExterno, numero_oficio_contabilidad_url: v })}
@@ -853,8 +840,8 @@ export default function PagoDocenteForm() {
                         <Label>Fecha Oficio Contabilidad</Label>
                         <Input
                           type="date"
-                          value={docente?.tipo_docente === 'interno' ? docInterno.fecha_oficio_contabilidad : docExterno.fecha_oficio_contabilidad}
-                          onChange={(e) => docente?.tipo_docente === 'interno'
+                          value={docente?.tipo_docente?.includes('interno') ? docInterno.fecha_oficio_contabilidad : docExterno.fecha_oficio_contabilidad}
+                          onChange={(e) => docente?.tipo_docente?.includes('interno')
                             ? setDocInterno({ ...docInterno, fecha_oficio_contabilidad: e.target.value })
                             : setDocExterno({ ...docExterno, fecha_oficio_contabilidad: e.target.value })}
                         />
@@ -866,12 +853,12 @@ export default function PagoDocenteForm() {
                 <DocumentField
                   label="Oficio Dirección Exp. Docentes"
                   placeholder="001-DIR-2026"
-                  value={docente?.tipo_docente === 'interno' ? docInterno.oficio_direccion_exp_docentes : docExterno.oficio_direccion_exp_docentes}
-                  onChange={(v: string) => docente?.tipo_docente === 'interno'
+                  value={docente?.tipo_docente?.includes('interno') ? docInterno.oficio_direccion_exp_docentes : docExterno.oficio_direccion_exp_docentes}
+                  onChange={(v: string) => docente?.tipo_docente?.includes('interno')
                     ? setDocInterno({ ...docInterno, oficio_direccion_exp_docentes: v })
                     : setDocExterno({ ...docExterno, oficio_direccion_exp_docentes: v })}
-                  urlValue={docente?.tipo_docente === 'interno' ? docInterno.oficio_direccion_exp_docentes_url : docExterno.oficio_direccion_exp_docentes_url}
-                  onUrlChange={(v: string) => docente?.tipo_docente === 'interno'
+                  urlValue={docente?.tipo_docente?.includes('interno') ? docInterno.oficio_direccion_exp_docentes_url : docExterno.oficio_direccion_exp_docentes_url}
+                  onUrlChange={(v: string) => docente?.tipo_docente?.includes('interno')
                     ? setDocInterno({ ...docInterno, oficio_direccion_exp_docentes_url: v })
                     : setDocExterno({ ...docExterno, oficio_direccion_exp_docentes_url: v })}
                   showUpload={true}
@@ -931,7 +918,7 @@ export default function PagoDocenteForm() {
                       className="h-9"
                     />
                   </div>
-                  {docente?.tipo_docente === 'externo' && docExterno.tiene_retencion_8_porciento && (
+                  {docente?.tipo_docente?.includes('externo') && docExterno.tiene_retencion_8_porciento && (
                     <>
                       <div>
                         <Label className="text-sm">2° Nota de Pago (S/. {docExterno.tiene_retencion_8_porciento ? (0.08 * importeTotal).toFixed(2) : importeTotal.toFixed(2)})</Label>

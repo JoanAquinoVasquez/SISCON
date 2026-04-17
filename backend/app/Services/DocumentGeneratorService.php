@@ -292,6 +292,8 @@ class DocumentGeneratorService
             $templateName = 'Resolución Aceptacion DocExt 2025.docx';
         } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
             $templateName = 'Resolución Aceptacion DocExt 2024.docx';
+        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo_enfermeria') {
+            $templateName = 'Resolución Aceptacion DocExt FE 2025.docx';
         } else {
             throw new \Exception("No hay plantilla definida para el periodo {$pago->periodo}");
         }

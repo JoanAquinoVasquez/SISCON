@@ -47,16 +47,29 @@ class FixPagosDocentes extends Command
                 $this->info("Found duplicates for key: {$key}");
 
                 // We have multiple pagos that correspond to the same teacher, course, period and dates.
-                // We should merge them into one. Let's pick the one with the most expedientes or the one with 'conformidad' if any.
+                // We should merge them into one. Priority for mainPago:
+                // 1. One with 'conformidad' expediente
+                // 2. One with non-zero importe_total
+                // 3. One with more expedientes
                 $mainPago = null;
                 $otherPagos = [];
 
-                // Prefer the one that has a 'conformidad' expediente
-                foreach ($pagos as $pago) {
-                    $hasConformidad = $pago->expedientes->where('tipo_asunto', 'conformidad')->count() > 0;
-                    if ($hasConformidad && !$mainPago) {
-                        $mainPago = $pago;
-                    } else if (!$mainPago) {
+                // Sort pagos by priority
+                $sortedPagos = $pagos->sort(function ($a, $b) {
+                    $aHasConformidad = $a->expedientes->where('tipo_asunto', 'conformidad')->count() > 0;
+                    $bHasConformidad = $b->expedientes->where('tipo_asunto', 'conformidad')->count() > 0;
+
+                    if ($aHasConformidad && !$bHasConformidad) return -1;
+                    if (!$aHasConformidad && $bHasConformidad) return 1;
+
+                    if ($a->importe_total > 0 && $b->importe_total <= 0) return -1;
+                    if ($a->importe_total <= 0 && $b->importe_total > 0) return 1;
+
+                    return $b->expedientes->count() <=> $a->expedientes->count();
+                });
+
+                foreach ($sortedPagos as $pago) {
+                    if (!$mainPago) {
                         $mainPago = $pago;
                     } else {
                         $otherPagos[] = $pago;
@@ -87,7 +100,11 @@ class FixPagosDocentes extends Command
                                 'numero_resolucion_aprobacion',
                                 'fecha_resolucion_aprobacion',
                                 'numero_resolucion_pago',
-                                'numero_oficio_contabilidad'
+                                'numero_oficio_contabilidad',
+                                'numero_horas',
+                                'costo_por_hora',
+                                'importe_total',
+                                'importe_letras'
                             ];
 
                             foreach ($fields as $f) {

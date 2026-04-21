@@ -182,9 +182,9 @@ export default function DevolucionesList() {
             setIsStatusModalOpen(false);
             setFile(null);
             fetchDevoluciones();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error al actualizar estado:', error);
-            toast.error('Error al actualizar el estado');
+            toast.error(error.message || 'Error al actualizar el estado');
         } finally {
             setUpdatingStatus(false);
         }
@@ -480,7 +480,7 @@ export default function DevolucionesList() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-sm font-medium text-gray-700">Haz clic o arrastra un archivo</p>
-                                            <p className="text-xs text-gray-500 mt-1">PDF, DOCX o Imágenes (máx. 10MB)</p>
+                                            <p className="text-xs text-gray-500 mt-1">PDF, DOCX o Imágenes</p>
                                         </div>
                                         <input
                                             id="file-upload-devolucion"

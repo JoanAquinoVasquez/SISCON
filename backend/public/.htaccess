@@ -1,5 +1,7 @@
 <IfModule mime_module>
   AddHandler application/x-httpd-alt-php82 .php .php8 .phtml
+  php_value upload_max_filesize 100M
+  php_value post_max_size 100M
 </IfModule>
 
 <IfModule mod_rewrite.c>

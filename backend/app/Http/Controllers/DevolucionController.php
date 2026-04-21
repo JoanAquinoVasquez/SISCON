@@ -197,7 +197,7 @@ class DevolucionController extends Controller
         $validator = Validator::make($request->all(), [
             'estado' => 'required|in:pendiente,en_proceso,completado,rechazado',
             'observaciones' => 'nullable|string',
-            'file' => 'nullable|file|max:10240'
+            'file' => 'nullable|file'
         ]);
 
         if ($validator->fails()) {

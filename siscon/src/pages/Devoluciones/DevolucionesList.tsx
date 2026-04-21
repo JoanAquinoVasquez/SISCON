@@ -378,6 +378,15 @@ export default function DevolucionesList() {
                                                 <DropdownMenuItem onClick={() => handleStatusChange(devolucion)}>
                                                     <Pencil className="mr-2 h-4 w-4" /> Cambiar Estado
                                                 </DropdownMenuItem>
+                                                {devolucion.estado === 'completado' && devolucion.documento_respuesta_url && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => window.open(devolucion.documento_respuesta_url, '_blank')}
+                                                        className="text-blue-600 focus:text-blue-600"
+                                                    >
+                                                        <FileIcon className="mr-2 h-4 w-4" /> Ver Archivo
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuSeparator />
                                                 <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={() => handleDelete(devolucion.id)}>
                                                     <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                                 </DropdownMenuItem>

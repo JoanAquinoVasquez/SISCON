@@ -291,8 +291,8 @@ export default function PagoDocenteForm() {
             oficio_direccion_exp_docentes_url: data.oficio_direccion_exp_docentes_url || '',
           });
 
-          // Poblar documentos externos solo si es externo
-          if (data.docente.tipo_docente === 'externo') {
+          // Poblar documentos externos si es cualquier tipo externo (externo, externo_enfermeria, etc.)
+          if (data.docente.tipo_docente?.includes('externo')) {
             setDocExterno({
               tiene_retencion_8_porciento: data.tiene_retencion_8_porciento || false,
               numero_recibo_honorario: data.numero_recibo_honorario || '',

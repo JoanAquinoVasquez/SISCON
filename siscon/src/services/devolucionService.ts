@@ -17,6 +17,7 @@ export interface Devolucion {
   importe: number;
   numero_voucher: string;
   numero_oficio_direccion?: string;
+  expediente_numero?: string;
   estado: "pendiente" | "aprobado" | "rechazado" | "observado";
   estado_label?: string;
   observaciones?: string;

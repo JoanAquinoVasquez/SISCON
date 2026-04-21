@@ -338,9 +338,18 @@ export default function DevolucionesList() {
                                     <TableCell>{getTipoBadge(devolucion.tipo_devolucion)}</TableCell>
                                     <TableCell>
                                         <div className="font-medium text-sm">V: {devolucion.numero_voucher}</div>
-                                        {devolucion.numero_oficio_direccion && (
-                                            <div className="text-xs text-muted-foreground mt-0.5">O: {devolucion.numero_oficio_direccion}</div>
-                                        )}
+                                        <div className="flex flex-col gap-0.5 mt-1">
+                                            {devolucion.expediente_numero && (
+                                                <div className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 w-fit font-mono">
+                                                    E: {devolucion.expediente_numero}
+                                                </div>
+                                            )}
+                                            {devolucion.numero_oficio_direccion && (
+                                                <div className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100 w-fit font-mono">
+                                                    O: {devolucion.numero_oficio_direccion}
+                                                </div>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell className="text-right font-medium">
                                         S/ {Number(devolucion.importe).toLocaleString('es-PE', { minimumFractionDigits: 2 })}

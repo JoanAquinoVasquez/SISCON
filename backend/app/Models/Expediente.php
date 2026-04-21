@@ -411,7 +411,6 @@ class Expediente extends Model
             'tipo_devolucion' => $this->tipo_devolucion,
             'importe' => $this->importe_devolucion,
             'numero_voucher' => $this->numero_voucher,
-            'numero_oficio_direccion' => $this->numero_documento,
             'estado' => 'pendiente',
         ]);
 

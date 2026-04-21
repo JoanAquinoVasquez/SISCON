@@ -67,6 +67,7 @@ class DevolucionController extends Controller
                 'importe' => $devolucion->importe,
                 'numero_voucher' => $devolucion->numero_voucher,
                 'numero_oficio_direccion' => $devolucion->numero_oficio_direccion,
+                'expediente_numero' => $devolucion->expedientes->first()?->numero_documento,
                 'estado' => $devolucion->estado,
                 'estado_label' => $devolucion->estado_label,
                 'observaciones' => $devolucion->observaciones,

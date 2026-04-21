@@ -188,46 +188,71 @@ class DevolucionController extends Controller
      */
     public function actualizarEstado(Request $request, string $id)
     {
-        $devolucion = Devolucion::find($id);
+        $devolucion = Devolucion::with('expedientes')->find($id);
 
         if (!$devolucion) {
             return response()->json(['message' => 'Devolución no encontrada'], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'estado' => 'required|in:pendiente,en_proceso,completado,rechazado',
+            'estado'        => 'required|in:pendiente,en_proceso,completado,rechazado',
             'observaciones' => 'nullable|string',
-            'file' => 'nullable|file'
+            'file'          => 'nullable|file',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'Error de validación: ' . implode(', ', $validator->errors()->all()),
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
-        $devolucion->estado = $request->estado;
-        if ($request->has('observaciones')) {
+        // 1. Actualizar estado directamente en los expedientes relacionados
+        $expedienteIds = $devolucion->expedientes->pluck('id');
+        if ($expedienteIds->isNotEmpty()) {
+            \App\Models\Expediente::whereIn('id', $expedienteIds)
+                ->update(['estado' => $request->estado]);
+        }
+
+        // 2. Guardar observaciones en la devolucion
+        if ($request->filled('observaciones')) {
             $devolucion->observaciones = $request->observaciones;
+            $devolucion->save();
         }
-        $devolucion->save();
 
-        // If file is provided, update the related expediente's document_respuesta_url
+        // 3. Upload del archivo a Drive (no bloquea la actualización del estado)
+        $driveLink  = null;
+        $driveError = null;
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $driveService = new \App\Services\GoogleDriveService();
-            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
-            $link = $driveService->uploadFile($file, $folderId);
+            try {
+                $file         = $request->file('file');
+                $driveService = new \App\Services\GoogleDriveService();
+                $folderId     = env('GOOGLE_DRIVE_FOLDER_ID');
+                $link         = $driveService->uploadFile($file, $folderId);
 
-            if ($link) {
-                // Update all associated expedientes
-                foreach ($devolucion->expedientes as $expediente) {
-                    $expediente->update(['documento_respuesta_url' => $link]);
+                if ($link) {
+                    $driveLink = $link;
+                    if ($expedienteIds->isNotEmpty()) {
+                        \App\Models\Expediente::whereIn('id', $expedienteIds)
+                            ->update(['documento_respuesta_url' => $link]);
+                    }
+                } else {
+                    $driveError = 'No se pudo subir el archivo a Google Drive.';
                 }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Drive upload error: ' . $e->getMessage());
+                $driveError = 'Error al subir el archivo: ' . $e->getMessage();
             }
         }
 
+        // 4. Re-cargar para devolver estado actualizado
+        $devolucion->refresh();
+
         return response()->json([
-            'message' => 'Estado actualizado exitosamente',
-            'data' => $devolucion
+            'message'     => 'Estado actualizado exitosamente',
+            'data'        => $devolucion,
+            'drive_link'  => $driveLink,
+            'drive_error' => $driveError,
         ], 200);
     }
 }

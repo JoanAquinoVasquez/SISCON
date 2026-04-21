@@ -177,8 +177,13 @@ export default function DevolucionesList() {
                 formData.append('file', file);
             }
 
-            await updateEstadoDevolucion(selectedDevolucion.id, formData);
+            const result = await updateEstadoDevolucion(selectedDevolucion.id, formData);
             toast.success('Estado actualizado correctamente');
+            if (result?.drive_error) {
+                toast.error('⚠️ Archivo no subido: ' + result.drive_error, { duration: 6000 });
+            } else if (result?.drive_link) {
+                toast.success('Archivo subido a Drive correctamente');
+            }
             setIsStatusModalOpen(false);
             setFile(null);
             fetchDevoluciones();

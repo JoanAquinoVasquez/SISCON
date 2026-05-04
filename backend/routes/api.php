@@ -181,4 +181,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // ========================================
     Route::get('documentos/oficios', [App\Http\Controllers\DocumentoController::class, 'indexOficios']);
     Route::get('documentos/resoluciones', [App\Http\Controllers\DocumentoController::class, 'indexResoluciones']);
+
+    // Template Management
+    Route::get('templates', [App\Http\Controllers\TemplateController::class, 'index']);
+    Route::get('templates/download/{filename}', [App\Http\Controllers\TemplateController::class, 'download']);
+    Route::post('templates/upload', [App\Http\Controllers\TemplateController::class, 'upload']);
 });

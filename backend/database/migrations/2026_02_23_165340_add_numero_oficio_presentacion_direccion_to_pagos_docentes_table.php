@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('pagos_docentes', function (Blueprint $table) {
-            $table->string('numero_oficio_presentacion_direccion')->nullable()->after('numero_oficio_presentacion_coordinador');
-        });
+        if (!Schema::hasColumn('pagos_docentes', 'numero_oficio_presentacion_direccion')) {
+            Schema::table('pagos_docentes', function (Blueprint $table) {
+                $table->string('numero_oficio_presentacion_direccion')->nullable()->after('numero_oficio_presentacion_coordinador');
+            });
+        }
     }
 
     /**

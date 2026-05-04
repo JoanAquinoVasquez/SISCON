@@ -19,6 +19,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import OficiosList from './pages/Documentos/OficiosList';
 import ResolucionesList from './pages/Documentos/ResolucionesList';
 import DevolucionesList from './pages/Devoluciones/DevolucionesList';
+import GestionPlantillas from './pages/Configuracion/GestionPlantillas';
 
 function App() {
   const { user } = useAuth();
@@ -106,6 +107,11 @@ function App() {
           <Route path="devoluciones" element={
             <ErrorBoundary>
               <DevolucionesList />
+            </ErrorBoundary>
+          } />
+          <Route path="templates" element={
+            <ErrorBoundary>
+              <GestionPlantillas />
             </ErrorBoundary>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

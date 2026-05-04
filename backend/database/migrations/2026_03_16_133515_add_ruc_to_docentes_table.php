@@ -10,11 +10,13 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('docentes', function (Blueprint $table) {
-            // Agregar RUC (opcional, 20 dígitos) después del DNI
-            $table->string('ruc', 20)->nullable()->after('dni');
-            $table->index('ruc');
-        });
+        if (!Schema::hasColumn('docentes', 'ruc')) {
+            Schema::table('docentes', function (Blueprint $table) {
+                // Agregar RUC (opcional, 20 dígitos) después del DNI
+                $table->string('ruc', 20)->nullable()->after('dni');
+                $table->index('ruc');
+            });
+        }
     }
 
     /**

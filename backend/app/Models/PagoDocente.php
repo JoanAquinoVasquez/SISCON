@@ -11,6 +11,16 @@ class PagoDocente extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'pagos_docentes';
+    
+    protected static function booted()
+    {
+        static::saving(function ($pago) {
+            // Si tiene horas teóricas o prácticas (caso FE), el número total de horas es la suma
+            if ($pago->horas_teoricas > 0 || $pago->horas_practicas > 0) {
+                $pago->numero_horas = ($pago->horas_teoricas ?? 0) + ($pago->horas_practicas ?? 0);
+            }
+        });
+    }
 
     protected $fillable = [
         'docente_id',
@@ -21,6 +31,10 @@ class PagoDocente extends Model
         'coordinador_nombre',
         'numero_horas',
         'costo_por_hora',
+        'horas_teoricas',
+        'horas_practicas',
+        'costo_hora_teorica',
+        'costo_hora_practica',
         'importe_total',
         'importe_letras',
         'fechas_ensenanza',
@@ -72,6 +86,10 @@ class PagoDocente extends Model
     protected $casts = [
         'numero_horas' => 'decimal:2',
         'costo_por_hora' => 'decimal:2',
+        'horas_teoricas' => 'decimal:2',
+        'horas_practicas' => 'decimal:2',
+        'costo_hora_teorica' => 'decimal:2',
+        'costo_hora_practica' => 'decimal:2',
         'importe_total' => 'decimal:2',
         'fechas_ensenanza' => 'array',
         'tiene_retencion_8_porciento' => 'boolean',

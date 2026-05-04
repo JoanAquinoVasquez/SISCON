@@ -119,6 +119,10 @@ export default function PagoDocenteForm() {
   // Cálculos
   const [numeroHoras, setNumeroHoras] = useState<string>('');
   const [costoPorHora, setCostoPorHora] = useState<string>('');
+  const [horasTeoricas, setHorasTeoricas] = useState<string>('');
+  const [horasPracticas, setHorasPracticas] = useState<string>('');
+  const [costoHoraTeorica, setCostoHoraTeorica] = useState<string>('');
+  const [costoHoraPractica, setCostoHoraPractica] = useState<string>('');
   const [importeTotal, setImporteTotal] = useState<number>(0);
   const [importeLetras, setImporteLetras] = useState<string>('');
 
@@ -247,6 +251,10 @@ export default function PagoDocenteForm() {
           setPeriodo(data.periodo);
           setNumeroHoras(data.numero_horas.toString());
           setCostoPorHora(data.costo_por_hora.toString());
+          setHorasTeoricas(data.horas_teoricas?.toString() || '');
+          setHorasPracticas(data.horas_practicas?.toString() || '');
+          setCostoHoraTeorica(data.costo_hora_teorica?.toString() || '');
+          setCostoHoraPractica(data.costo_hora_practica?.toString() || '');
           setImporteTotal(parseFloat(data.importe_total) || 0);
           setImporteLetras(data.importe_letras);
           setFechasEnsenanza(data.fechas_ensenanza || []);
@@ -363,12 +371,29 @@ export default function PagoDocenteForm() {
 
   // Calcular importe automáticamente
   useEffect(() => {
-    const horas = parseFloat(numeroHoras) || 0;
-    const costo = parseFloat(costoPorHora) || 0;
-    const total = horas * costo;
-    setImporteTotal(total);
-    setImporteLetras(total > 0 ? numeroALetras(total) : '');
-  }, [numeroHoras, costoPorHora, numeroALetras]);
+    const isFE = datosCurso.facultad_codigo === 'FE';
+
+    if (isFE) {
+      const hTeo = parseFloat(horasTeoricas) || 0;
+      const hPrac = parseFloat(horasPracticas) || 0;
+      const cTeo = parseFloat(costoHoraTeorica) || 0;
+      const cPrac = parseFloat(costoHoraPractica) || 0;
+      const total = (hTeo * cTeo) + (hPrac * cPrac);
+      setImporteTotal(total);
+      setImporteLetras(total > 0 ? numeroALetras(total) : '');
+
+      // Opcionalmente podemos actualizar numeroHoras para reportes
+      if (hTeo > 0 || hPrac > 0) {
+        setNumeroHoras((hTeo + hPrac).toString());
+      }
+    } else {
+      const horas = parseFloat(numeroHoras) || 0;
+      const costo = parseFloat(costoPorHora) || 0;
+      const total = horas * costo;
+      setImporteTotal(total);
+      setImporteLetras(total > 0 ? numeroALetras(total) : '');
+    }
+  }, [numeroHoras, costoPorHora, horasTeoricas, horasPracticas, costoHoraTeorica, costoHoraPractica, numeroALetras, datosCurso.facultad_codigo]);
 
   // Cargar datos del curso cuando se selecciona
   useEffect(() => {
@@ -428,8 +453,12 @@ export default function PagoDocenteForm() {
         facultad_nombre: datosCurso.facultad_nombre,
         director_nombre: datosCurso.director_nombre,
         coordinador_nombre: datosCurso.coordinador_nombre,
-        numero_horas: parseFloat(numeroHoras),
-        costo_por_hora: parseFloat(costoPorHora),
+        numero_horas: parseFloat(numeroHoras) || 0,
+        costo_por_hora: parseFloat(costoPorHora) || 0,
+        horas_teoricas: datosCurso.facultad_codigo === 'FE' ? parseFloat(horasTeoricas) : null,
+        horas_practicas: datosCurso.facultad_codigo === 'FE' ? parseFloat(horasPracticas) : null,
+        costo_hora_teorica: datosCurso.facultad_codigo === 'FE' ? parseFloat(costoHoraTeorica) : null,
+        costo_hora_practica: datosCurso.facultad_codigo === 'FE' ? parseFloat(costoHoraPractica) : null,
         importe_total: importeTotal,
         importe_letras: importeLetras,
         fechas_ensenanza: fechasEnsenanza,
@@ -589,42 +618,118 @@ export default function PagoDocenteForm() {
               </div>
 
               {/* Fila de Cálculos Comprimida */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-600">N° de Horas</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={numeroHoras}
-                    onChange={(e) => setNumeroHoras(e.target.value)}
-                    placeholder="0.00"
-                    className="h-9 focus-visible:ring-blue-400"
-                  />
-                </div>
+              <div className="space-y-4">
+                {datosCurso.facultad_codigo === 'FE' ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-600">Horas Teóricas</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={horasTeoricas}
+                          onChange={(e) => setHorasTeoricas(e.target.value)}
+                          placeholder="0.00"
+                          className="h-9 focus-visible:ring-blue-400"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-600">Costo Hora Teórica</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/.</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={costoHoraTeorica}
+                            onChange={(e) => setCostoHoraTeorica(e.target.value)}
+                            placeholder="0.00"
+                            className="h-9 pl-7 focus-visible:ring-blue-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 bg-blue-600/10 p-2 rounded-md border border-blue-200">
+                        <div className="flex justify-between items-center text-xs font-bold text-blue-800">
+                          <span>Subtotal Teóricas:</span>
+                          <span>S/ {(parseFloat(horasTeoricas) * parseFloat(costoHoraTeorica) || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-600">Costo por Hora</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/.</span>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={costoPorHora}
-                      onChange={(e) => setCostoPorHora(e.target.value)}
-                      placeholder="0.00"
-                      className="h-9 pl-7 focus-visible:ring-blue-400"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end p-4 bg-green-50/50 rounded-lg border border-green-100">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-600">Horas Prácticas</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={horasPracticas}
+                          onChange={(e) => setHorasPracticas(e.target.value)}
+                          placeholder="0.00"
+                          className="h-9 focus-visible:ring-blue-400"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-600">Costo Hora Práctica</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/.</span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={costoHoraPractica}
+                            onChange={(e) => setCostoHoraPractica(e.target.value)}
+                            placeholder="0.00"
+                            className="h-9 pl-7 focus-visible:ring-blue-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 bg-green-600/10 p-2 rounded-md border border-green-200">
+                        <div className="flex justify-between items-center text-xs font-bold text-green-800">
+                          <span>Subtotal Prácticas:</span>
+                          <span>S/ {(parseFloat(horasPracticas) * parseFloat(costoHoraPractica) || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-slate-600">N° de Horas</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={numeroHoras}
+                        onChange={(e) => setNumeroHoras(e.target.value)}
+                        placeholder="0.00"
+                        className="h-9 focus-visible:ring-blue-400"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold text-slate-600">Costo por Hora</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">S/.</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={costoPorHora}
+                          onChange={(e) => setCostoPorHora(e.target.value)}
+                          placeholder="0.00"
+                          className="h-9 pl-7 focus-visible:ring-blue-400"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Importe Total ocupando 2 columnas para balancear */}
-                <div className="md:col-span-2 space-y-1.5">
-                  <Label className="text-xs font-semibold text-blue-700">Importe Total Calculado</Label>
-                  <div className="flex items-center h-9 px-4 rounded-md bg-blue-600 text-white font-bold shadow-sm">
-                    <span className="text-sm mr-auto text-blue-100 font-normal">Total:</span>
-                    <span className="text-lg">
-                      S/ {Number(importeTotal || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-                    </span>
+                {/* Importe Total siempre visible */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                  <div className="md:col-start-3 md:col-span-2 space-y-1.5">
+                    <Label className="text-xs font-semibold text-blue-700">Importe Total Calculado</Label>
+                    <div className="flex items-center h-9 px-4 rounded-md bg-blue-600 text-white font-bold shadow-sm">
+                      <span className="text-sm mr-auto text-blue-100 font-normal">Total:</span>
+                      <span className="text-lg">
+                        S/ {Number(importeTotal || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

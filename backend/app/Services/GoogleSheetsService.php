@@ -101,26 +101,35 @@ class GoogleSheetsService
 
         $expedienteNumero = $pago->numero_exp_siaf ?? '';
 
-        return [
+        $esFE = str_contains($pago->facultad_nombre ?? '', 'Enfermería') || ($pago->curso->semestres->first()->programa->facultad->codigo ?? '') === 'FE';
+
+        $data = [
             $pago->id,
             strtoupper($pago->estado), // 2. ESTADO DE PAGO
             $mesPago ? $mesPago : '', // 4. Tipo Docente
             $docenteNombre, // 3. Docente
-
-
-
             $pago->numero_pedido_servicio ? $pago->numero_pedido_servicio : '', // 8. Pedido de servicio
             $pago->orden_servicio ? $pago->orden_servicio : '', // 7. Orden de servicio
             $expedienteNumero ? $expedienteNumero : '', // 5. Expediente Siaf / Interno
             $pago->acta_conformidad ? $pago->acta_conformidad : '',
             $notaPago ? $notaPago : '', // 6. Nota de pago
-
             $programaNombre ? $programaNombre : '', // 12. Programa
             $pago->periodo, // 2. PERIODO
             $pago->curso->nombre ?? '', // 11. Curso
             $fechas ? $fechas : '', // 14. Fechas de enseñanza
-            $pago->numero_horas ? $pago->numero_horas : '',
-            $pago->costo_por_hora ? $pago->costo_por_hora : '',
+        ];
+
+        if ($esFE) {
+            $data[] = $pago->horas_teoricas ?: '';
+            $data[] = $pago->costo_hora_teorica ?: '';
+            $data[] = $pago->horas_practicas ?: '';
+            $data[] = $pago->costo_hora_practica ?: '';
+        } else {
+            $data[] = $pago->numero_horas ?: '';
+            $data[] = $pago->costo_por_hora ?: '';
+        }
+
+        $remaining = [
             $pago->importe_total ? $pago->importe_total : '',
             $pago->numero_oficio_presentacion_facultad ? $pago->numero_oficio_presentacion_facultad : '',   // 19. Oficio de presentación de facultad
             $pago->numero_oficio_presentacion_coordinador ? $pago->numero_oficio_presentacion_coordinador : '', // 20. Oficio de presentación coordinador
@@ -141,14 +150,14 @@ class GoogleSheetsService
 
             $pago->numero_oficio_conformidad_direccion ? $pago->numero_oficio_conformidad_direccion : '', // 16. Oficio Conformidad Dirección
 
-
-
             $pago->docente->dni ? $pago->docente->dni : '',
             $pago->docente->ruc ? $pago->docente->ruc : '',
             $pago->docente->fecha_nacimiento ? $pago->docente->fecha_nacimiento : '',
             $pago->docente->numero_telefono ? $pago->docente->numero_telefono : '',
             $pago->docente->email ? $pago->docente->email : '',
         ];
+
+        return array_merge($data, $remaining);
     }
 
     private function formatFechasEnsenanza($fechas): string

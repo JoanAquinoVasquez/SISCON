@@ -22,7 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-*.php
+/*.php
 
 # Firebase credentials
 config/firebase_credentials.json

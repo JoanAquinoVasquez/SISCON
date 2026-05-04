@@ -18,6 +18,7 @@ use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\OficioController;
+use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -183,7 +184,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('documentos/resoluciones', [App\Http\Controllers\DocumentoController::class, 'indexResoluciones']);
 
     // Template Management
-    Route::get('templates', [App\Http\Controllers\TemplateController::class, 'index']);
-    Route::get('templates/download/{filename}', [App\Http\Controllers\TemplateController::class, 'download']);
-    Route::post('templates/upload', [App\Http\Controllers\TemplateController::class, 'upload']);
+    Route::get('templates', [TemplateController::class, 'index']);
+    Route::get('templates/download/{filename}', [TemplateController::class, 'download']);
+    Route::post('templates/upload', [TemplateController::class, 'upload']);
 });

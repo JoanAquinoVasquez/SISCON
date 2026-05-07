@@ -30,7 +30,7 @@ import { semestreService, type Semestre } from '../../services/semestreService';
 import { cursoService, type Curso } from '../../services/cursoService';
 import { CursoForm } from './CursoForm';
 import { SemestreForm } from './SemestreForm';
-import { ProgramaCreateForm } from './ProgramaCreateForm';
+import { ProgramaForm } from './ProgramaForm';
 import { cn } from '../../lib/utils';
 
 // ---------- helpers ----------
@@ -63,6 +63,7 @@ export default function CursosPage() {
 
   // ── Dialogs
   const [isProgramaFormOpen, setIsProgramaFormOpen] = useState(false);
+  const [editingPrograma, setEditingPrograma] = useState<Programa | null>(null);
   const [isSemestreFormOpen, setIsSemestreFormOpen] = useState(false);
   const [editingSemestre, setEditingSemestre] = useState<Semestre | null>(null);
   const [isCursoFormOpen, setIsCursoFormOpen] = useState(false);
@@ -98,6 +99,32 @@ export default function CursosPage() {
       showToast('Programa creado exitosamente', 'success');
       setIsProgramaFormOpen(false);
       setSelectedPrograma(res.data);
+      setSelectedSemestre(null);
+    },
+    onError: (e: Error) => showToast(`Error: ${e.message}`, 'error'),
+  });
+
+  const updateProgramaMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      programaService.update(id, data),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['programas'] });
+      showToast('Programa actualizado exitosamente', 'success');
+      setIsProgramaFormOpen(false);
+      setEditingPrograma(null);
+      if (selectedPrograma?.id === res.data.id) {
+        setSelectedPrograma(res.data);
+      }
+    },
+    onError: (e: Error) => showToast(`Error: ${e.message}`, 'error'),
+  });
+
+  const deleteProgramaMutation = useMutation({
+    mutationFn: programaService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programas'] });
+      showToast('Programa eliminado correctamente', 'success');
+      setSelectedPrograma(null);
       setSelectedSemestre(null);
     },
     onError: (e: Error) => showToast(`Error: ${e.message}`, 'error'),
@@ -205,6 +232,20 @@ export default function CursosPage() {
     setSelectedSemestre(null);
   };
 
+  const handleProgramaSubmit = (data: any) => {
+    if (editingPrograma) {
+      updateProgramaMutation.mutate({ id: editingPrograma.id, data });
+    } else {
+      createProgramaMutation.mutate(data);
+    }
+  };
+
+  const handleDeletePrograma = (p: Programa) => {
+    if (confirm(`¿Estás seguro de eliminar el programa "${p.nombre}"? Se borrarán todos sus semestres y cursos asociados.`)) {
+      deleteProgramaMutation.mutate(p.id);
+    }
+  };
+
   const handleSemestreSubmit = (data: any) => {
     if (!selectedPrograma) return;
     if (editingSemestre) {
@@ -255,7 +296,10 @@ export default function CursosPage() {
           id="btn-nuevo-programa"
           className="gap-2"
           variant="outline"
-          onClick={() => setIsProgramaFormOpen(true)}
+          onClick={() => {
+            setEditingPrograma(null);
+            setIsProgramaFormOpen(true);
+          }}
         >
           <FolderPlus className="h-4 w-4" />
           Agregar Periodo / Programa
@@ -330,55 +374,85 @@ export default function CursosPage() {
               <ul className="space-y-1">
                 {filteredProgramas.map((p) => (
                   <li key={p.id}>
-                    <button
+                    <div
                       id={`prog-${p.id}`}
                       onClick={() => handleSelectPrograma(p)}
                       className={cn(
-                        'w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 text-sm group',
+                        'w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 text-sm group flex items-start justify-between gap-1 cursor-pointer',
                         selectedPrograma?.id === p.id
                           ? 'bg-blue-600 text-white shadow-sm'
                           : 'hover:bg-slate-100',
                       )}
                     >
-                      <div className="flex items-start justify-between gap-1">
-                        <span className="font-medium leading-tight line-clamp-2">{p.nombre}</span>
-                        <ChevronRight
-                          className={cn(
-                            'h-4 w-4 shrink-0 mt-0.5 transition-transform',
-                            selectedPrograma?.id === p.id
-                              ? 'text-white rotate-90'
-                              : 'text-muted-foreground group-hover:translate-x-0.5',
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-1">
+                          <span className="font-medium leading-tight line-clamp-2">{p.nombre}</span>
+                          {!selectedPrograma || selectedPrograma.id !== p.id ? (
+                            <ChevronRight className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 mt-0.5 text-white rotate-90 transition-transform" />
                           )}
-                        />
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {p.periodo && (
+                            <span
+                              className={cn(
+                                'text-xs px-1.5 py-0.5 rounded border font-medium',
+                                selectedPrograma?.id === p.id
+                                  ? 'bg-white/20 text-white border-white/30'
+                                  : 'bg-amber-50 text-amber-700 border-amber-200',
+                              )}
+                            >
+                              <Calendar className="inline h-3 w-3 mr-0.5" />
+                              {p.periodo}
+                            </span>
+                          )}
+                          {p.grado && (
+                            <span
+                              className={cn(
+                                'text-xs px-1.5 py-0.5 rounded border font-medium',
+                                selectedPrograma?.id === p.id
+                                  ? 'bg-white/20 text-white border-white/30'
+                                  : gradoBadgeClass(p.grado.nombre),
+                              )}
+                            >
+                              {p.grado.nombre}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {p.periodo && (
-                          <span
-                            className={cn(
-                              'text-xs px-1.5 py-0.5 rounded border font-medium',
-                              selectedPrograma?.id === p.id
-                                ? 'bg-white/20 text-white border-white/30'
-                                : 'bg-amber-50 text-amber-700 border-amber-200',
-                            )}
-                          >
-                            <Calendar className="inline h-3 w-3 mr-0.5" />
-                            {p.periodo}
-                          </span>
-                        )}
-                        {p.grado && (
-                          <span
-                            className={cn(
-                              'text-xs px-1.5 py-0.5 rounded border font-medium',
-                              selectedPrograma?.id === p.id
-                                ? 'bg-white/20 text-white border-white/30'
-                                : gradoBadgeClass(p.grado.nombre),
-                            )}
-                          >
-                            {p.grado.nombre}
-                          </span>
-                        )}
+
+                      {/* Acciones del programa */}
+                      <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingPrograma(p);
+                            setIsProgramaFormOpen(true);
+                          }}
+                          className={cn(
+                            'p-1 rounded hover:bg-white/20 transition-colors',
+                            selectedPrograma?.id === p.id ? 'text-white' : 'text-slate-400 hover:text-blue-600',
+                          )}
+                          title="Editar programa"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePrograma(p);
+                          }}
+                          className={cn(
+                            'p-1 rounded hover:bg-white/20 transition-colors',
+                            selectedPrograma?.id === p.id ? 'text-white' : 'text-slate-400 hover:text-red-600',
+                          )}
+                          title="Eliminar programa"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -624,11 +698,15 @@ export default function CursosPage() {
       </div>
 
       {/* ════ DIALOGS ════ */}
-      <ProgramaCreateForm
+      <ProgramaForm
         open={isProgramaFormOpen}
-        onClose={() => setIsProgramaFormOpen(false)}
-        onSubmit={(data) => createProgramaMutation.mutate(data as any)}
-        isLoading={createProgramaMutation.isPending}
+        programa={editingPrograma}
+        onClose={() => {
+          setIsProgramaFormOpen(false);
+          setEditingPrograma(null);
+        }}
+        onSubmit={handleProgramaSubmit}
+        isLoading={createProgramaMutation.isPending || updateProgramaMutation.isPending}
       />
 
       <SemestreForm

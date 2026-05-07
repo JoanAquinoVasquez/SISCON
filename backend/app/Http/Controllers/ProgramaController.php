@@ -91,7 +91,7 @@ class ProgramaController extends Controller
             'grado_id'    => 'sometimes|exists:grados,id',
             'facultad_id' => 'nullable|exists:facultads,id',
             'nombre'      => 'sometimes|string|min:3',
-            'periodo'     => 'sometimes|string|regex:/^\d{4}-[I|II]$/',
+            'periodo'     => ['sometimes', 'string', 'regex:/^\d{4}-(I|II)$/'],
             'descripcion' => 'nullable|string',
         ], [
             'periodo.regex' => 'El periodo debe tener formato YYYY-I o YYYY-II (ej: 2025-I)',

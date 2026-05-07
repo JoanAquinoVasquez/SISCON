@@ -1,4 +1,4 @@
-// src/pages/Cursos/ProgramaCreateForm.tsx
+// src/pages/Cursos/ProgramaForm.tsx
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
@@ -35,12 +35,13 @@ interface FormData {
 
 interface Props {
   open: boolean;
+  programa?: Programa | null;
   onClose: () => void;
   onSubmit: (data: FormData) => void;
   isLoading?: boolean;
 }
 
-export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props) {
+export function ProgramaForm({ open, programa, onClose, onSubmit, isLoading }: Props) {
   const { showToast } = useToast();
 
   // ── Datos de BD
@@ -60,7 +61,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     enabled: open,
   });
 
-  // Extraer arrays de forma segura (Maneja tanto JSON directo como envuelto en .data)
+  // Extraer arrays de forma segura
   const listProgramas = respProgramas as any;
   const programas = Array.isArray(listProgramas) ? listProgramas : (listProgramas?.data || []);
 
@@ -80,6 +81,61 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
   const [facultadAutoNombre, setFacultadAutoNombre] = useState('');
   const comboRef = useRef<HTMLDivElement>(null);
 
+  // ── RHF
+  const { register, handleSubmit, setValue, formState: { errors }, reset } =
+    useForm<FormData>({ 
+      mode: 'onChange',
+      defaultValues: { nombre: '', grado_id: 0, facultad_id: undefined, periodo: '', descripcion: '' } 
+    });
+
+  // ── Efecto: Inicializar cuando cambia 'programa' (Edición) o se abre/cierra
+  useEffect(() => {
+    if (open) {
+      if (programa) {
+        // MODO EDICIÓN
+        setGradoId(Number(programa.grado_id));
+        setFacultadId(Number(programa.facultad_id || 0));
+        setNombreSearch(programa.nombre);
+        setNombreSeleccionado(programa.nombre);
+        setPeriodoInput(programa.periodo);
+        
+        setValue('nombre', programa.nombre);
+        setValue('grado_id', Number(programa.grado_id));
+        setValue('facultad_id', programa.facultad_id ? Number(programa.facultad_id) : undefined);
+        setValue('periodo', programa.periodo);
+        setValue('descripcion', programa.descripcion || '');
+
+        if (programa.facultad) {
+          setFacultadAutoNombre(programa.facultad.nombre);
+        } else if (programa.facultad_id) {
+          const fac = facultades.find((f: any) => Number(f.id) === Number(programa.facultad_id));
+          setFacultadAutoNombre(fac?.nombre ?? '');
+        } else {
+          setFacultadAutoNombre('');
+        }
+      } else {
+        // MODO CREACIÓN (Reset)
+        reset();
+        setGradoId(0);
+        setFacultadId(0);
+        setNombreSearch('');
+        setNombreSeleccionado('');
+        setPeriodoInput('');
+        setFacultadAutoNombre('');
+      }
+    }
+  }, [open, programa, reset, setValue, facultades]);
+
+  // Cerrar dropdown click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (comboRef.current && !comboRef.current.contains(e.target as Node))
+        setShowSuggestions(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   // ── Helpers
   const gradoNombre = grados.find((g: any) => Number(g.id) === Number(gradoId))?.nombre ?? '';
   const esNombreNuevo = !!nombreSearch && nombreSearch.length >= 3 && !nombreSeleccionado;
@@ -90,7 +146,6 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     
     const seen = new Map<string, Programa>();
     for (const p of (programas as Programa[])) {
-      // FIX: Usamos Number() para asegurar compatibilidad entre entornos (Local vs Producción)
       if (Number(p.grado_id) === Number(gradoId) && !seen.has(p.nombre)) {
         seen.set(p.nombre, p);
       }
@@ -102,8 +157,8 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     (p) => !nombreSearch || p.nombre.toLowerCase().includes(nombreSearch.toLowerCase()),
   );
 
-  // ── Detectar periodo duplicado
-  const periodoYaExiste = !!(
+  // ── Detectar periodo duplicado (Solo en creación)
+  const periodoYaExiste = !programa && !!(
     gradoId &&
     nombreSearch.length >= 3 &&
     periodoInput.length >= 6 &&
@@ -114,36 +169,6 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
         p.periodo === periodoInput,
     )
   );
-
-  // ── RHF
-  const { register, handleSubmit, setValue, formState: { errors }, reset } =
-    useForm<FormData>({ 
-      mode: 'onChange',
-      defaultValues: { nombre: '', grado_id: 0, facultad_id: undefined, periodo: '', descripcion: '' } 
-    });
-
-  // Reset al cerrar
-  useEffect(() => {
-    if (!open) {
-      reset();
-      setGradoId(0);
-      setFacultadId(0);
-      setNombreSearch('');
-      setNombreSeleccionado('');
-      setPeriodoInput('');
-      setFacultadAutoNombre('');
-    }
-  }, [open, reset]);
-
-  // Cerrar dropdown click fuera
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (comboRef.current && !comboRef.current.contains(e.target as Node))
-        setShowSuggestions(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
 
   // ── Handlers
   const handleGradoChange = (v: string) => {
@@ -161,12 +186,12 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     setValue('periodo', '', { shouldValidate: true });
   };
 
-  const handleSelectSugerencia = (nombre: string, programa: Programa) => {
+  const handleSelectSugerencia = (nombre: string, p: Programa) => {
     setNombreSeleccionado(nombre);
     setNombreSearch(nombre);
     setValue('nombre', nombre, { shouldValidate: true });
-    if (programa.facultad_id) {
-      const fId = Number(programa.facultad_id);
+    if (p.facultad_id) {
+      const fId = Number(p.facultad_id);
       setFacultadId(fId);
       setValue('facultad_id', fId, { shouldValidate: true });
       const fac = facultades.find((f: any) => Number(f.id) === fId);
@@ -249,9 +274,11 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Agregar Periodo / Programa</DialogTitle>
+          <DialogTitle>{programa ? 'Editar Programa' : 'Agregar Periodo / Programa'}</DialogTitle>
           <DialogDescription>
-            Selecciona el grado y luego el programa para registrar un nuevo periodo.
+            {programa 
+              ? 'Modifica los datos del programa seleccionado.' 
+              : 'Selecciona el grado y luego el programa para registrar un nuevo periodo.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -444,7 +471,7 @@ export function ProgramaCreateForm({ open, onClose, onSubmit, isLoading }: Props
               disabled={isLoading || periodoYaExiste || !periodoInput || !nombreSearch || (mostrarSeleccionFacultad && !facultadId)}
               className="bg-blue-600 hover:bg-blue-700"
             >
-              {isLoading ? 'Guardando...' : 'Crear Periodo'}
+              {isLoading ? 'Guardando...' : programa ? 'Guardar Cambios' : 'Crear Periodo'}
             </Button>
           </DialogFooter>
         </form>

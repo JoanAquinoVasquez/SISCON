@@ -11,6 +11,12 @@ import {
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 interface DashboardStats {
+  resumen_financiero: {
+    total_general: number;
+    total_pagado: number;
+    total_pendiente: number;
+    porcentaje_ejecucion: number;
+  };
   expedientes: {
     total: number;
     por_estado: Record<string, number>;
@@ -37,6 +43,7 @@ interface DashboardStats {
     por_estado: Record<string, number>;
     por_tipo: Record<string, number>;
     importe_total: number;
+    importe_pagado: number;
   };
   catalogo: {
     docentes_total: number;
@@ -241,15 +248,59 @@ export function Dashboard() {
           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28" />)
         ) : (
           <>
-            <StatCard title="Importe Total Docentes" value={fmt(data?.pagos_docentes.importe_total ?? 0)}
-              subtitle="Suma de todos los pagos"
-              icon={DollarSign} gradient="from-green-500 to-emerald-600" bg="bg-green-50" />
-            <StatCard title="Importe Pagado" value={fmt(data?.pagos_docentes.importe_pagado ?? 0)}
-              subtitle="Solo pagos completados"
+            <StatCard title="Total Obligaciones" value={fmt(data?.resumen_financiero.total_general ?? 0)}
+              subtitle="Suma de Pagos Docentes y Devoluciones"
+              icon={DollarSign} gradient="from-blue-500 to-indigo-600" bg="bg-blue-50" />
+            <StatCard title="Importe Pagado" value={fmt(data?.resumen_financiero.total_pagado ?? 0)}
+              subtitle={`${data?.resumen_financiero.porcentaje_ejecucion ?? 0}% de ejecución`}
               icon={CheckCircle2} gradient="from-teal-400 to-cyan-500" bg="bg-teal-50" />
-            <StatCard title="Importe Devoluciones" value={fmt(data?.devoluciones.importe_total ?? 0)}
-              subtitle="Total devoluciones registradas"
-              icon={RotateCcw} gradient="from-rose-400 to-red-500" bg="bg-rose-50" />
+            <StatCard title="Pendiente de Pago" value={fmt(data?.resumen_financiero.total_pendiente ?? 0)}
+              subtitle="Monto por procesar"
+              icon={Clock} gradient="from-amber-400 to-orange-500" bg="bg-amber-50" />
+          </>
+        )}
+      </div>
+      
+      {/* ── Detalle Financiero ───────────────────────────────────── */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 mt-4 mb-2">
+        {isLoading ? (
+          <>
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </>
+        ) : (
+          <>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-violet-50">
+                <GraduationCap className="h-6 w-6 text-violet-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Pagos Docentes</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-800">{fmt(data?.pagos_docentes.importe_pagado ?? 0)}</span>
+                  <span className="text-xs text-slate-400 font-normal">pagados de {fmt(data?.pagos_docentes.importe_total ?? 0)}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                  <div className="h-full bg-violet-500 rounded-full" style={{ width: `${data?.pagos_docentes.importe_total ? Math.round((data.pagos_docentes.importe_pagado / data.pagos_docentes.importe_total) * 100) : 0}%` }} />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-rose-50">
+                <RotateCcw className="h-6 w-6 text-rose-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Devoluciones</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-slate-800">{fmt(data?.devoluciones.importe_pagado ?? 0)}</span>
+                  <span className="text-xs text-slate-400 font-normal">pagados de {fmt(data?.devoluciones.importe_total ?? 0)}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                  <div className="h-full bg-rose-500 rounded-full" style={{ width: `${data?.devoluciones.importe_total ? Math.round((data.devoluciones.importe_pagado / data.devoluciones.importe_total) * 100) : 0}%` }} />
+                </div>
+              </div>
+            </div>
           </>
         )}
       </div>

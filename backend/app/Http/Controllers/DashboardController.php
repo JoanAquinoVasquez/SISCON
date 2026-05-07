@@ -53,25 +53,21 @@ class DashboardController extends Controller
         // ─────────────────────────────────────────
         // 2. PAGOS DOCENTES
         // ─────────────────────────────────────────
-        $pagosTotal = PagoDocente::count();
-
-        // Los pagos docente tienen su estado a través del expediente relacionado
+        // 2. Pagos Docentes
+        $totalPagos = PagoDocente::count();
+        
         $pagosPorEstado = DB::table('pagos_docentes')
             ->join('expedientes', 'expedientes.pago_docente_id', '=', 'pagos_docentes.id')
-            ->select('expedientes.estado', DB::raw('count(distinct pagos_docentes.id) as total'))
             ->whereNull('pagos_docentes.deleted_at')
             ->whereNull('expedientes.deleted_at')
+            ->select('expedientes.estado', DB::raw('count(distinct pagos_docentes.id) as total'))
             ->groupBy('expedientes.estado')
+            ->get()
             ->pluck('total', 'estado')
             ->toArray();
 
-        // Pagos sin expediente (pendientes de tramitar) 
-        $pagosSinExpediente = PagoDocente::doesntHave('expedientes')->count();
-
-        // Importe total de pagos docentes
         $importeTotal = PagoDocente::sum('importe_total');
-
-        // Importes pagados (completados)
+        
         $importePagado = DB::table('pagos_docentes')
             ->join('expedientes', 'expedientes.pago_docente_id', '=', 'pagos_docentes.id')
             ->where('expedientes.estado', 'completado')
@@ -79,7 +75,8 @@ class DashboardController extends Controller
             ->whereNull('expedientes.deleted_at')
             ->sum('pagos_docentes.importe_total');
 
-        // Pagos por tipo de docente
+        $pagosSinExpediente = PagoDocente::doesntHave('expedientes')->count();
+
         $pagosPorTipoDocente = DB::table('pagos_docentes')
             ->join('docentes', 'pagos_docentes.docente_id', '=', 'docentes.id')
             ->select('docentes.tipo_docente', DB::raw('count(*) as total'))
@@ -88,7 +85,6 @@ class DashboardController extends Controller
             ->pluck('total', 'tipo_docente')
             ->toArray();
 
-        // Pagos agrupados por hoja de Google Sheets (Internos/Internos FE/Externos/Externos FE)
         $pagosRaw = DB::table('pagos_docentes')
             ->join('docentes', 'pagos_docentes.docente_id', '=', 'docentes.id')
             ->select('docentes.tipo_docente', 'pagos_docentes.facultad_nombre')
@@ -106,17 +102,24 @@ class DashboardController extends Controller
             }
         }
 
-        // ─────────────────────────────────────────
-        // 3. DEVOLUCIONES
-        // ─────────────────────────────────────────
-        $devolucionesTotal = Devolucion::count();
+        // 3. Devoluciones
+        $totalDevoluciones = Devolucion::count();
+        $importeTotalDevoluciones = Devolucion::sum('importe');
+
+        $importePagadoDevoluciones = DB::table('devoluciones')
+            ->join('expedientes', 'expedientes.devolucion_id', '=', 'devoluciones.id')
+            ->where('expedientes.estado', 'completado')
+            ->whereNull('devoluciones.deleted_at')
+            ->whereNull('expedientes.deleted_at')
+            ->sum('devoluciones.importe');
 
         $devolucionesPorEstado = DB::table('devoluciones')
             ->join('expedientes', 'expedientes.devolucion_id', '=', 'devoluciones.id')
-            ->select('expedientes.estado', DB::raw('count(distinct devoluciones.id) as total'))
             ->whereNull('devoluciones.deleted_at')
             ->whereNull('expedientes.deleted_at')
+            ->select('expedientes.estado', DB::raw('count(distinct devoluciones.id) as total'))
             ->groupBy('expedientes.estado')
+            ->get()
             ->pluck('total', 'estado')
             ->toArray();
 
@@ -124,8 +127,6 @@ class DashboardController extends Controller
             ->groupBy('tipo_devolucion')
             ->pluck('total', 'tipo_devolucion')
             ->toArray();
-
-        $importeTotalDevoluciones = Devolucion::sum('importe');
 
         // ─────────────────────────────────────────
         // 4. DOCENTES
@@ -137,11 +138,16 @@ class DashboardController extends Controller
             ->pluck('total', 'tipo_docente')
             ->toArray();
 
-        // ─────────────────────────────────────────
-        // 5. CATÁLOGO ACADÉMICO
-        // ─────────────────────────────────────────
         $programasTotal = Programa::count();
         $cursosTotal = Curso::count();
+
+        // ─────────────────────────────────────────
+        // 6. RESUMEN FINANCIERO CONSOLIDADO
+        // ─────────────────────────────────────────
+        $totalGeneral = $importeTotal + $importeTotalDevoluciones;
+        $totalPagado = $importePagado + $importePagadoDevoluciones;
+        $totalPendiente = $totalGeneral - $totalPagado;
+        $porcentajeEjecucion = $totalGeneral > 0 ? round(($totalPagado / $totalGeneral) * 100, 1) : 0;
 
         // ─────────────────────────────────────────
         // 6. KPIs DE RENDIMIENTO
@@ -153,15 +159,15 @@ class DashboardController extends Controller
             : 0;
 
         // Tasa de completado de pagos
-        $tasaPagosCompletados = $pagosTotal > 0
-            ? round((($pagosPorEstado['completado'] ?? 0)) / $pagosTotal * 100, 1)
+        $tasaPagosCompletados = $totalPagos > 0
+            ? round((($pagosPorEstado['completado'] ?? 0)) / $totalPagos * 100, 1)
             : 0;
 
         // Expedientes en proceso (pendiente + en_proceso)
         $expedientesActivos = ($expedientesPorEstado['pendiente'] ?? 0) + ($expedientesPorEstado['en_proceso'] ?? 0);
 
         // Promedio importe por pago docente
-        $promedioImportePago = $pagosTotal > 0 ? round($importeTotal / $pagosTotal, 2) : 0;
+        $promedioImportePago = $totalPagos > 0 ? round($importeTotal / $totalPagos, 2) : 0;
 
         // ─────────────────────────────────────────
         // 7. ACTIVIDAD RECIENTE (últimos 7 días)
@@ -174,6 +180,12 @@ class DashboardController extends Controller
             ->get();
 
         return response()->json([
+            'resumen_financiero' => [
+                'total_general' => $totalGeneral,
+                'total_pagado' => $totalPagado,
+                'total_pendiente' => $totalPendiente,
+                'porcentaje_ejecucion' => $porcentajeEjecucion,
+            ],
             'expedientes' => [
                 'total' => $expedientesTotal,
                 'por_estado' => $expedientesPorEstado,
@@ -185,7 +197,7 @@ class DashboardController extends Controller
                 'tasa_completado' => $tasaCompletado,
             ],
             'pagos_docentes' => [
-                'total' => $pagosTotal,
+                'total' => $totalPagos,
                 'por_estado' => $pagosPorEstado,
                 'por_tipo_docente' => $pagosPorTipoDocente,
                 'por_hoja' => $pagosPorHoja,
@@ -196,10 +208,11 @@ class DashboardController extends Controller
                 'tasa_completados' => $tasaPagosCompletados,
             ],
             'devoluciones' => [
-                'total' => $devolucionesTotal,
+                'total' => $totalDevoluciones,
                 'por_estado' => $devolucionesPorEstado,
                 'por_tipo' => $devolucionesPorTipo,
                 'importe_total' => $importeTotalDevoluciones,
+                'importe_pagado' => $importePagadoDevoluciones,
             ],
             'catalogo' => [
                 'docentes_total' => $docentesTotal,

@@ -31,6 +31,7 @@ import { cursoService, type Curso } from '../../services/cursoService';
 import { CursoForm } from './CursoForm';
 import { SemestreForm } from './SemestreForm';
 import { ProgramaForm } from './ProgramaForm';
+import { ConfirmDialog } from '../../components/ui/confirm-dialog';
 import { cn } from '../../lib/utils';
 
 // ---------- helpers ----------
@@ -68,6 +69,11 @@ export default function CursosPage() {
   const [editingSemestre, setEditingSemestre] = useState<Semestre | null>(null);
   const [isCursoFormOpen, setIsCursoFormOpen] = useState(false);
   const [editingCurso, setEditingCurso] = useState<Curso | null>(null);
+
+  // ── Confirmations
+  const [isConfirmDeletePrograma, setIsConfirmDeletePrograma] = useState(false);
+  const [isConfirmDeleteSemestre, setIsConfirmDeleteSemestre] = useState(false);
+  const [isConfirmDeleteCurso, setIsConfirmDeleteCurso] = useState(false);
 
   // ══════════════════════════════════════════
   // QUERIES
@@ -124,6 +130,8 @@ export default function CursosPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['programas'] });
       showToast('Programa eliminado correctamente', 'success');
+      setIsConfirmDeletePrograma(false);
+      setEditingPrograma(null);
       setSelectedPrograma(null);
       setSelectedSemestre(null);
     },
@@ -163,6 +171,8 @@ export default function CursosPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['semestres', selectedPrograma?.id] });
       showToast('Semestre eliminado', 'success');
+      setIsConfirmDeleteSemestre(false);
+      setEditingSemestre(null);
       if (selectedSemestre?.id === editingSemestre?.id) setSelectedSemestre(null);
     },
     onError: (e: Error) => showToast(`Error: ${e.message}`, 'error'),
@@ -199,6 +209,8 @@ export default function CursosPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cursos-semestre', selectedSemestre?.id] });
       showToast('Curso eliminado', 'success');
+      setIsConfirmDeleteCurso(false);
+      setEditingCurso(null);
     },
     onError: (e: Error) => showToast(`Error: ${e.message}`, 'error'),
   });
@@ -241,9 +253,8 @@ export default function CursosPage() {
   };
 
   const handleDeletePrograma = (p: Programa) => {
-    if (confirm(`¿Estás seguro de eliminar el programa "${p.nombre}"? Se borrarán todos sus semestres y cursos asociados.`)) {
-      deleteProgramaMutation.mutate(p.id);
-    }
+    setEditingPrograma(p);
+    setIsConfirmDeletePrograma(true);
   };
 
   const handleSemestreSubmit = (data: any) => {
@@ -265,15 +276,13 @@ export default function CursosPage() {
   };
 
   const handleDeleteSemestre = (s: Semestre) => {
-    if (confirm(`¿Eliminar el "${s.nombre}"? Se desvinculará de todos sus cursos.`)) {
-      deleteSemestreMutation.mutate(s.id);
-    }
+    setEditingSemestre(s);
+    setIsConfirmDeleteSemestre(true);
   };
 
   const handleDeleteCurso = (c: Curso) => {
-    if (confirm(`¿Eliminar el curso "${c.nombre}"?`)) {
-      deleteCursoMutation.mutate(c.id);
-    }
+    setEditingCurso(c);
+    setIsConfirmDeleteCurso(true);
   };
 
   // ══════════════════════════════════════════
@@ -735,6 +744,40 @@ export default function CursosPage() {
         }}
         onSubmit={handleCursoSubmit}
         isLoading={createCursoMutation.isPending || updateCursoMutation.isPending}
+      />
+
+      {/* ── Confirmations ── */}
+      <ConfirmDialog
+        open={isConfirmDeletePrograma}
+        onOpenChange={setIsConfirmDeletePrograma}
+        title="Eliminar Programa"
+        description={`¿Estás seguro de eliminar el programa "${editingPrograma?.nombre}"? Se borrarán todos sus semestres y cursos asociados de forma permanente.`}
+        onConfirm={() => editingPrograma && deleteProgramaMutation.mutate(editingPrograma.id)}
+        confirmText="Eliminar"
+        variant="destructive"
+        isLoading={deleteProgramaMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={isConfirmDeleteSemestre}
+        onOpenChange={setIsConfirmDeleteSemestre}
+        title="Eliminar Semestre"
+        description={`¿Estás seguro de eliminar el "${editingSemestre?.nombre}"? Se desvinculará de todos sus cursos.`}
+        onConfirm={() => editingSemestre && deleteSemestreMutation.mutate(editingSemestre.id)}
+        confirmText="Eliminar"
+        variant="destructive"
+        isLoading={deleteSemestreMutation.isPending}
+      />
+
+      <ConfirmDialog
+        open={isConfirmDeleteCurso}
+        onOpenChange={setIsConfirmDeleteCurso}
+        title="Eliminar Curso"
+        description={`¿Estás seguro de eliminar el curso "${editingCurso?.nombre}"?`}
+        onConfirm={() => editingCurso && deleteCursoMutation.mutate(editingCurso.id)}
+        confirmText="Eliminar"
+        variant="destructive"
+        isLoading={deleteCursoMutation.isPending}
       />
     </div>
   );

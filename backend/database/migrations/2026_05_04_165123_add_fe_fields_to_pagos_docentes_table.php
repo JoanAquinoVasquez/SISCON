@@ -12,10 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('pagos_docentes', function (Blueprint $table) {
-            $table->decimal('horas_teoricas', 10, 2)->nullable()->after('costo_por_hora');
-            $table->decimal('horas_practicas', 10, 2)->nullable()->after('horas_teoricas');
-            $table->decimal('costo_hora_teorica', 10, 2)->nullable()->after('horas_practicas');
-            $table->decimal('costo_hora_practica', 10, 2)->nullable()->after('costo_hora_teorica');
+            if (!Schema::hasColumn('pagos_docentes', 'horas_teoricas')) {
+                $table->decimal('horas_teoricas', 10, 2)->nullable()->after('costo_por_hora');
+            }
+            if (!Schema::hasColumn('pagos_docentes', 'horas_practicas')) {
+                $table->decimal('horas_practicas', 10, 2)->nullable()->after('horas_teoricas');
+            }
+            if (!Schema::hasColumn('pagos_docentes', 'costo_hora_teorica')) {
+                $table->decimal('costo_hora_teorica', 10, 2)->nullable()->after('horas_practicas');
+            }
+            if (!Schema::hasColumn('pagos_docentes', 'costo_hora_practica')) {
+                $table->decimal('costo_hora_practica', 10, 2)->nullable()->after('costo_hora_teorica');
+            }
         });
     }
 

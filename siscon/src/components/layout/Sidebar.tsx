@@ -12,6 +12,7 @@ import {
   FileCheck,
   BookOpen,
   Settings,
+  Building2,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -20,6 +21,7 @@ const menuItems = [
   { icon: Home, label: 'Inicio', path: '/dashboard' },
   { icon: FolderOpen, label: 'Expedientes', path: '/expedientes' },
   { icon: DollarSign, label: 'Pagos Docentes', path: '/pagos-docentes' },
+  { icon: Building2, label: 'Directores', path: '/unidades-posgrado' },
   { icon: ClipboardList, label: 'Coordinadores', path: '/coordinadores' },
   { icon: BookOpen, label: 'Cursos', path: '/cursos' },
   { icon: Users, label: 'Usuarios', path: '/users' },

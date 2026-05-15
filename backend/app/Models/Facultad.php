@@ -17,6 +17,7 @@ class Facultad extends Model
         'codigo',
         'director_nombre',
         'director_genero',
+        'director_telefono',
     ];
 
     // Relaciones

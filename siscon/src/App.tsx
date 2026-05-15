@@ -20,6 +20,7 @@ import OficiosList from './pages/Documentos/OficiosList';
 import ResolucionesList from './pages/Documentos/ResolucionesList';
 import DevolucionesList from './pages/Devoluciones/DevolucionesList';
 import GestionPlantillas from './pages/Configuracion/GestionPlantillas';
+import UnidadesPosgradoPage from './pages/UnidadesPosgrado';
 
 function App() {
   const { user } = useAuth();
@@ -61,6 +62,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="programas" element={<ProgramasPage />} />
+          <Route path="unidades-posgrado" element={<ErrorBoundary><UnidadesPosgradoPage /></ErrorBoundary>} />
           <Route path="cursos" element={<ErrorBoundary><CursosPage /></ErrorBoundary>} />
           <Route path="docentes" element={<DocentesPage />} />
           <Route path="coordinadores" element={<CoordinadoresPage />} />

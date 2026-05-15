@@ -20,6 +20,7 @@ use App\Http\Controllers\FileUploadController;
 use App\Http\Controllers\OficioController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FacultadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('grados', GradoController::class);
     Route::get('grados-list', [ProgramaController::class, 'grados']);
     Route::get('facultades-list', [ProgramaController::class, 'facultades']);
+    
+    // Facultades / Unidades de Posgrado
+    Route::apiResource('facultades', FacultadController::class);
 
     // Programas
     Route::apiResource('programas', ProgramaController::class);

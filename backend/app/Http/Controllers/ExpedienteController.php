@@ -300,131 +300,7 @@ class ExpedienteController extends Controller
 
     private function saveToGoogleSheets($expediente, $isUpdate = false)
     {
-        // Cargar relaciones necesarias si no están cargadas
-        $expediente->loadMissing([
-            'docente',
-            'curso',
-            'pagoDocente',
-            'semestre.programa.grado',
-            'devolucion',
-            'user'
-        ]);
-
-        $estado = $expediente->estado ?? 'PENDIENTE';
-        $numeroExpediente = $expediente->numero_expediente_mesa_partes;
-        $fechaMP = $expediente->fecha_mesa_partes ? $expediente->fecha_mesa_partes->format('d/m/Y') : '';
-        $numeroDocumento = $expediente->numero_documento;
-        $fechaRecepcion = $expediente->fecha_recepcion_contabilidad ? $expediente->fecha_recepcion_contabilidad->format('d/m/Y') : '';
-        $nombre = $expediente->remitente;
-        $usuarioRegistro = $expediente->user->name ?? 'Sistema';
-
-        $asunto = $this->generarAsunto($expediente);
-
-        $data = [
-            $expediente->id, // ID del expediente (columna A)
-            strtoupper($estado),
-            $numeroExpediente,
-            $fechaMP,
-            $numeroDocumento,
-            $fechaRecepcion,
-            $nombre,
-            $asunto,
-            $usuarioRegistro,
-        ];
-
-        if ($isUpdate) {
-            $this->googleSheetsService->updateExpediente($data, $expediente->id);
-        } else {
-            $this->googleSheetsService->appendExpediente($data);
-        }
-    }
-
-
-    private function generarAsunto($expediente)
-    {
-        if ($expediente->tipo_asunto === 'descripcion') {
-            return $expediente->descripcion_asunto;
-        }
-
-        if ($expediente->tipo_asunto === 'devolucion') {
-            return "Devolución - " . ($expediente->descripcion_asunto ?? '');
-        }
-
-        $docente = $expediente->docente;
-        $curso = $expediente->curso;
-        $programa = $expediente->semestre ? $expediente->semestre->programa : null;
-        $grado = $programa ? ($programa->grado->nombre ?? '') : '';
-        $periodo = $programa ? $programa->periodo : '';
-
-        $nombreDocente = $docente ? trim("{$docente->titulo_profesional} {$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}") : 'Docente no especificado';
-        $nombreCurso = $curso ? $curso->nombre : 'Curso no especificado';
-
-        $programaInfo = '';
-        if ($programa) {
-            $grado = $programa->grado->nombre ?? '';
-            $periodo = $programa->periodo ?? '';
-            $programaInfo = trim("del programa de {$grado} {$programa->nombre} {$periodo}");
-        }
-
-        $fechasFormat = $this->formatearFechas($expediente->fechas_ensenanza);
-
-        $texto = "";
-
-        if ($expediente->tipo_asunto === 'presentacion') {
-            $texto = "Presentación del docente {$nombreDocente} para enseñar el curso {$nombreCurso}";
-            if ($programaInfo)
-                $texto .= " {$programaInfo}";
-            $texto .= ".";
-
-            // Agregar oficio de coordinador si existe
-            if ($expediente->pagoDocente && $expediente->pagoDocente->numero_oficio_presentacion_coordinador) {
-                $texto .= " Con Oficio N° " . $expediente->pagoDocente->numero_oficio_presentacion_coordinador . ".";
-            }
-        } elseif ($expediente->tipo_asunto === 'conformidad') {
-            $texto = "Conformidad del docente {$nombreDocente} por la enseñanza del curso {$nombreCurso}";
-            if ($programaInfo)
-                $texto .= " {$programaInfo}";
-            $texto .= ".";
-
-            if ($expediente->pagoDocente) {
-                if ($expediente->pagoDocente->numero_oficio_conformidad_coordinador) {
-                    $texto .= " Con Oficio de Coordinador N° " . $expediente->pagoDocente->numero_oficio_conformidad_coordinador . ".";
-                }
-                if ($expediente->pagoDocente->numero_oficio_conformidad_facultad) {
-                    $texto .= " Con Oficio de Facultad N° " . $expediente->pagoDocente->numero_oficio_conformidad_facultad . ".";
-                }
-            }
-        }
-
-        if ($fechasFormat) {
-            $texto .= " Fechas: " . $fechasFormat . ".";
-        }
-
-        return $texto;
-    }
-
-    private function formatearFechas($fechas)
-    {
-        if (empty($fechas) || !is_array($fechas)) {
-            return '';
-        }
-
-        // Agrupar por mes
-        $meses = [];
-        foreach ($fechas as $fecha) {
-            $carbon = \Carbon\Carbon::parse($fecha);
-            $nombreMes = ucfirst($carbon->locale('es')->monthName);
-            $dia = $carbon->day;
-            $meses[$nombreMes][] = $dia;
-        }
-
-        $partes = [];
-        foreach ($meses as $mes => $dias) {
-            sort($dias);
-            $partes[] = "{$mes}: " . implode(', ', $dias);
-        }
-
-        return implode('; ', $partes);
+        $this->googleSheetsService->syncExpediente($expediente, $isUpdate);
     }
 
     /**
@@ -809,9 +685,79 @@ class ExpedienteController extends Controller
             return response()->json(['message' => 'Expediente no encontrado'], 404);
         }
 
-        $expediente->delete();
+        DB::beginTransaction();
+        try {
+            $pagoDocenteId = $expediente->pago_docente_id;
+            $devolucionId = $expediente->devolucion_id;
 
-        return response()->json(['message' => 'Expediente eliminado exitosamente'], 200);
+            // 1. Soft delete the expediente from database
+            $expediente->delete();
+
+            // 2. Delete the expediente row from Google Sheets
+            try {
+                $googleSheetsService = app(\App\Services\GoogleSheetsService::class);
+                $googleSheetsService->deleteDataRow('2026-EXP-SISCON', $expediente->id);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Error deleting Expediente from Sheets: ' . $e->getMessage());
+            }
+
+            // 3. Handle associated PagoDocente if exists
+            if ($pagoDocenteId) {
+                // Check if there are other active expedientes linked to the same PagoDocente
+                $hasOtherExpedientes = Expediente::where('pago_docente_id', $pagoDocenteId)->exists();
+
+                if (!$hasOtherExpedientes) {
+                    $pagoDocente = PagoDocente::find($pagoDocenteId);
+                    if ($pagoDocente) {
+                        // Delete the PagoDocente row from Google Sheets
+                        try {
+                            $googleSheetsService = app(\App\Services\GoogleSheetsService::class);
+                            $sheetName = $googleSheetsService->resolveSheetName($pagoDocente);
+                            $googleSheetsService->deleteDataRow($sheetName, $pagoDocente->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Error deleting PagoDocente from Sheets: ' . $e->getMessage());
+                        }
+
+                        // Soft delete the PagoDocente from database
+                        $pagoDocente->delete();
+                    }
+                } else {
+                    // If other expedientes are still active, sync the updated PagoDocente state to Google Sheets
+                    $pagoDocente = PagoDocente::find($pagoDocenteId);
+                    if ($pagoDocente) {
+                        try {
+                            $googleSheetsService = app(\App\Services\GoogleSheetsService::class);
+                            $googleSheetsService->updatePagoDocente($pagoDocente);
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('Error updating PagoDocente in Sheets after expediente deletion: ' . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
+            // 4. Handle associated Devolucion if exists
+            if ($devolucionId) {
+                // Check if there are other active expedientes linked to the same Devolucion
+                $hasOtherDevoluciones = Expediente::where('devolucion_id', $devolucionId)->exists();
+
+                if (!$hasOtherDevoluciones) {
+                    $devolucion = \App\Models\Devolucion::find($devolucionId);
+                    if ($devolucion) {
+                        // Soft delete the Devolucion from database
+                        $devolucion->delete();
+                    }
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'Expediente y dependencias procesadas/eliminadas exitosamente'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error al eliminar el expediente',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

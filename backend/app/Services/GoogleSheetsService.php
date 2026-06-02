@@ -539,4 +539,132 @@ class GoogleSheetsService
             Log::error($e->getTraceAsString());
         }
     }
+
+    public function syncExpediente(\App\Models\Expediente $expediente, $isUpdate = false)
+    {
+        // Cargar relaciones necesarias si no están cargadas
+        $expediente->loadMissing([
+            'docente',
+            'curso',
+            'pagoDocente',
+            'semestre.programa.grado',
+            'devolucion',
+            'user'
+        ]);
+
+        $estado = $expediente->estado ?? 'PENDIENTE';
+        $numeroExpediente = $expediente->numero_expediente_mesa_partes;
+        $fechaMP = $expediente->fecha_mesa_partes ? $expediente->fecha_mesa_partes->format('d/m/Y') : '';
+        $numeroDocumento = $expediente->numero_documento;
+        $fechaRecepcion = $expediente->fecha_recepcion_contabilidad ? $expediente->fecha_recepcion_contabilidad->format('d/m/Y') : '';
+        $nombre = $expediente->remitente;
+        $usuarioRegistro = $expediente->user->name ?? 'Sistema';
+
+        $asunto = $this->generarAsunto($expediente);
+
+        $data = [
+            $expediente->id, // ID del expediente (columna A)
+            strtoupper($estado),
+            $numeroExpediente,
+            $fechaMP,
+            $numeroDocumento,
+            $fechaRecepcion,
+            $nombre,
+            $asunto,
+            $usuarioRegistro,
+        ];
+
+        if ($isUpdate) {
+            $this->updateExpediente($data, $expediente->id);
+        } else {
+            $this->appendExpediente($data);
+        }
+    }
+
+    private function generarAsunto($expediente)
+    {
+        if ($expediente->tipo_asunto === 'descripcion') {
+            return $expediente->descripcion_asunto;
+        }
+
+        if ($expediente->tipo_asunto === 'devolucion') {
+            return "Devolución - " . ($expediente->descripcion_asunto ?? '');
+        }
+
+        $docente = $expediente->docente;
+        $curso = $expediente->curso;
+        $programa = $expediente->semestre ? $expediente->semestre->programa : null;
+        $grado = $programa ? ($programa->grado->nombre ?? '') : '';
+        $periodo = $programa ? $programa->periodo : '';
+
+        $nombreDocente = $docente ? trim("{$docente->titulo_profesional} {$docente->nombres} {$docente->apellido_paterno} {$docente->apellido_materno}") : 'Docente no especificado';
+        $nombreCurso = $curso ? $curso->nombre : 'Curso no especificado';
+
+        $programaInfo = '';
+        if ($programa) {
+            $grado = $programa->grado->nombre ?? '';
+            $periodo = $programa->periodo ?? '';
+            $programaInfo = trim("del programa de {$grado} {$programa->nombre} {$periodo}");
+        }
+
+        $fechasFormat = $this->formatearFechasExp($expediente->fechas_ensenanza);
+
+        $texto = "";
+
+        if ($expediente->tipo_asunto === 'presentacion') {
+            $texto = "Presentación del docente {$nombreDocente} para enseñar el curso {$nombreCurso}";
+            if ($programaInfo)
+                $texto .= " {$programaInfo}";
+            $texto .= ".";
+
+            // Agregar oficio de coordinador si existe
+            if ($expediente->pagoDocente && $expediente->pagoDocente->numero_oficio_presentacion_coordinador) {
+                $texto .= " Con Oficio N° " . $expediente->pagoDocente->numero_oficio_presentacion_coordinador . ".";
+            }
+        } elseif ($expediente->tipo_asunto === 'conformidad') {
+            $texto = "Conformidad del docente {$nombreDocente} por la enseñanza del curso {$nombreCurso}";
+            if ($programaInfo)
+                $texto .= " {$programaInfo}";
+            $texto .= ".";
+
+            if ($expediente->pagoDocente) {
+                if ($expediente->pagoDocente->numero_oficio_conformidad_coordinador) {
+                    $texto .= " Con Oficio de Coordinador N° " . $expediente->pagoDocente->numero_oficio_conformidad_coordinador . ".";
+                }
+                if ($expediente->pagoDocente->numero_oficio_conformidad_facultad) {
+                    $texto .= " Con Oficio de Facultad N° " . $expediente->pagoDocente->numero_oficio_conformidad_facultad . ".";
+                }
+            }
+        }
+
+        if ($fechasFormat) {
+            $texto .= " Fechas: " . $fechasFormat . ".";
+        }
+
+        return $texto;
+    }
+
+    private function formatearFechasExp($fechas)
+    {
+        if (empty($fechas) || !is_array($fechas)) {
+            return '';
+        }
+
+        // Agrupar por mes
+        $meses = [];
+        foreach ($fechas as $fecha) {
+            $carbon = \Carbon\Carbon::parse($fecha);
+            $nombreMes = ucfirst($carbon->locale('es')->monthName);
+            $dia = $carbon->day;
+            $meses[$nombreMes][] = $dia;
+        }
+
+        $partes = [];
+        foreach ($meses as $mes => $dias) {
+            sort($dias);
+            $partes[] = "{$mes}: " . implode(', ', $dias);
+        }
+
+        return implode('; ', $partes);
+    }
 }

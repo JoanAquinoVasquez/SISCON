@@ -305,9 +305,47 @@ class PagoDocenteController extends Controller
             return response()->json(['message' => 'Pago no encontrado'], 404);
         }
 
-        $pago->delete();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Load associated expedientes before deleting PagoDocente
+            $pago->load('expedientes');
+            $expedientes = $pago->expedientes;
 
-        return response()->json(['message' => 'Pago eliminado exitosamente'], 200);
+            // 1. Unlink and reset status of all related expedientes
+            foreach ($expedientes as $expediente) {
+                $expediente->update([
+                    'pago_docente_id' => null,
+                    'estado' => 'pendiente'
+                ]);
+
+                // Sync each updated expediente with Google Sheets
+                try {
+                    $this->googleSheetsService->syncExpediente($expediente, true);
+                } catch (\Exception $e) {
+                    Log::error('Error syncing expediente to Sheets after PagoDocente deletion: ' . $e->getMessage());
+                }
+            }
+
+            // 2. Delete the PagoDocente row from Google Sheets
+            try {
+                $sheetName = $this->googleSheetsService->resolveSheetName($pago);
+                $this->googleSheetsService->deleteDataRow($sheetName, $pago->id, env('GOOGLE_SHEETS_PAGOS_ID'));
+            } catch (\Exception $e) {
+                Log::error('Error deleting PagoDocente from Sheets: ' . $e->getMessage());
+            }
+
+            // 3. Soft delete the PagoDocente from database
+            $pago->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+            return response()->json(['message' => 'Pago eliminado y expedientes asociados desvinculados exitosamente'], 200);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return response()->json([
+                'message' => 'Error al eliminar el pago',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

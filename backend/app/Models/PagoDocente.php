@@ -12,6 +12,12 @@ class PagoDocente extends Model
 
     protected $table = 'pagos_docentes';
     
+    protected $appends = [
+        'estado',
+        'es_interno',
+        'es_externo',
+    ];
+    
     protected static function booted()
     {
         static::saving(function ($pago) {

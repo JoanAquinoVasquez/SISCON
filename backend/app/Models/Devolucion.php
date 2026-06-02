@@ -11,6 +11,12 @@ class Devolucion extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'devoluciones';
+    
+    protected $appends = [
+        'estado',
+        'tipo_devolucion_label',
+        'estado_label',
+    ];
 
     protected $fillable = [
         'persona',

@@ -118,8 +118,11 @@ class DocumentGeneratorService
      */
     private function replaceVariables(TemplateProcessor $template, PagoDocente $pago): void
     {
-        // Obtener programa del primer semestre del curso
-        $programa = $pago->curso->semestres->first()->programa ?? null;
+        // Obtener programa del semestre del curso que coincida con el periodo del pago, o el primero por defecto
+        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+            return $s->programa && $s->programa->periodo === $pago->periodo;
+        });
+        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
 
         // Nombre completo del docente con título profesional
         $nombreCompleto = '';

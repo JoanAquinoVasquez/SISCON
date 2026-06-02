@@ -103,8 +103,11 @@ class PagoDocenteController extends Controller
 
         // Format response with computed fields
         $pagos->getCollection()->transform(function ($pago) {
-            // Obtener programa del primer semestre del curso
-            $programa = $pago->curso->semestres->first()->programa ?? null;
+            // Obtener programa que coincida con el periodo del pago, o el primero por defecto
+            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                return $s->programa && $s->programa->periodo === $pago->periodo;
+            });
+            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
 
             return [
                 'id' => $pago->id,
@@ -205,8 +208,11 @@ class PagoDocenteController extends Controller
     {
         $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->findOrFail($id);
 
-        // Obtener programa del primer semestre del curso
-        $programa = $pago->curso->semestres->first()->programa ?? null;
+        // Obtener programa que coincida con el periodo del pago, o el primero por defecto
+        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+            return $s->programa && $s->programa->periodo === $pago->periodo;
+        });
+        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
 
         $pago->programa_nombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre} ({$programa->periodo})" : null;
         $pago->facultad_codigo = $programa->facultad->codigo ?? null;

@@ -69,7 +69,10 @@ class GoogleSheetsService
 
     private function formatPagoDocenteData(\App\Models\PagoDocente $pago): array
     {
-        $programa = $pago->curso->semestres->first()->programa ?? null;
+        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+            return $s->programa && $s->programa->periodo === $pago->periodo;
+        });
+        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
         $programaNombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre}" : '';
         $mesPago = '';
         $docenteNombre = $pago->docente
@@ -101,7 +104,7 @@ class GoogleSheetsService
 
         $expedienteNumero = $pago->numero_exp_siaf ?? '';
 
-        $esFE = str_contains($pago->facultad_nombre ?? '', 'Enfermería') || ($pago->curso->semestres->first()->programa->facultad->codigo ?? '') === 'FE';
+        $esFE = str_contains($pago->facultad_nombre ?? '', 'Enfermería') || ($programa->facultad->codigo ?? '') === 'FE';
 
         $data = [
             $pago->id,

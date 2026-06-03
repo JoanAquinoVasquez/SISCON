@@ -30,6 +30,35 @@ interface Template {
   last_modified: string;
 }
 
+const getTemplateDescription = (name: string): string => {
+  switch (name) {
+    case 'Resoluciones Plantilla DI 2025.docx':
+      return 'Resolución para Docente Interno (Periodo 2025-I)';
+    case 'Resoluciones Plantilla DE 2025.docx':
+      return 'Resolución para Docente Externo (Periodo 2025-I)';
+    case 'Resolucion Plantilla DI 2024.docx':
+      return 'Resolución para Docente Interno (Periodo 2024-II)';
+    case 'Resolucion Plantilla DE 2024.docx':
+      return 'Resolución para Docente Externo (Periodo 2024-II)';
+    case 'Ofic. Conta Plantilla DI 2025.docx':
+      return 'Oficio de Contabilidad para Docente Interno (Periodo 2025-I)';
+    case 'Ofic. Conta Plantilla DE 2025.docx':
+      return 'Oficio de Contabilidad para Docente Externo (Periodo 2025-I)';
+    case 'Ofic. Conta Plantilla DI 2024.docx':
+      return 'Oficio de Contabilidad para Docente Interno (Periodo 2024-II)';
+    case 'Ofic. Conta Plantilla DE 2024.docx':
+      return 'Oficio de Contabilidad para Docente Externo (Periodo 2024-II)';
+    case 'Resolución Aceptacion DocExt 2025.docx':
+      return 'Resolución de Aceptación para Docente Externo (Periodo 2025-I)';
+    case 'Resolución Aceptacion DocExt 2024.docx':
+      return 'Resolución de Aceptación para Docente Externo (Periodo 2024-II)';
+    case 'Resolución Aceptacion DocExt FE 2025.docx':
+      return 'Resolución de Aceptación para Docente Externo Enfermería (Periodo 2025-I)';
+    default:
+      return 'Plantilla del sistema';
+  }
+};
+
 export default function GestionPlantillas() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +203,10 @@ export default function GestionPlantillas() {
                         <div className="p-2 bg-blue-50 rounded-lg">
                           <FileDown className="h-4 w-4 text-blue-600" />
                         </div>
-                        {template.name}
+                        <div>
+                          <div className="font-medium">{template.name}</div>
+                          <div className="text-xs text-slate-500 mt-0.5">{getTemplateDescription(template.name)}</div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-slate-600">

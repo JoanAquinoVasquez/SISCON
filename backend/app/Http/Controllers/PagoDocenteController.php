@@ -721,12 +721,27 @@ class PagoDocenteController extends Controller
         }
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'estado' => 'required|in:pendiente,en_proceso,completado,rechazado',
-            'file' => 'nullable|file|max:10240'
+            'estado' => 'required|in:pendiente,en_proceso,completado,rechazado,sin_efecto',
+            'file' => 'nullable|file|max:10240',
+            'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Handle motivo_sin_efecto on related expedientes
+        if ($request->estado === 'sin_efecto') {
+            foreach ($pago->expedientes as $expediente) {
+                $expediente->update(['motivo_sin_efecto' => $request->motivo_sin_efecto]);
+            }
+        } else {
+            // Clear motivo when changing away from sin_efecto
+            foreach ($pago->expedientes as $expediente) {
+                if ($expediente->motivo_sin_efecto) {
+                    $expediente->update(['motivo_sin_efecto' => null]);
+                }
+            }
         }
 
         $pago->estado = $request->estado;

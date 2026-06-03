@@ -42,6 +42,7 @@ class Expediente extends Model
         'user_id',
         'estado',
         'documento_respuesta_url',
+        'motivo_sin_efecto',
     ];
 
     protected $casts = [

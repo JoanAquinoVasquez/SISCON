@@ -195,7 +195,8 @@ export default function PagosDocentesList() {
   const [estadoForm, setEstadoForm] = useState({
     id: 0,
     estado: 'pendiente',
-    file: null as File | null
+    file: null as File | null,
+    motivo_sin_efecto: ''
   });
 
   const fetchPagos = async () => {
@@ -265,6 +266,9 @@ export default function PagosDocentesList() {
       if (estadoForm.file) {
         formData.append('file', estadoForm.file);
       }
+      if (estadoForm.estado === 'sin_efecto') {
+        formData.append('motivo_sin_efecto', estadoForm.motivo_sin_efecto);
+      }
 
       await axios.post(`/pagos-docentes/${estadoForm.id}/actualizar-estado`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -272,7 +276,7 @@ export default function PagosDocentesList() {
 
       toast.success('Estado actualizado correctamente');
       setIsEstadoOpen(false);
-      setEstadoForm({ id: 0, estado: 'pendiente', file: null });
+      setEstadoForm({ id: 0, estado: 'pendiente', file: null, motivo_sin_efecto: '' });
       fetchPagos();
     } catch (error: any) {
       console.error(error);
@@ -451,6 +455,8 @@ export default function PagosDocentesList() {
         return <Badge variant="success">Finalizado</Badge>;
       case 'rechazado':
         return <Badge variant="destructive">Rechazado</Badge>;
+      case 'sin_efecto':
+        return <Badge variant="outline">Sin Efecto</Badge>;
       default:
         return <Badge variant="outline">{estado}</Badge>;
     }
@@ -525,6 +531,7 @@ export default function PagosDocentesList() {
             <SelectItem value="en_proceso"><span>En Proceso</span></SelectItem>
             <SelectItem value="completado"><span>Completado</span></SelectItem>
             <SelectItem value="rechazado"><span>Rechazado</span></SelectItem>
+            <SelectItem value="sin_efecto"><span>Sin Efecto</span></SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -650,7 +657,7 @@ export default function PagosDocentesList() {
                           <Pencil className="mr-2 h-4 w-4" /> Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
-                          setEstadoForm({ id: pago.id, estado: pago.estado, file: null });
+                          setEstadoForm({ id: pago.id, estado: pago.estado, file: null, motivo_sin_efecto: '' });
                           setIsEstadoOpen(true);
                         }}>
                           <CheckCircle className="mr-2 h-4 w-4" /> Cambiar estado
@@ -915,8 +922,28 @@ export default function PagosDocentesList() {
                 <option value="en_proceso">En Proceso</option>
                 <option value="completado">Completado</option>
                 <option value="rechazado">Rechazado</option>
+                <option value="sin_efecto">Sin Efecto</option>
               </select>
             </div>
+
+            {estadoForm.estado === 'sin_efecto' && (
+              <div className="space-y-2">
+                <label htmlFor="motivo_sin_efecto_pago" className="text-sm font-semibold text-gray-700">
+                  Motivo <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="motivo_sin_efecto_pago"
+                  value={estadoForm.motivo_sin_efecto}
+                  onChange={(e) => setEstadoForm({ ...estadoForm, motivo_sin_efecto: e.target.value })}
+                  placeholder="Describa el motivo por el cual el pago queda sin efecto..."
+                  className="flex w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[100px] resize-y"
+                  maxLength={1000}
+                />
+                <p className="text-[11px] text-gray-500 text-right">
+                  {estadoForm.motivo_sin_efecto.length}/1000 caracteres
+                </p>
+              </div>
+            )}
 
             {estadoForm.estado === 'completado' && (
               <div className="space-y-3">
@@ -990,7 +1017,7 @@ export default function PagosDocentesList() {
             </Button>
             <Button
               onClick={handleSaveEstado}
-              disabled={loadingEstado}
+              disabled={loadingEstado || (estadoForm.estado === 'sin_efecto' && !estadoForm.motivo_sin_efecto.trim())}
               className="px-6 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
             >
               {loadingEstado ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

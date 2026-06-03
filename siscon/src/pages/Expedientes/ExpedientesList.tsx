@@ -35,6 +35,7 @@ interface Expediente {
   curso_nombre: string | null;
   periodo: string | null;
   estado: string;
+  motivo_sin_efecto?: string | null;
   documento_respuesta_url?: string | null;
   estado_pago: string | null;
   pago_docente_id: number | null;
@@ -72,7 +73,8 @@ export default function ExpedientesList() {
   const [estadoForm, setEstadoForm] = useState({
     id: 0,
     estado: 'pendiente',
-    file: null as File | null
+    file: null as File | null,
+    motivo_sin_efecto: ''
   });
 
   const debouncedSearch = useDebounce(search, 500);
@@ -174,7 +176,8 @@ export default function ExpedientesList() {
     setEstadoForm({
       id: exp.id,
       estado: exp.estado || 'pendiente',
-      file: null
+      file: null,
+      motivo_sin_efecto: exp.motivo_sin_efecto || ''
     });
     setIsEstadoOpen(true);
   };
@@ -187,6 +190,9 @@ export default function ExpedientesList() {
       formData.append('estado', estadoForm.estado);
       if (estadoForm.file) {
         formData.append('file', estadoForm.file);
+      }
+      if (estadoForm.estado === 'sin_efecto') {
+        formData.append('motivo_sin_efecto', estadoForm.motivo_sin_efecto);
       }
 
       await axios.post(`/expedientes/${estadoForm.id}/estado`, formData, {
@@ -211,6 +217,7 @@ export default function ExpedientesList() {
       en_proceso: { variant: 'secondary', label: 'En Proceso' },
       completado: { variant: 'success', label: 'Completado' },
       rechazado: { variant: 'destructive', label: 'Rechazado' },
+      sin_efecto: { variant: 'outline', label: 'Sin Efecto' },
     };
     const config = variants[currentState] || variants.pendiente;
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -267,6 +274,7 @@ export default function ExpedientesList() {
             <option value="en_proceso">En Proceso</option>
             <option value="completado">Completado</option>
             <option value="rechazado">Rechazado</option>
+            <option value="sin_efecto">Sin Efecto</option>
           </select>
         </div>
       </Card>
@@ -394,6 +402,11 @@ export default function ExpedientesList() {
                     )}
                     <TableCell>
                       {getEstadoBadge(exp.estado)}
+                      {exp.estado === 'sin_efecto' && exp.motivo_sin_efecto && (
+                        <div className="text-[10px] text-muted-foreground mt-0.5 max-w-[180px] truncate" title={exp.motivo_sin_efecto}>
+                          {exp.motivo_sin_efecto}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-right action-buttons">
                       {/* Dropdown */}
@@ -488,6 +501,12 @@ export default function ExpedientesList() {
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estado</h3>
                   <div className="mb-1">{getEstadoBadge(selectedExpediente.estado)}</div>
+                  {selectedExpediente.estado === 'sin_efecto' && selectedExpediente.motivo_sin_efecto && (
+                    <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded-md">
+                      <p className="text-xs font-semibold text-gray-500 mb-0.5">Motivo:</p>
+                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{selectedExpediente.motivo_sin_efecto}</p>
+                    </div>
+                  )}
                   {selectedExpediente.documento_respuesta_url && (
                     <a
                       href={selectedExpediente.documento_respuesta_url}
@@ -610,8 +629,28 @@ export default function ExpedientesList() {
                 <option value="en_proceso">En Proceso</option>
                 <option value="completado">Completado</option>
                 <option value="rechazado">Rechazado</option>
+                <option value="sin_efecto">Sin Efecto</option>
               </select>
             </div>
+
+            {estadoForm.estado === 'sin_efecto' && (
+              <div className="space-y-2">
+                <label htmlFor="motivo_sin_efecto" className="text-sm font-semibold text-gray-700">
+                  Motivo <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="motivo_sin_efecto"
+                  value={estadoForm.motivo_sin_efecto}
+                  onChange={(e) => setEstadoForm({ ...estadoForm, motivo_sin_efecto: e.target.value })}
+                  placeholder="Describa el motivo por el cual el expediente queda sin efecto..."
+                  className="flex w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-h-[100px] resize-y"
+                  maxLength={1000}
+                />
+                <p className="text-[11px] text-gray-500 text-right">
+                  {estadoForm.motivo_sin_efecto.length}/1000 caracteres
+                </p>
+              </div>
+            )}
 
             {estadoForm.estado === 'completado' && (
               <div className="space-y-3">
@@ -685,7 +724,7 @@ export default function ExpedientesList() {
             </Button>
             <Button
               onClick={handleSaveEstado}
-              disabled={loadingEstado || (estadoForm.estado === 'completado' && !estadoForm.file)}
+              disabled={loadingEstado || (estadoForm.estado === 'completado' && !estadoForm.file) || (estadoForm.estado === 'sin_efecto' && !estadoForm.motivo_sin_efecto.trim())}
               className="px-6 rounded-lg bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"
             >
               {loadingEstado ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

@@ -121,6 +121,7 @@ class ExpedienteController extends Controller
                 'numero_oficio_direccion' => $expediente->tipo_asunto === 'devolucion' ? ($expediente->devolucion->numero_oficio_direccion ?? null) : null,
                 'created_at' => $expediente->created_at,
                 'updated_at' => $expediente->updated_at,
+                'motivo_sin_efecto' => $expediente->motivo_sin_efecto,
             ];
         });
 
@@ -774,7 +775,8 @@ class ExpedienteController extends Controller
         $validator = Validator::make($request->all(), [
             'estado' => 'required|string',
             'documento_respuesta_url' => 'nullable|string',
-            'file' => 'nullable|file|max:10240'
+            'file' => 'nullable|file|max:10240',
+            'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
@@ -782,6 +784,14 @@ class ExpedienteController extends Controller
         }
 
         $data = ['estado' => $request->estado];
+
+        // Handle motivo_sin_efecto
+        if ($request->estado === 'sin_efecto') {
+            $data['motivo_sin_efecto'] = $request->motivo_sin_efecto;
+        } else {
+            // Clear motivo when changing away from sin_efecto
+            $data['motivo_sin_efecto'] = null;
+        }
 
         if ($request->hasFile('file')) {
             $file = $request->file('file');

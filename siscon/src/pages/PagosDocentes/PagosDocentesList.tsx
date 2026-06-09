@@ -406,6 +406,46 @@ export default function PagosDocentesList() {
     }
   };
 
+  // Generar términos de referencia
+  const [isGeneratingTerminos, setIsGeneratingTerminos] = useState(false);
+  const handleGenerateTerminos = async (id: number) => {
+    setIsGeneratingTerminos(true);
+    try {
+      const response = await axios.post(
+        `/pagos-docentes/${id}/generar-terminos`,
+        {},
+        { responseType: 'blob' }
+      );
+
+      // Extraer nombre de archivo del header Content-Disposition
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `Terminos_Referencia_${id}.docx`; // Fallback
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = decodeURIComponent(filenameMatch[1]);
+        }
+      }
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Términos de Referencia generados exitosamente');
+    } catch (error: any) {
+      console.error('Error al generar términos de referencia:', error);
+      toast.error('Error al generar los términos de referencia');
+    } finally {
+      setIsGeneratingTerminos(false);
+    }
+  };
+
   // Exportar Excel
   const [isExporting, setIsExporting] = useState(false);
   const handleExportExcel = async () => {
@@ -793,6 +833,15 @@ export default function PagosDocentesList() {
                       canGenerate: selectedPago.estado === 'pendiente' && !(selectedPago.grado_nombre === 'Segunda Especialidad Profesional' && selectedPago.facultad_codigo === 'FE'),
                       generateAction: () => handleGenerateResolucionAceptacion(selectedPago.id),
                       isGenerating: isGeneratingResolucionAceptacion
+                    },
+                    {
+                      label: "Términos de Referencia",
+                      value: "Generar TDR",
+                      show: selectedPago.docente?.tipo_docente?.includes('externo') && 
+                            !!selectedPago.numero_resolucion_aprobacion,
+                      canGenerate: false,
+                      generateAction: () => handleGenerateTerminos(selectedPago.id),
+                      isGenerating: isGeneratingTerminos
                     },
                     {
                       label: "Conf. Facultad",

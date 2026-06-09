@@ -198,6 +198,14 @@ class DocumentGeneratorService
         $template->setValue('PROMOCION', $pago->periodo); // PROMOCION es el periodo
         $template->setValue('NUMERO_HORAS', $pago->numero_horas);
         $template->setValue('COSTO_POR_HORA', number_format((float) $pago->costo_por_hora, 2));
+        
+        $costoPorHoraLetras = $this->convertirNumeroALetras((float) $pago->costo_por_hora);
+        if ($costoPorHoraLetras) {
+            $costoPorHoraLetras = mb_strtolower($costoPorHoraLetras, 'UTF-8');
+            $costoPorHoraLetras = mb_strtoupper(mb_substr($costoPorHoraLetras, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($costoPorHoraLetras, 1, null, 'UTF-8');
+        }
+        $template->setValue('COSTO_POR_HORA_LETRAS', $costoPorHoraLetras);
+
         $template->setValue('IMPORTE_TOTAL', number_format((float) $pago->importe_total, 2));
         $template->setValue('IMPORTE_LETRAS', $pago->importe_letras);
         $template->setValue('FECHAS', $fechasEnsenanza); // FECHAS en lugar de FECHAS_ENSENANZA
@@ -249,6 +257,7 @@ class DocumentGeneratorService
         //Importe y costo
         $template->setValue('IMPORTE', number_format((float) $pago->importe_total, 2));
         $template->setValue('COSTO_X_HORA', number_format((float) $pago->costo_por_hora, 2));
+        $template->setValue('COSTO_X_HORA_LETRAS', $costoPorHoraLetras);
 
         // Convertir importe en letras a formato de oración (primera letra mayúscula, resto minúsculas)
         $importeLetras = $pago->importe_letras;
@@ -468,5 +477,131 @@ class DocumentGeneratorService
 
         $ultimos = array_pop($dias);
         return implode(', ', $dias) . ' y ' . $ultimos;
+    }
+
+    /**
+     * Convierte un número decimal a letras en español (formato moneda)
+     */
+    private function convertirNumeroALetras(float $numero): string
+    {
+        if ($numero === 0.0) {
+            return 'CERO SOLES';
+        }
+        if ($numero < 0) {
+            return 'NÚMERO NEGATIVO';
+        }
+
+        $parteEntera = (int) floor($numero);
+        $parteDecimal = (int) round(round($numero - $parteEntera, 2) * 100);
+
+        $unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
+        $decenas = ['', 'DIEZ', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
+        $especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+        $centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
+
+        $convertirGrupo = function (int $num) use ($unidades, $decenas, $especiales, $centenas) {
+            if ($num === 0) return '';
+            if ($num === 100) return 'CIEN';
+
+            $centena = (int) floor($num / 100);
+            $resto = $num % 100;
+            $decena = (int) floor($resto / 10);
+            $unidad = $resto % 10;
+
+            $resultado = $centenas[$centena];
+
+            if ($resto >= 10 && $resto < 20) {
+                $resultado .= ($resultado ? ' ' : '') . $especiales[$resto - 10];
+            } else {
+                if ($decena > 0) {
+                    $resultado .= ($resultado ? ' ' : '') . $decenas[$decena];
+                    if ($unidad > 0) {
+                        $resultado .= ($decena === 2 ? '' : ' Y ') . $unidades[$unidad];
+                    }
+                } elseif ($unidad > 0) {
+                    $resultado .= ($resultado ? ' ' : '') . $unidades[$unidad];
+                }
+            }
+
+            return $resultado;
+        };
+
+        $resultado = '';
+
+        // Millones
+        $millones = (int) floor($parteEntera / 1000000);
+        if ($millones > 0) {
+            if ($millones === 1) {
+                $resultado .= 'UN MILLÓN ';
+            } else {
+                $resultado .= $convertirGrupo($millones) . ' MILLONES ';
+            }
+        }
+
+        // Miles
+        $miles = (int) floor(($parteEntera % 1000000) / 1000);
+        if ($miles > 0) {
+            if ($miles === 1) {
+                $resultado .= 'MIL ';
+            } else {
+                $resultado .= $convertirGrupo($miles) . ' MIL ';
+            }
+        }
+
+        // Unidades
+        $unidadesNum = $parteEntera % 1000;
+        if ($unidadesNum > 0) {
+            $resultado .= $convertirGrupo($unidadesNum);
+        }
+
+        $resultado = trim($resultado);
+        $resultado .= ' CON ' . str_pad((string)$parteDecimal, 2, '0', STR_PAD_LEFT) . '/100 SOLES';
+
+        return $resultado;
+    }
+
+    /**
+     * Genera términos de referencia para un pago docente
+     */
+    public function generateTerminosReferencia(PagoDocente $pago): string
+    {
+        // Cargar relaciones necesarias
+        $pago->load([
+            'docente',
+            'curso.semestres.programa.grado',
+            'curso.semestres.programa.facultad',
+            'curso.semestres.programa.coordinadores'
+        ]);
+
+        $templateName = 'PLANTILLA TÉRMINOS DE REFERENCIA.docx';
+        $templatePath = storage_path('templates/' . $templateName);
+
+        if (!file_exists($templatePath)) {
+            throw new \Exception("Plantilla no encontrada: {$templateName}");
+        }
+
+        // Crear procesador de plantilla
+        $template = new TemplateProcessor($templatePath);
+
+        // Reemplazar variables
+        $this->replaceVariables($template, $pago);
+
+        // Generar nombre de archivo
+        $docenteNombre = $pago->docente->nombres . ' ' . $pago->docente->apellido_paterno;
+        $fileName = 'TDR ' . $docenteNombre . ' ' . $pago->periodo . '.docx';
+        
+        // Limpiar nombre de archivo (reemplazar caracteres no permitidos)
+        $fileName = preg_replace('/[^A-Za-z0-9_\-\. ]/', '', $fileName);
+        $outputPath = storage_path('app/temp/' . $fileName);
+
+        // Asegurar que el directorio existe
+        if (!file_exists(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        // Guardar documento
+        $template->saveAs($outputPath);
+
+        return $outputPath;
     }
 }

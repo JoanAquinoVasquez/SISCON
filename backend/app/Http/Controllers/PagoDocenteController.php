@@ -666,6 +666,46 @@ class PagoDocenteController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Genera y descarga el documento de términos de referencia
+     */
+    public function generateTerminosReferencia(string $id)
+    {
+        $pago = PagoDocente::with('docente')->find($id);
+
+        if (!$pago) {
+            return response()->json(['message' => 'Pago no encontrado'], 404);
+        }
+
+        // Validación de condiciones
+        $tipoDocente = $pago->docente->tipo_docente ?? '';
+        if (!str_contains($tipoDocente, 'externo')) {
+            return response()->json(['message' => 'Solo se pueden generar términos de referencia para docentes externos.'], 400);
+        }
+
+        if (empty($pago->numero_resolucion_aprobacion)) {
+            return response()->json(['message' => 'El pago debe contar con el número de resolución de aprobación registrado.'], 400);
+        }
+
+        try {
+            $service = new DocumentGeneratorService();
+            $filePath = $service->generateTerminosReferencia($pago);
+            $fileName = basename($filePath);
+
+            return response()->file($filePath, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition' => "attachment; filename*=UTF-8''" . rawurlencode($fileName),
+                'Access-Control-Expose-Headers' => 'Content-Disposition'
+            ])->deleteFileAfterSend(true);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al generar los términos de referencia',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Exportar pagos a Excel
      */

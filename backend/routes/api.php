@@ -146,6 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('pagos-docentes/{id}/generar-resolucion', [PagoDocenteController::class, 'generateResolucion']);
     Route::post('pagos-docentes/{id}/generar-resolucion-aceptacion', [PagoDocenteController::class, 'generateResolucionAceptacion']);
     Route::post('pagos-docentes/{id}/generar-oficio', [PagoDocenteController::class, 'generateOficioContabilidad']);
+    Route::post('pagos-docentes/{id}/generar-terminos', [PagoDocenteController::class, 'generateTerminosReferencia']);
     Route::get('pagos-docentes/exportar-excel', [PagoDocenteController::class, 'exportExcel']);
     Route::post('pagos-docentes/{id}/actualizar-estado', [PagoDocenteController::class, 'actualizarEstado']);
     Route::post('pagos-docentes/{id}/enviar-sheets', [PagoDocenteController::class, 'enviarASheets']);

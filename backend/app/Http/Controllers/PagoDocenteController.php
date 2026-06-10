@@ -255,6 +255,8 @@ class PagoDocenteController extends Controller
             'oficio_direccion_exp_docentes_url' => 'nullable|url',
             'numero_oficio_presentacion_direccion' => 'nullable|string',
             'numero_oficio_presentacion_direccion_url' => 'nullable|url',
+            'numero_informe_final' => 'nullable|string',
+            'numero_informe_final_url' => 'nullable|url',
         ]);
 
         if ($validator->fails()) {

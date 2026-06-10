@@ -826,9 +826,8 @@ export default function PagoDocenteForm() {
                 <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wider mb-4">
                   ✅ Documentos de Conformidad e Informe
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {/* El Informe Final ahora encabeza este grupo */}
-                  {/* Oficio Conformidad Dirección: NO mostrar para Segunda Especialidad */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  {/* El Oficio Conformidad Dirección: NO mostrar para Segunda Especialidad */}
                   {datosCurso.grado_nombre !== 'Segunda Especialidad Profesional' && (
                     <DocumentField
                       label="Oficio Conformidad Dirección"
@@ -861,17 +860,17 @@ export default function PagoDocenteForm() {
                       : setDocExterno({ ...docExterno, numero_oficio_conformidad_coordinador_url: v })}
                   />
 
+                  <DocumentField
+                    label="Informe Final Docente"
+                    placeholder="001-JEAV"
+                    value={numeroInformeFinal}
+                    onChange={setNumeroInformeFinal}
+                    urlValue={numeroInformeFinalUrl}
+                    onUrlChange={setNumeroInformeFinalUrl}
+                  />
                 </div>
                 {docente?.tipo_docente?.includes('externo') && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <DocumentField
-                      label="Informe Final"
-                      placeholder="001-JEAV"
-                      value={numeroInformeFinal}
-                      onChange={setNumeroInformeFinal}
-                      urlValue={numeroInformeFinalUrl}
-                      onUrlChange={setNumeroInformeFinalUrl}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <DocumentField
                       label="Recibo por Honorario"
                       placeholder="E001-10"

@@ -24,14 +24,21 @@ class DocumentGeneratorService
 
         // Determinar plantilla según tipo de docente
         $tipoDocente = $pago->docente->tipo_docente;
-        if ($pago->periodo === '2025-I' && $tipoDocente === 'interno') {
-            $templateName = 'Resoluciones Plantilla DI 2025.docx';
-        } elseif ($pago->periodo === '2025-I' && $tipoDocente === 'externo') {
-            $templateName = 'Resoluciones Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'interno') {
-            $templateName = 'Resolucion Plantilla DI 2024.docx';
-        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'externo') {
-            $templateName = 'Resolucion Plantilla DE 2024.docx';
+        $templateName = '';
+        if ($pago->periodo === '2025-I') {
+            if ($tipoDocente === 'interno_enfermeria') {
+                $templateName = 'Resoluciones Plantilla DI FE 2025.docx';
+            } elseif (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Resoluciones Plantilla DI 2025.docx';
+            } else {
+                $templateName = 'Resoluciones Plantilla DE 2025.docx';
+            }
+        } elseif ($pago->periodo === '2024-II') {
+            if (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Resolucion Plantilla DI 2024.docx';
+            } else {
+                $templateName = 'Resolucion Plantilla DE 2024.docx';
+            }
         }
 
         $templatePath = storage_path('templates/' . $templateName);
@@ -76,14 +83,19 @@ class DocumentGeneratorService
 
         // Determinar plantilla según tipo de docente
         $tipoDocente = $pago->docente->tipo_docente;
-        if ($pago->periodo === '2025-I' && $tipoDocente === 'interno') {
-            $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
-        } elseif ($pago->periodo === '2025-I' && $tipoDocente === 'externo') {
-            $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
-        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'interno') {
-            $templateName = 'Ofic. Conta Plantilla DI 2024.docx';
-        } elseif ($pago->periodo === '2024-II' && $tipoDocente === 'externo') {
-            $templateName = 'Ofic. Conta Plantilla DE 2024.docx';
+        $templateName = '';
+        if ($pago->periodo === '2025-I') {
+            if (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
+            } else {
+                $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
+            }
+        } elseif ($pago->periodo === '2024-II') {
+            if (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Ofic. Conta Plantilla DI 2024.docx';
+            } else {
+                $templateName = 'Ofic. Conta Plantilla DE 2024.docx';
+            }
         }
 
         $templatePath = storage_path('templates/' . $templateName);
@@ -267,6 +279,17 @@ class DocumentGeneratorService
         }
         $template->setValue('IMPORTE_EN_LETRAS', $importeLetras);
         $template->setValue('N_HORAS', number_format((float) $pago->numero_horas, 0));
+
+        // Variables de enfermería (horas teóricas y prácticas con sus costos)
+        $horasTeoricas = (float) $pago->horas_teoricas;
+        $horasTeoricasFormatted = ($horasTeoricas == (int)$horasTeoricas) ? number_format($horasTeoricas, 0) : number_format($horasTeoricas, 2);
+        $template->setValue('N_HORAS_TEORICAS', $horasTeoricasFormatted);
+        $template->setValue('COSTO_X_HORA_TEORICA', number_format((float) $pago->costo_hora_teorica, 2));
+
+        $horasPracticas = (float) $pago->horas_practicas;
+        $horasPracticasFormatted = ($horasPracticas == (int)$horasPracticas) ? number_format($horasPracticas, 0) : number_format($horasPracticas, 2);
+        $template->setValue('N_HORAS_PRACTICAS', $horasPracticasFormatted);
+        $template->setValue('COSTO_X_HORA_PRACTICA', number_format((float) $pago->costo_hora_practica, 2));
 
         // Variables solo para externos (incluye enfermería)
         if ($pago->docente->tipo_docente === 'externo' || $pago->docente->tipo_docente === 'externo_enfermeria') {

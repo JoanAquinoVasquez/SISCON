@@ -34,6 +34,8 @@ const getTemplateDescription = (name: string): string => {
   switch (name) {
     case 'Resoluciones Plantilla DI 2025.docx':
       return 'Resolución para Docente Interno (Periodo 2025-I)';
+    case 'Resoluciones Plantilla DI FE 2025.docx':
+      return 'Resolución para Docente Interno de Enfermería (Periodo 2025-I)';
     case 'Resoluciones Plantilla DE 2025.docx':
       return 'Resolución para Docente Externo (Periodo 2025-I)';
     case 'Resolucion Plantilla DI 2024.docx':

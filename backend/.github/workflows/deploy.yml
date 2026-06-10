@@ -24,7 +24,9 @@ jobs:
             **/.env
             **/vendor/**
             **/node_modules/**
-            **/storage/**
+            **/storage/app/**
+            **/storage/framework/**
+            **/storage/logs/**
             **/tests/**
             **/phpunit.xml
             **/.editorconfig

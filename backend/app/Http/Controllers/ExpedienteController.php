@@ -109,6 +109,7 @@ class ExpedienteController extends Controller
                 'periodo' => $programa->periodo ?? null,
                 'estado' => $expediente->estado,
                 'documento_respuesta_url' => $expediente->documento_respuesta_url,
+                'documento_respuesta_nombre' => $expediente->documento_respuesta_nombre,
                 'estado_pago' => $expediente->tipo_asunto === 'devolucion'
                     ? ($expediente->devolucion->estado ?? null)
                     : ($expediente->pagoDocente->estado ?? null),
@@ -802,6 +803,7 @@ class ExpedienteController extends Controller
 
             if ($link) {
                 $data['documento_respuesta_url'] = $link;
+                $data['documento_respuesta_nombre'] = $file->getClientOriginalName();
             } else {
                 return response()->json(['message' => 'Error al subir archivo a Google Drive'], 500);
             }

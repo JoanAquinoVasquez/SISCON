@@ -69,6 +69,7 @@ class DevolucionController extends Controller
                 'numero_oficio_direccion' => $devolucion->numero_oficio_direccion,
                 'expediente_numero' => $devolucion->expedientes->first()?->numero_documento,
                 'documento_respuesta_url' => $devolucion->expedientes->first()?->documento_respuesta_url,
+                'documento_respuesta_nombre' => $devolucion->expedientes->first()?->documento_respuesta_nombre,
                 'estado' => $devolucion->estado,
                 'estado_label' => $devolucion->estado_label,
                 'observaciones' => $devolucion->observaciones,
@@ -235,7 +236,10 @@ class DevolucionController extends Controller
                     $driveLink = $link;
                     if ($expedienteIds->isNotEmpty()) {
                         \App\Models\Expediente::whereIn('id', $expedienteIds)
-                            ->update(['documento_respuesta_url' => $link]);
+                            ->update([
+                                'documento_respuesta_url' => $link,
+                                'documento_respuesta_nombre' => $file->getClientOriginalName()
+                            ]);
                     }
                 } else {
                     $driveError = 'No se pudo subir el archivo a Google Drive.';

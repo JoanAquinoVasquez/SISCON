@@ -42,6 +42,7 @@ class Expediente extends Model
         'user_id',
         'estado',
         'documento_respuesta_url',
+        'documento_respuesta_nombre',
         'motivo_sin_efecto',
     ];
 

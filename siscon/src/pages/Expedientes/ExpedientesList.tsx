@@ -37,6 +37,7 @@ interface Expediente {
   estado: string;
   motivo_sin_efecto?: string | null;
   documento_respuesta_url?: string | null;
+  documento_respuesta_nombre?: string | null;
   estado_pago: string | null;
   pago_docente_id: number | null;
   devolucion_id?: number | null;
@@ -512,10 +513,11 @@ export default function ExpedientesList() {
                       href={selectedExpediente.documento_respuesta_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline inline-flex items-center"
+                      className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 mt-1 max-w-[200px] truncate"
+                      title={selectedExpediente.documento_respuesta_nombre || 'Ver doc. respuesta'}
                     >
-                      <Eye className="w-3 h-3 mr-1" />
-                      Ver doc. respuesta
+                      <Eye className="w-3.5 h-3.5 shrink-0" />
+                      <span>{selectedExpediente.documento_respuesta_nombre || 'Ver doc. respuesta'}</span>
                     </a>
                   )}
                 </div>

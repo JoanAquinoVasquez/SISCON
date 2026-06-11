@@ -141,6 +141,7 @@ class PagoDocenteController extends Controller
                 'facultad_codigo' => $programa->facultad->codigo ?? null,
                 'grado_nombre' => $programa->grado->nombre ?? null,
                 'documento_respuesta_url' => $pago->documento_respuesta_url,
+                'documento_respuesta_nombre' => $pago->documento_respuesta_nombre,
             ];
         });
 
@@ -799,7 +800,10 @@ class PagoDocenteController extends Controller
 
             if ($link) {
                 foreach ($pago->expedientes as $expediente) {
-                    $expediente->update(['documento_respuesta_url' => $link]);
+                    $expediente->update([
+                        'documento_respuesta_url' => $link,
+                        'documento_respuesta_nombre' => $file->getClientOriginalName()
+                    ]);
                 }
             }
         }

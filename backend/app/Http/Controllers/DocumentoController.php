@@ -34,6 +34,7 @@ class DocumentoController extends Controller
                 ->join('grados', 'programas.grado_id', '=', 'grados.id')
                 ->select(
                     'pagos_docentes.id as pago_id',
+                    DB::raw('NULL as devolucion_id'),
                     "pagos_docentes.{$config['col']} as numero",
                     "pagos_docentes.{$config['url']} as url",
                     DB::raw("'$typeKey' as tipo_codigo"),
@@ -55,6 +56,42 @@ class DocumentoController extends Controller
 
             $queries[] = $query;
         }
+
+        // Add query for response oficios from expedientes table
+        $queryExpedientes = DB::table('expedientes')
+            ->leftJoin('docentes', 'expedientes.docente_id', '=', 'docentes.id')
+            ->leftJoin('semestres', 'expedientes.semestre_id', '=', 'semestres.id')
+            ->leftJoin('programas', function ($join) {
+                $join->on('semestres.programa_id', '=', 'programas.id')
+                     ->orOn('expedientes.programa_id', '=', 'programas.id');
+            })
+            ->leftJoin('grados', 'programas.grado_id', '=', 'grados.id')
+            ->select(
+                'expedientes.pago_docente_id as pago_id',
+                'expedientes.devolucion_id as devolucion_id',
+                DB::raw("COALESCE(expedientes.documento_respuesta_nombre, 'Oficio Respuesta') as numero"),
+                'expedientes.documento_respuesta_url as url',
+                DB::raw("'respuesta' as tipo_codigo"),
+                DB::raw("'Oficio Respuesta' as tipo_label"),
+                'expedientes.updated_at as fecha_registro',
+                DB::raw("COALESCE(NULLIF(TRIM(CONCAT(COALESCE(docentes.titulo_profesional, ''), ' ', COALESCE(docentes.nombres, ''), ' ', COALESCE(docentes.apellido_paterno, ''), ' ', COALESCE(docentes.apellido_materno, ''))), ''), expedientes.persona_devolucion, '') as docente_nombre"),
+                'grados.nombre as grado_nombre',
+                'programas.nombre as programa_nombre',
+                'programas.periodo as periodo'
+            )
+            ->whereNotNull('expedientes.documento_respuesta_url')
+            ->where('expedientes.documento_respuesta_url', '!=', '')
+            ->distinct();
+
+        if ($search) {
+            $queryExpedientes->where(function ($q) use ($search) {
+                $q->where('expedientes.documento_respuesta_nombre', 'like', "%{$search}%")
+                  ->orWhere('expedientes.numero_documento', 'like', "%{$search}%")
+                  ->orWhere('expedientes.persona_devolucion', 'like', "%{$search}%");
+            });
+        }
+
+        $queries[] = $queryExpedientes;
 
         // Union all queries
         $finalQuery = array_shift($queries);

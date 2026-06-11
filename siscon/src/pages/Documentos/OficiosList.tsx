@@ -10,7 +10,8 @@ import { Search, Loader2, FileText, Eye, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Oficio {
-    pago_id: number;
+    pago_id: number | null;
+    devolucion_id?: number | null;
     numero: string;
     url: string | null;
     tipo_codigo: string;
@@ -176,8 +177,16 @@ export default function OficiosList() {
                                             </TableCell>
                                             <TableCell>{oficio.docente_nombre}</TableCell>
                                             <TableCell>
-                                                <div className="text-sm">{oficio.grado_nombre} en {oficio.programa_nombre}</div>
-                                                <div className="text-xs text-muted-foreground">{oficio.periodo}</div>
+                                                {oficio.grado_nombre || oficio.programa_nombre ? (
+                                                    <div className="text-sm">
+                                                        {oficio.grado_nombre || ''}
+                                                        {oficio.grado_nombre && oficio.programa_nombre ? ' en ' : ''}
+                                                        {oficio.programa_nombre || ''}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-sm text-muted-foreground">-</div>
+                                                )}
+                                                {oficio.periodo && <div className="text-xs text-muted-foreground">{oficio.periodo}</div>}
                                             </TableCell>
                                             <TableCell>{formatDate(oficio.fecha_registro)}</TableCell>
                                             <TableCell className="text-right">
@@ -192,23 +201,31 @@ export default function OficiosList() {
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
                                                     )}
+                                                    {oficio.tipo_codigo !== 'respuesta' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => handleExport(oficio)}
+                                                            disabled={exportingId === oficio.pago_id}
+                                                            title="Exportar Word"
+                                                        >
+                                                            {exportingId === oficio.pago_id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <Download className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleExport(oficio)}
-                                                        disabled={exportingId === oficio.pago_id}
-                                                        title="Exportar Word"
-                                                    >
-                                                        {exportingId === oficio.pago_id ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <Download className="h-4 w-4" />
-                                                        )}
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => navigate(`/pagos-docentes/${oficio.pago_id}/editar`)}
+                                                        onClick={() => {
+                                                            if (oficio.tipo_codigo === 'respuesta' && oficio.devolucion_id) {
+                                                                navigate(`/devoluciones?search=${encodeURIComponent(oficio.docente_nombre || '')}`);
+                                                            } else if (oficio.pago_id) {
+                                                                navigate(`/pagos-docentes/${oficio.pago_id}/editar`);
+                                                            }
+                                                        }}
                                                         title="Ver trámite"
                                                     >
                                                         Ver Trámite

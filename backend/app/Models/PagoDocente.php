@@ -17,6 +17,7 @@ class PagoDocente extends Model
         'es_interno',
         'es_externo',
         'documento_respuesta_url',
+        'documento_respuesta_nombre',
     ];
     
     protected static function booted()
@@ -151,6 +152,11 @@ class PagoDocente extends Model
     public function getDocumentoRespuestaUrlAttribute()
     {
         return $this->expedientes->first()?->documento_respuesta_url;
+    }
+
+    public function getDocumentoRespuestaNombreAttribute()
+    {
+        return $this->expedientes->first()?->documento_respuesta_nombre;
     }
 
     public function expedientes()

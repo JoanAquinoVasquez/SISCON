@@ -20,7 +20,7 @@ class PagoDocenteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+        $query = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'expedientes']);
 
         // Search by docente name, DNI, or curso name
         // Search by multiple fields
@@ -140,6 +140,7 @@ class PagoDocenteController extends Controller
                 'updated_at' => $pago->updated_at,
                 'facultad_codigo' => $programa->facultad->codigo ?? null,
                 'grado_nombre' => $programa->grado->nombre ?? null,
+                'documento_respuesta_url' => $pago->documento_respuesta_url,
             ];
         });
 
@@ -206,7 +207,7 @@ class PagoDocenteController extends Controller
      */
     public function show($id)
     {
-        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])->findOrFail($id);
+        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'expedientes'])->findOrFail($id);
 
         // Obtener programa que coincida con el periodo del pago, o el primero por defecto
         $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
@@ -802,6 +803,8 @@ class PagoDocenteController extends Controller
                 }
             }
         }
+
+        $pago->load('expedientes');
 
         // Sync with Google Sheets
         try {

@@ -138,6 +138,7 @@ interface PagoDocente {
   numero_expediente_nota_pago_url?: string;
   facultad_codigo?: string;
   grado_nombre?: string;
+  documento_respuesta_url?: string;
   docente?: {
     titulo_profesional?: string;
     nombres: string;
@@ -693,6 +694,11 @@ export default function PagosDocentesList() {
                         <DropdownMenuItem onClick={() => handleViewDetail(pago.id)}>
                           <Eye className="mr-2 h-4 w-4" /> Ver detalle
                         </DropdownMenuItem>
+                        {pago.estado === 'completado' && pago.documento_respuesta_url && (
+                          <DropdownMenuItem onClick={() => window.open(pago.documento_respuesta_url, '_blank')}>
+                            <FileText className="mr-2 h-4 w-4 text-blue-600" /> <span className="text-blue-600 font-medium">Ver archivo</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => navigate(`/pagos-docentes/${pago.id}/editar`)}>
                           <Pencil className="mr-2 h-4 w-4" /> Editar
                         </DropdownMenuItem>
@@ -874,6 +880,12 @@ export default function PagosDocentesList() {
                       value: selectedPago.numero_expediente_nota_pago,
                       action: () => handleViewOficioPagoContabilidad(selectedPago.numero_expediente_nota_pago_url || ''),
                       show: true
+                    },
+                    {
+                      label: "Sustento de Pago",
+                      value: selectedPago.documento_respuesta_url ? "Ver Archivo" : null,
+                      action: () => selectedPago.documento_respuesta_url && window.open(selectedPago.documento_respuesta_url, '_blank'),
+                      show: selectedPago.estado === 'completado' && !!selectedPago.documento_respuesta_url
                     }
                   ].map((doc, index) => {
                     // Si no tiene valor y no se puede generar, no mostrar (ocultar "Pendiente")

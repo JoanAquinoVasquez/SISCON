@@ -104,8 +104,8 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                         $costoHora = (float) $pago->costo_por_hora;
                         $montoTotal = (float) $pago->importe_total;
                         
-                        // EsSalud is only calculated for internal teachers
-                        $esInterno = $pago->docente && $pago->docente->tipo_docente === 'interno';
+                        // EsSalud is only calculated for internal teachers (regular and enfermeria)
+                        $esInterno = $pago->docente && in_array($pago->docente->tipo_docente, ['interno', 'interno_enfermeria']);
                         $essalud = $esInterno ? round($montoTotal * 0.09, 2) : '';
 
                         $this->rows[] = [

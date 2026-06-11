@@ -1,14 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from '../../lib/axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   BarChart3,
   Download,
@@ -17,6 +10,9 @@ import {
   Filter,
   GraduationCap,
   Calendar,
+  ChevronDown,
+  Search,
+  Check,
 } from 'lucide-react';
 
 interface Programa {
@@ -25,6 +21,127 @@ interface Programa {
   periodo: string;
   grado?: { id: number; nombre: string };
   facultad?: { id: number; nombre: string };
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+interface SearchableSelectProps {
+  label: string;
+  options: SelectOption[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  searchPlaceholder?: string;
+  icon?: React.ReactNode;
+}
+
+function SearchableSelect({
+  label,
+  options,
+  value,
+  onChange,
+  placeholder,
+  searchPlaceholder = 'Buscar...',
+  icon,
+}: SearchableSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Reset search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch('');
+    }
+  }, [isOpen]);
+
+  const selectedOption = options.find((opt) => opt.value === value);
+
+  const filteredOptions = options.filter((opt) =>
+    opt.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-2 relative" ref={containerRef}>
+      <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+        {icon}
+        {label}
+      </label>
+      
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 hover:bg-slate-50 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left shadow-sm"
+      >
+        <span className={selectedOption ? 'text-slate-800 font-medium truncate' : 'text-slate-400 truncate'}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 overflow-hidden animate-in fade-in duration-100">
+          {/* Search Input */}
+          <div className="relative border-b border-slate-100">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full pl-9 pr-4 py-2.5 text-sm border-0 focus:ring-0 text-slate-800 placeholder-slate-400 focus:outline-none bg-slate-50/50"
+              autoFocus
+            />
+          </div>
+
+          {/* Options List */}
+          <div className="max-h-60 overflow-y-auto py-1 divide-y divide-slate-50">
+            {filteredOptions.length === 0 ? (
+              <div className="px-4 py-3 text-sm text-slate-400 text-center">
+                No se encontraron resultados
+              </div>
+            ) : (
+              filteredOptions.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
+                      isSelected
+                        ? 'bg-blue-50/70 text-blue-700 font-semibold'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="truncate">{opt.label}</span>
+                    {isSelected && <Check className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ReportePrograma() {
@@ -172,56 +289,35 @@ export default function ReportePrograma() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Period Selector */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <Calendar className="h-4 w-4 text-blue-500" />
-                  Periodo
-                </label>
-                <Select
-                  value={selectedPeriodo}
-                  onValueChange={(value) => {
-                    setSelectedPeriodo(value);
-                    setSelectedPrograma(''); // Reset program when period changes
-                  }}
-                >
-                  <SelectTrigger id="periodo-select" className="bg-white">
-                    <SelectValue placeholder="Seleccionar periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__todos__">Todos los periodos</SelectItem>
-                    {periodos.map((periodo) => (
-                      <SelectItem key={periodo} value={periodo}>
-                        {periodo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SearchableSelect
+                label="Periodo"
+                placeholder="Seleccionar periodo"
+                searchPlaceholder="Buscar periodo..."
+                icon={<Calendar className="h-4 w-4 text-blue-500" />}
+                value={selectedPeriodo}
+                onChange={(value) => {
+                  setSelectedPeriodo(value);
+                  setSelectedPrograma(''); // Reset program when period changes
+                }}
+                options={[
+                  { value: '__todos__', label: 'Todos los periodos' },
+                  ...periodos.map((p) => ({ value: p, label: p })),
+                ]}
+              />
 
               {/* Program Selector */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                  <GraduationCap className="h-4 w-4 text-purple-500" />
-                  Programa
-                </label>
-                <Select
-                  value={selectedPrograma}
-                  onValueChange={setSelectedPrograma}
-                >
-                  <SelectTrigger id="programa-select" className="bg-white">
-                    <SelectValue placeholder="Seleccionar programa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredProgramas.map((programa) => (
-                      <SelectItem key={programa.id} value={String(programa.id)}>
-                        {programa.grado?.nombre ? `${programa.grado.nombre} en ` : ''}
-                        {programa.nombre}
-                        {programa.periodo ? ` (${programa.periodo})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SearchableSelect
+                label="Programa"
+                placeholder="Seleccionar programa"
+                searchPlaceholder="Buscar programa por nombre o grado..."
+                icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
+                value={selectedPrograma}
+                onChange={setSelectedPrograma}
+                options={filteredProgramas.map((p) => ({
+                  value: String(p.id),
+                  label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
+                }))}
+              />
             </div>
           </div>
 

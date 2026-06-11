@@ -493,7 +493,7 @@ export default function PagosDocentesList() {
         return <Badge variant="default">Aprobado</Badge>;
       case 'completado':
       case 'finalizado':
-        return <Badge variant="success">Finalizado</Badge>;
+        return <Badge variant="success">Completado</Badge>;
       case 'rechazado':
         return <Badge variant="destructive">Rechazado</Badge>;
       case 'sin_efecto':
@@ -667,13 +667,27 @@ export default function PagosDocentesList() {
                     <div className="text-xs text-muted-foreground">
                       {pago.numero_oficio_conformidad_direccion ? `${pago.numero_oficio_conformidad_direccion}` : 'Pendiente'}</div>
                   </TableCell>
-                  <TableCell className='text-center'> Resol. Pago {' '}
-                    {pago.numero_resolucion_pago ? `N° ${pago.numero_resolucion_pago}` : 'Pendiente'}
-                    <div className="text-xs text-muted-foreground"> Ofic. {' '}
-                      {pago.numero_oficio_contabilidad
-                        ? `N° ${pago.numero_oficio_contabilidad}`
-                        : 'Pendiente'}
+                  <TableCell className='text-center'>
+                    <div>
+                      Resol. Pago {pago.numero_resolucion_pago ? `N° ${pago.numero_resolucion_pago}` : 'Pendiente'}
                     </div>
+                    <div className="text-xs text-muted-foreground">
+                      Ofic. {pago.numero_oficio_contabilidad ? `N° ${pago.numero_oficio_contabilidad}` : 'Pendiente'}
+                    </div>
+                    {pago.documento_respuesta_url && (
+                      <div className="text-xs text-blue-600 font-semibold mt-1 max-w-[200px] truncate mx-auto">
+                        R: {' '}
+                        <a
+                          href={pago.documento_respuesta_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline"
+                          title={pago.documento_respuesta_nombre || 'Ver archivo'}
+                        >
+                          {pago.documento_respuesta_nombre || '-'}
+                        </a>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
                     S/. {Number(pago.importe_total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

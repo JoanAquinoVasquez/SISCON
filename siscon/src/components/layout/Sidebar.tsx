@@ -13,6 +13,7 @@ import {
   BookOpen,
   Settings,
   Building2,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -29,6 +30,7 @@ const menuItems = [
   { icon: FileText, label: 'Oficios', path: '/documentos/oficios' },
   { icon: FileCheck, label: 'Resoluciones', path: '/documentos/resoluciones' },
   { icon: DollarSign, label: 'Devoluciones', path: '/devoluciones' },
+  { icon: BarChart3, label: 'Reportes', path: '/reportes' },
   { icon: Settings, label: 'Plantillas', path: '/templates' },
 ];
 

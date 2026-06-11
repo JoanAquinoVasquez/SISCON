@@ -21,6 +21,7 @@ import ResolucionesList from './pages/Documentos/ResolucionesList';
 import DevolucionesList from './pages/Devoluciones/DevolucionesList';
 import GestionPlantillas from './pages/Configuracion/GestionPlantillas';
 import UnidadesPosgradoPage from './pages/UnidadesPosgrado';
+import ReportePrograma from './pages/Reportes/ReportePrograma';
 
 function App() {
   const { user } = useAuth();
@@ -114,6 +115,11 @@ function App() {
           <Route path="templates" element={
             <ErrorBoundary>
               <GestionPlantillas />
+            </ErrorBoundary>
+          } />
+          <Route path="reportes" element={
+            <ErrorBoundary>
+              <ReportePrograma />
             </ErrorBoundary>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />

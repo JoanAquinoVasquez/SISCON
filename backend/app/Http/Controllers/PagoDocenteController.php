@@ -8,6 +8,7 @@ use App\Models\Programa;
 use App\Models\Curso;
 use App\Services\DocumentGeneratorService;
 use App\Exports\PagoDocenteExport;
+use App\Exports\ReporteProgramaExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -719,6 +720,31 @@ class PagoDocenteController extends Controller
         $fileName = 'pagos_docentes_' . date('Y-m-d_H-i-s') . '.xlsx';
 
         return Excel::download(new PagoDocenteExport($filters), $fileName);
+    }
+
+    /**
+     * Generar reporte Excel por programa
+     */
+    public function reportePrograma(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'programa_id' => 'required|exists:programas,id',
+            'periodo' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $programaId = $request->programa_id;
+        $periodo = $request->periodo;
+
+        $programa = \App\Models\Programa::with('grado')->find($programaId);
+        $gradoNombre = $programa->grado->nombre ?? '';
+        $programaNombre = $gradoNombre . ' en ' . $programa->nombre;
+        $fileName = 'Reporte_' . str_replace(' ', '_', $programaNombre) . '_' . date('Y-m-d') . '.xlsx';
+
+        return Excel::download(new ReporteProgramaExport($programaId, $periodo), $fileName);
     }
 
     protected $googleSheetsService;

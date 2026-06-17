@@ -264,9 +264,9 @@ export default function ReportePrograma() {
       </div>
 
       {/* Report Card */}
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60">
         {/* Card Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="h-6 w-6 text-white/90" />
             <div>

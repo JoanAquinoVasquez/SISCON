@@ -139,6 +139,7 @@ interface PagoDocente {
   facultad_codigo?: string;
   grado_nombre?: string;
   documento_respuesta_url?: string;
+  documento_respuesta_nombre?: string;
   docente?: {
     titulo_profesional?: string;
     nombres: string;

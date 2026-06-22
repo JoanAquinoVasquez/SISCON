@@ -776,7 +776,7 @@ class ExpedienteController extends Controller
         $validator = Validator::make($request->all(), [
             'estado' => 'required|string',
             'documento_respuesta_url' => 'nullable|string',
-            'file' => 'nullable|file|max:10240',
+            'file' => 'nullable|file|max:102400',
             'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 

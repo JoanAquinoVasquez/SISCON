@@ -14,7 +14,7 @@ class FileUploadController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
+            'file' => 'required|file|mimes:pdf|max:102400', // 100MB max
         ]);
 
         try {

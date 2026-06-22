@@ -14,7 +14,6 @@ import {
   ChevronDown,
   Search,
   Check,
-  Briefcase,
 } from 'lucide-react';
 
 interface Programa {

@@ -26,9 +26,9 @@ export function FileUpload({ label, value, onChange, disabled = false }: FileUpl
       return;
     }
 
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('El archivo no debe superar 10MB');
+    // Validate file size (100MB)
+    if (file.size > 100 * 1024 * 1024) {
+      setError('El archivo no debe superar 100MB');
       return;
     }
 

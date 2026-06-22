@@ -821,7 +821,7 @@ class PagoDocenteController extends Controller
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'estado' => 'required|in:pendiente,en_proceso,completado,rechazado,sin_efecto',
-            'file' => 'nullable|file|max:10240',
+            'file' => 'nullable|file|max:102400',
             'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 

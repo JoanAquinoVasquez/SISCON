@@ -747,6 +747,35 @@ class PagoDocenteController extends Controller
         return Excel::download(new ReporteProgramaExport($programaId, $periodo), $fileName);
     }
 
+    /**
+     * Generar reporte Excel de prestadores de cuarta categoria por mes y año
+     */
+    public function reportePrestadorCuartaCategoria(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'month' => 'required|integer|between:1,12',
+            'year' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $month = intval($request->month);
+        $year = intval($request->year);
+
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Setiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        $nombreMes = $meses[$month] ?? 'Mayo';
+
+        $fileName = 'Reporte_Cuarta_Categoria_' . str_replace(' ', '_', $nombreMes) . '_' . $year . '.xlsx';
+
+        return Excel::download(new \App\Exports\ReportePrestadorCuartaCategoriaExport($month, $year), $fileName);
+    }
+
     protected $googleSheetsService;
 
     public function __construct(\App\Services\GoogleSheetsService $googleSheetsService)

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import axios from '../../lib/axios';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabPanel } from '../../components/ui/tabs';
 import {
   BarChart3,
   Download,
@@ -13,6 +14,7 @@ import {
   ChevronDown,
   Search,
   Check,
+  Briefcase,
 } from 'lucide-react';
 
 interface Programa {
@@ -144,13 +146,41 @@ function SearchableSelect({
   );
 }
 
+const MESES = [
+  { value: '1', label: 'Enero' },
+  { value: '2', label: 'Febrero' },
+  { value: '3', label: 'Marzo' },
+  { value: '4', label: 'Abril' },
+  { value: '5', label: 'Mayo' },
+  { value: '6', label: 'Junio' },
+  { value: '7', label: 'Julio' },
+  { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setiembre' },
+  { value: '10', label: 'Octubre' },
+  { value: '11', label: 'Noviembre' },
+  { value: '12', label: 'Diciembre' },
+];
+
+const currentYear = new Date().getFullYear();
+const ANOS = Array.from({ length: 6 }, (_, i) => {
+  const y = currentYear - 3 + i;
+  return { value: String(y), label: String(y) };
+});
+
 export default function ReportePrograma() {
+  const [activeTab, setActiveTab] = useState('programa');
   const [programas, setProgramas] = useState<Programa[]>([]);
   const [periodos, setPeriodos] = useState<string[]>([]);
   const [selectedPrograma, setSelectedPrograma] = useState<string>('');
   const [selectedPeriodo, setSelectedPeriodo] = useState<string>('');
+  
+  // Fourth Category States
+  const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingCuarta, setIsExportingCuarta] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -209,7 +239,6 @@ export default function ReportePrograma() {
         responseType: 'blob',
       });
 
-      // Get filename from Content-Disposition header or generate one
       const contentDisposition = response.headers['content-disposition'];
       let fileName = `Reporte_Programa_${new Date().toISOString().split('T')[0]}.xlsx`;
       if (contentDisposition) {
@@ -237,7 +266,55 @@ export default function ReportePrograma() {
     }
   };
 
+  const handleExportCuarta = async () => {
+    if (!selectedMonth || !selectedYear) {
+      toast.error('Selecciona mes y año');
+      return;
+    }
+
+    setIsExportingCuarta(true);
+    try {
+      const response = await axios.get('/reportes/prestador-cuarta-categoria', {
+        params: {
+          month: selectedMonth,
+          year: selectedYear,
+        },
+        responseType: 'blob',
+      });
+
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `Reporte_Cuarta_Categoria_${selectedYear}_${selectedMonth}.xlsx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?([^;\n]*)/i);
+        if (match && match[1]) {
+          fileName = decodeURIComponent(match[1].replace(/['"]/g, ''));
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Reporte de cuarta categoría generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar reporte de cuarta categoría:', error);
+      toast.error('Error al generar el reporte');
+    } finally {
+      setIsExportingCuarta(false);
+    }
+  };
+
   const selectedProgramaData = programas.find(p => String(p.id) === selectedPrograma);
+
+  const reportTabs = [
+    { id: 'programa', label: 'Reporte por Programa', icon: '🎓' },
+    { id: 'cuarta-categoria', label: 'Prestadores de Cuarta Categoría', icon: '💼' }
+  ];
 
   if (isLoading) {
     return (
@@ -259,122 +336,215 @@ export default function ReportePrograma() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Reportes</h1>
-          <p className="text-sm text-slate-500">Genera reportes en Excel por programa</p>
+          <p className="text-sm text-slate-500">Genera y exporta reportes del sistema</p>
         </div>
       </div>
 
       {/* Report Card */}
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60">
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
         {/* Card Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 rounded-t-2xl">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="h-6 w-6 text-white/90" />
             <div>
-              <h2 className="text-lg font-semibold text-white">Reporte por Programa</h2>
+              <h2 className="text-lg font-semibold text-white">Reportes SISCON</h2>
               <p className="text-sm text-white/70">
-                Genera un reporte Excel con semestres, cursos, docentes y montos de pago
+                Genera reportes detallados en formato Excel
               </p>
             </div>
           </div>
         </div>
 
         {/* Card Body */}
-        <div className="p-6 space-y-6">
-          {/* Filters Section */}
-          <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100">
-            <div className="flex items-center gap-2 mb-4">
-              <Filter className="h-4 w-4 text-slate-500" />
-              <span className="text-sm font-medium text-slate-600">Filtros del Reporte</span>
-            </div>
+        <div className="p-6">
+          <Tabs tabs={reportTabs} activeTab={activeTab} onChange={setActiveTab} />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Period Selector */}
-              <SearchableSelect
-                label="Periodo"
-                placeholder="Seleccionar periodo"
-                searchPlaceholder="Buscar periodo..."
-                icon={<Calendar className="h-4 w-4 text-blue-500" />}
-                value={selectedPeriodo}
-                onChange={(value) => {
-                  setSelectedPeriodo(value);
-                  setSelectedPrograma(''); // Reset program when period changes
-                }}
-                options={[
-                  { value: '__todos__', label: 'Todos los periodos' },
-                  ...periodos.map((p) => ({ value: p, label: p })),
-                ]}
-              />
-
-              {/* Program Selector */}
-              <SearchableSelect
-                label="Programa"
-                placeholder="Seleccionar programa"
-                searchPlaceholder="Buscar programa por nombre o grado..."
-                icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
-                value={selectedPrograma}
-                onChange={setSelectedPrograma}
-                options={filteredProgramas.map((p) => ({
-                  value: String(p.id),
-                  label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
-                }))}
-              />
-            </div>
-          </div>
-
-          {/* Preview Info */}
-          {selectedProgramaData && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
-              <h3 className="text-sm font-semibold text-blue-800 mb-3">Vista Previa del Reporte</h3>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-medium text-blue-600 min-w-[80px]">Programa:</span>
-                  <span className="text-sm text-slate-700">
-                    {selectedProgramaData.grado?.nombre ? `${selectedProgramaData.grado.nombre} en ` : ''}
-                    {selectedProgramaData.nombre}
-                  </span>
+          <TabPanel id="programa" activeTab={activeTab}>
+            <div className="space-y-6">
+              {/* Filters Section */}
+              <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-600">Filtros del Reporte</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs font-medium text-blue-600 min-w-[80px]">Periodo:</span>
-                  <span className="text-sm text-slate-700">
-                    {selectedPeriodo && selectedPeriodo !== '__todos__' ? selectedPeriodo : 'Todos'}
-                  </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Period Selector */}
+                  <SearchableSelect
+                    label="Periodo"
+                    placeholder="Seleccionar periodo"
+                    searchPlaceholder="Buscar periodo..."
+                    icon={<Calendar className="h-4 w-4 text-blue-500" />}
+                    value={selectedPeriodo}
+                    onChange={(value) => {
+                      setSelectedPeriodo(value);
+                      setSelectedPrograma(''); // Reset program when period changes
+                    }}
+                    options={[
+                      { value: '__todos__', label: 'Todos los periodos' },
+                      ...periodos.map((p) => ({ value: p, label: p })),
+                    ]}
+                  />
+
+                  {/* Program Selector */}
+                  <SearchableSelect
+                    label="Programa"
+                    placeholder="Seleccionar programa"
+                    searchPlaceholder="Buscar programa por nombre o grado..."
+                    icon={<GraduationCap className="h-4 w-4 text-purple-500" />}
+                    value={selectedPrograma}
+                    onChange={setSelectedPrograma}
+                    options={filteredProgramas.map((p) => ({
+                      value: String(p.id),
+                      label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
+                    }))}
+                  />
                 </div>
-                {selectedProgramaData.facultad && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs font-medium text-blue-600 min-w-[80px]">Facultad:</span>
-                    <span className="text-sm text-slate-700">{selectedProgramaData.facultad.nombre}</span>
+              </div>
+
+              {/* Preview Info */}
+              {selectedProgramaData && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-3">Vista Previa del Reporte</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-medium text-blue-600 min-w-[80px]">Programa:</span>
+                      <span className="text-sm text-slate-700">
+                        {selectedProgramaData.grado?.nombre ? `${selectedProgramaData.grado.nombre} en ` : ''}
+                        {selectedProgramaData.nombre}
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-medium text-blue-600 min-w-[80px]">Periodo:</span>
+                      <span className="text-sm text-slate-700">
+                        {selectedPeriodo && selectedPeriodo !== '__todos__' ? selectedPeriodo : 'Todos'}
+                      </span>
+                    </div>
+                    {selectedProgramaData.facultad && (
+                      <div className="flex items-start gap-2">
+                        <span className="text-xs font-medium text-blue-600 min-w-[80px]">Facultad:</span>
+                        <span className="text-sm text-slate-700">{selectedProgramaData.facultad.nombre}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div className="mt-3 pt-3 border-t border-blue-200/50">
-                <p className="text-xs text-blue-600/70">
-                  El reporte incluirá: Semestre, Curso, Docente, Total Horas, Costo Hora, Monto Total y EsSalud 9%
-                </p>
+                  <div className="mt-3 pt-3 border-t border-blue-200/50">
+                    <p className="text-xs text-blue-600/70">
+                      El reporte incluirá: Semestre, Curso, Docente, Total Horas, Costo Hora, Monto Total y EsSalud 9%
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Export Button */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  id="btn-generar-reporte"
+                  onClick={handleExport}
+                  disabled={!selectedPrograma || isExporting}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 disabled:opacity-50 disabled:shadow-none"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Generar Reporte Excel
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-          )}
+          </TabPanel>
 
-          {/* Export Button */}
-          <div className="flex justify-end pt-2">
-            <Button
-              id="btn-generar-reporte"
-              onClick={handleExport}
-              disabled={!selectedPrograma || isExporting}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 disabled:opacity-50 disabled:shadow-none"
-            >
-              {isExporting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4 mr-2" />
-                  Generar Reporte Excel
-                </>
-              )}
-            </Button>
-          </div>
+          <TabPanel id="cuarta-categoria" activeTab={activeTab}>
+            <div className="space-y-6">
+              {/* Filters Section */}
+              <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-600">Filtros de Búsqueda</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Month Selector */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <Calendar className="h-4 w-4 text-blue-500" />
+                      Mes de Pago
+                    </label>
+                    <select
+                      value={selectedMonth}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 hover:bg-slate-50 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
+                    >
+                      {MESES.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Year Selector */}
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                      <Calendar className="h-4 w-4 text-purple-500" />
+                      Año de Pago
+                    </label>
+                    <select
+                      value={selectedYear}
+                      onChange={(e) => setSelectedYear(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 hover:bg-slate-50 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-sm"
+                    >
+                      {ANOS.map((y) => (
+                        <option key={y.value} value={y.value}>
+                          {y.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info/Preview */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-100">
+                <h3 className="text-sm font-semibold text-purple-800 mb-3">Información del Reporte de Cuarta Categoría</h3>
+                <div className="space-y-2 text-sm text-slate-600">
+                  <p>
+                    Este reporte exporta todos los prestadores de servicios de cuarta categoría (docentes externos) que registran una **Fecha de Constancia de Pago** en el mes y año seleccionados.
+                  </p>
+                  <p className="text-xs text-purple-600/70 pt-2 border-t border-purple-200/50">
+                    Columnas incluidas: Tipo Doc. (1), DNI, RUC, Apellidos y Nombres (en mayúsculas), Fecha de Nacimiento, Sexo (1: H, 2: F) y Nacionalidad (9589).
+                  </p>
+                </div>
+              </div>
+
+              {/* Export Button */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  id="btn-generar-reporte-cuarta"
+                  onClick={handleExportCuarta}
+                  disabled={isExportingCuarta}
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 disabled:opacity-50 disabled:shadow-none"
+                >
+                  {isExportingCuarta ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Generar Reporte Excel
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </TabPanel>
         </div>
       </div>
 

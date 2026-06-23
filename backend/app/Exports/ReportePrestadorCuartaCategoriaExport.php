@@ -18,8 +18,10 @@ class ReportePrestadorCuartaCategoriaExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
+            new ReporteDatosPrestadorSheet($this->month, $this->year),
             new ReportePrestadorCuartaCategoriaSheet($this->month, $this->year),
             new ReporteRetencionImpuestoSheet($this->month, $this->year),
+            new ReporteDetCompSheet($this->month, $this->year),
         ];
     }
 }

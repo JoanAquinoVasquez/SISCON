@@ -49,8 +49,8 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
 
         // Row 1 - 3
         $this->rows[] = ['UNIVERSIDAD NACIONAL PEDRO RUIZ GALLO'];
-        $this->rows[] = ['ESCUELA DE POSGRADO', '', '', '', '', '', '', '', '', '', '', '', '', '', 0, 'Sin retención'];
-        $this->rows[] = ['LAMBAYEQUE', '', '', '', '', '', '', '', '', '', '', '', '', '', 1, 'Con retención'];
+        $this->rows[] = ['ESCUELA DE POSGRADO', '', '', '', '', '', '', '', '', '', '', '', '', '', '0', 'Sin retención'];
+        $this->rows[] = ['LAMBAYEQUE', '', '', '', '', '', '', '', '', '', '', '', '', '', '1', 'Con retención'];
         $this->rows[] = ['']; // Row 4 (blank)
 
         // Row 5
@@ -62,8 +62,7 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
 
         // Row 7 (Header 1)
         $this->rows[] = [
-            'COMPROB. PAGO', '', '',
-            'CCI',
+            'COMPROB. PAGO', '', '', '',
             'RUC',
             'RAZON SOCIAL', '', '',
             'RECIBO POR HONORARIOS', '', '', '', '', '',
@@ -74,11 +73,10 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
 
         // Row 8 (Header 2)
         $this->rows[] = [
-            'N/P N°', 'FECHA', 'F PAGO',
-            '',
+            'N/P N°', 'FECHA', 'F PAGO', 'CCI',
             '',
             'PERSONAS NATURALES', '', '',
-            'SER', 'N°', 'FECHA', 'IMP. TOTAL', 'IMPORT', 'NETO A PAG.',
+            'SERIE', 'N°', 'FECHA', 'IMP. TOTAL', 'IMPORT', 'NETO A PAG.',
             '',
             '',
             ''
@@ -154,7 +152,7 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
         }
 
         // Add bottom TOTAL row if there is data
-        $dataStartRow = 9;
+        $dataStartRow = 10;
         $dataEndRow = $dataStartRow + $this->dataCount - 1;
 
         if ($this->dataCount > 0) {
@@ -234,8 +232,8 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
                 $sheet->getRowDimension(3)->setRowHeight(20);
                 $sheet->getRowDimension(5)->setRowHeight(25);
                 $sheet->getRowDimension(6)->setRowHeight(25);
-                $sheet->getRowDimension(7)->setRowHeight(20);
                 $sheet->getRowDimension(8)->setRowHeight(20);
+                $sheet->getRowDimension(9)->setRowHeight(20);
 
                 // Row 1 - 3 styles (bold, size 11, left-aligned)
                 $sheet->getStyle('A1:A3')->applyFromArray([
@@ -289,18 +287,17 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
                 ]);
 
                 // Merge headers vertically and horizontally
-                $sheet->mergeCells('A7:C7'); // COMPROB. PAGO
-                $sheet->mergeCells('D7:D8'); // CCI
-                $sheet->mergeCells('E7:E8'); // RUC
-                $sheet->mergeCells('F7:H7'); // RAZON SOCIAL
-                $sheet->mergeCells('F8:H8'); // PERSONAS NATURALES
-                $sheet->mergeCells('I7:N7'); // RECIBO POR HONORARIOS
-                $sheet->mergeCells('O7:O8'); // CODIGO
-                $sheet->mergeCells('P7:P8'); // RETENCIÓN
-                $sheet->mergeCells('Q7:Q8'); // FACULTAD
+                $sheet->mergeCells('A8:D8'); // COMPROB. PAGO
+                $sheet->mergeCells('E8:E9'); // RUC
+                $sheet->mergeCells('F8:H8'); // RAZON SOCIAL
+                $sheet->mergeCells('F9:H9'); // PERSONAS NATURALES
+                $sheet->mergeCells('I8:N8'); // RECIBO POR HONORARIOS
+                $sheet->mergeCells('O8:O9'); // CODIGO
+                $sheet->mergeCells('P8:P9'); // RETENCIÓN
+                $sheet->mergeCells('Q8:Q9'); // FACULTAD
 
                 // Header styling (thin borders, bold, centered)
-                $sheet->getStyle("A7:Q8")->applyFromArray([
+                $sheet->getStyle("A8:Q9")->applyFromArray([
                     'font' => [
                         'bold' => true,
                         'size' => 10,
@@ -319,7 +316,7 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
                 ]);
 
                 // Data rows styling
-                if ($highestRow >= 9) {
+                if ($highestRow >= 10) {
                     $dataEnd = $highestRow;
                     $hasTotal = false;
 
@@ -329,8 +326,8 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
                         $hasTotal = true;
                     }
 
-                    if ($dataEnd >= 9) {
-                        $sheet->getStyle("A9:{$lastCol}{$dataEnd}")->applyFromArray([
+                    if ($dataEnd >= 10) {
+                        $sheet->getStyle("A10:{$lastCol}{$dataEnd}")->applyFromArray([
                             'borders' => [
                                 'allBorders' => [
                                     'borderStyle' => Border::BORDER_THIN,
@@ -343,16 +340,16 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
                         ]);
 
                         // Alignments for specific columns
-                        $sheet->getStyle("A9:E{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("I9:K{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("O9:Q{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("A10:E{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("I10:K{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("O10:Q{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         
                         // Formats for currency columns
                         $currencyFormat = '"S/." #,##0.00';
-                        $sheet->getStyle("L9:N{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
+                        $sheet->getStyle("L10:N{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
 
-                        // Set RUC and receipt details as string explicitly to preserve leading zeros
-                        for ($row = 9; $row <= $dataEnd; $row++) {
+                        // Set RUC and receipt details as string explicitly to prevent scientific notation or dropping leading zeros
+                        for ($row = 10; $row <= $dataEnd; $row++) {
                             $sheet->getCell("E{$row}")->setValueExplicit($sheet->getCell("E{$row}")->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                             $sheet->getCell("I{$row}")->setValueExplicit($sheet->getCell("I{$row}")->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
                             $sheet->getCell("J{$row}")->setValueExplicit($sheet->getCell("J{$row}")->getValue(), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);

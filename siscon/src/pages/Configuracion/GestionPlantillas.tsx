@@ -32,15 +32,17 @@ interface Template {
 
 const getTemplateDescription = (name: string): string => {
   switch (name) {
-    case 'Resoluciones Plantilla DI 2025.docx':
+    case 'Resoluciones Plantilla Pago DI 2025.docx':
       return 'Resolución para Docente Interno (Periodo 2025-I)';
-    case 'Resoluciones Plantilla DI FE 2025.docx':
+    case 'Resoluciones Plantilla Pago DI FE 2025.docx':
       return 'Resolución para Docente Interno de Enfermería (Periodo 2025-I)';
-    case 'Resoluciones Plantilla DE 2025.docx':
+    case 'Resoluciones Plantilla Pago FE DocExt 2025.docx':
+      return 'Resolución de Pago para Docente Externo Enfermería (Periodo 2025-I)';
+    case 'Resoluciones Plantilla Pago DE 2025.docx':
       return 'Resolución para Docente Externo (Periodo 2025-I)';
-    case 'Resolucion Plantilla DI 2024.docx':
+    case 'Resolucion Plantilla Pago DI 2024.docx':
       return 'Resolución para Docente Interno (Periodo 2024-II)';
-    case 'Resolucion Plantilla DE 2024.docx':
+    case 'Resolucion Plantilla Pago DE 2024.docx':
       return 'Resolución para Docente Externo (Periodo 2024-II)';
     case 'Ofic. Conta Plantilla DI 2025.docx':
       return 'Oficio de Contabilidad para Docente Interno (Periodo 2025-I)';

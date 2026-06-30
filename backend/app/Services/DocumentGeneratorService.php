@@ -27,17 +27,19 @@ class DocumentGeneratorService
         $templateName = '';
         if ($pago->periodo === '2025-I') {
             if ($tipoDocente === 'interno_enfermeria') {
-                $templateName = 'Resoluciones Plantilla DI FE 2025.docx';
+                $templateName = 'Resoluciones Plantilla Pago DI FE 2025.docx';
+            } elseif ($tipoDocente === 'externo_enfermeria') {
+                $templateName = 'Resoluciones Plantilla Pago FE DocExt 2025.docx';
             } elseif (str_contains($tipoDocente, 'interno')) {
-                $templateName = 'Resoluciones Plantilla DI 2025.docx';
+                $templateName = 'Resoluciones Plantilla Pago DI 2025.docx';
             } else {
-                $templateName = 'Resoluciones Plantilla DE 2025.docx';
+                $templateName = 'Resoluciones Plantilla Pago DE 2025.docx';
             }
         } elseif ($pago->periodo === '2024-II') {
             if (str_contains($tipoDocente, 'interno')) {
-                $templateName = 'Resolucion Plantilla DI 2024.docx';
+                $templateName = 'Resolucion Plantilla Pago DI 2024.docx';
             } else {
-                $templateName = 'Resolucion Plantilla DE 2024.docx';
+                $templateName = 'Resolucion Plantilla Pago DE 2024.docx';
             }
         }
 

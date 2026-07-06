@@ -34,9 +34,7 @@ class FixPagosDocentes extends Command
         $groupedPagos = PagoDocente::with('expedientes')
             ->get()
             ->groupBy(function ($pago) {
-                $monthsYears = $this->extractMonthsYears($pago->fechas_ensenanza);
-                $key = implode(',', $monthsYears);
-                return $pago->docente_id . '-' . $pago->curso_id . '-' . $pago->periodo . '-' . $key;
+                return $pago->docente_id . '-' . $pago->curso_id . '-' . $pago->periodo;
             });
 
         $mergedCount = 0;

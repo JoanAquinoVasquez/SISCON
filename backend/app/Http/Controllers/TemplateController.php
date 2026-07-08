@@ -51,7 +51,11 @@ class TemplateController extends Controller
             return response()->json(['message' => 'Archivo no encontrado'], 404);
         }
 
-        return response()->download($path);
+        return response()->download($path, $filename, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => 'Sat, 01 Jan 2000 00:00:00 GMT'
+        ]);
     }
 
     /**

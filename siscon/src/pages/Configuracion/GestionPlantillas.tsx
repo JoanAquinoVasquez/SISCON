@@ -70,26 +70,26 @@ export default function GestionPlantillas() {
   const [uploading, setUploading] = useState<string | null>(null);
   const { showToast } = useToast();
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = async (showSkeleton = true) => {
     try {
-      setLoading(true);
+      if (showSkeleton) setLoading(true);
       const response = await axios.get('/templates');
       setTemplates(response.data.data);
     } catch (error) {
       console.error('Error fetching templates:', error);
       showToast('Error al cargar las plantillas', 'error');
     } finally {
-      setLoading(false);
+      if (showSkeleton) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTemplates();
+    fetchTemplates(true);
   }, []);
 
   const handleDownload = async (filename: string) => {
     try {
-      const response = await axios.get(`/templates/download/${filename}`, {
+      const response = await axios.get(`/templates/download/${filename}?t=${new Date().getTime()}`, {
         responseType: 'blob',
       });
       
@@ -119,7 +119,7 @@ export default function GestionPlantillas() {
         },
       });
       showToast('Plantilla actualizada exitosamente', 'success');
-      fetchTemplates();
+      fetchTemplates(false);
     } catch (error) {
       console.error('Error uploading template:', error);
       showToast('Error al actualizar la plantilla', 'error');

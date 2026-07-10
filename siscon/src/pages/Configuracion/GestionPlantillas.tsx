@@ -147,7 +147,7 @@ export default function GestionPlantillas() {
           <h1 className="text-3xl font-bold tracking-tight text-slate-900">Gestión de Plantillas</h1>
           <p className="text-slate-500 mt-1">Descarga y actualiza los formatos de Word (.docx) utilizados para la generación de documentos.</p>
         </div>
-        <Button onClick={fetchTemplates} variant="outline" className="gap-2">
+        <Button onClick={() => fetchTemplates()} variant="outline" className="gap-2">
           <RefreshCw className={loading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
           Refrescar
         </Button>

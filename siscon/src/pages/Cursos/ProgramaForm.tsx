@@ -41,6 +41,8 @@ interface Props {
   isLoading?: boolean;
 }
 
+const EMPTY_ARRAY: any[] = [];
+
 export function ProgramaForm({ open, programa, onClose, onSubmit, isLoading }: Props) {
   const { showToast } = useToast();
 
@@ -63,13 +65,13 @@ export function ProgramaForm({ open, programa, onClose, onSubmit, isLoading }: P
 
   // Extraer arrays de forma segura
   const listProgramas = respProgramas as any;
-  const programas = Array.isArray(listProgramas) ? listProgramas : (listProgramas?.data || []);
+  const programas = Array.isArray(listProgramas) ? listProgramas : (listProgramas?.data || EMPTY_ARRAY);
 
   const listGrados = respGrados as any;
-  const grados = Array.isArray(listGrados) ? listGrados : (listGrados?.data || []);
+  const grados = Array.isArray(listGrados) ? listGrados : (listGrados?.data || EMPTY_ARRAY);
 
   const listFacultades = respFacultades as any;
-  const facultades = Array.isArray(listFacultades) ? listFacultades : (listFacultades?.data || []);
+  const facultades = Array.isArray(listFacultades) ? listFacultades : (listFacultades?.data || EMPTY_ARRAY);
 
   // ── Estado del formulario
   const [gradoId, setGradoId] = useState<number>(0);

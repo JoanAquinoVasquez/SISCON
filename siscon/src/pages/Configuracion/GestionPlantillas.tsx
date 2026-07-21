@@ -68,6 +68,7 @@ export default function GestionPlantillas() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [uploading, setUploading] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const fetchTemplates = async (showSkeleton = true) => {
@@ -89,6 +90,8 @@ export default function GestionPlantillas() {
 
   const handleDownload = async (filename: string) => {
     try {
+      setDownloading(filename);
+      showToast('Descargando plantilla...', 'info');
       const response = await axios.get(`/templates/download/${filename}?t=${new Date().getTime()}`, {
         responseType: 'blob',
       });
@@ -100,9 +103,12 @@ export default function GestionPlantillas() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      showToast('Plantilla descargada exitosamente', 'success');
     } catch (error) {
       console.error('Error downloading template:', error);
       showToast('Error al descargar la plantilla', 'error');
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -228,14 +234,22 @@ export default function GestionPlantillas() {
                           variant="ghost"
                           className="h-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                           onClick={() => handleDownload(template.name)}
+                          disabled={downloading === template.name || uploading === template.name}
                           title="Descargar plantilla"
                         >
-                          <Download className="h-4 w-4 mr-2" />
-                          Descargar
+                          {downloading === template.name ? (
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Download className="h-4 w-4 mr-2" />
+                          )}
+                          {downloading === template.name ? 'Descargando...' : 'Descargar'}
                         </Button>
                         
                         <div className="relative">
-                          <label className="cursor-pointer">
+                          <label className={cn(
+                            "cursor-pointer",
+                            (uploading === template.name || downloading === template.name) && "pointer-events-none"
+                          )}>
                             <input
                               type="file"
                               accept=".docx"
@@ -244,12 +258,12 @@ export default function GestionPlantillas() {
                                 const file = e.target.files?.[0];
                                 if (file) handleUpload(template.name, file);
                               }}
-                              disabled={uploading === template.name}
+                              disabled={uploading === template.name || downloading === template.name}
                             />
                             <div className={cn(
                               "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
                               "border border-slate-200 bg-white shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-8 px-3 py-2",
-                              uploading === template.name && "opacity-50 cursor-not-allowed"
+                              (uploading === template.name || downloading === template.name) && "opacity-50 cursor-not-allowed"
                             )}>
                               {uploading === template.name ? (
                                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -277,7 +291,7 @@ export default function GestionPlantillas() {
           <p className="text-sm text-amber-800 leading-relaxed">
             Al actualizar una plantilla, asegúrese de mantener el nombre original del archivo. El sistema sobrescribirá el archivo en el servidor 
             utilizando el nombre destino mostrado en la tabla, independientemente del nombre del archivo que usted suba.
-            Verifique que los <strong>placeholders</strong> (ej: {'{DOCENTE}'}, {'{CURSO}'}) se mantengan iguales para evitar errores en la generación de documentos.
+            Verifique que los <strong>placeholders</strong> (ej: {'${DOCENTE}'}, {'${CURSO}'}) se mantengan iguales para evitar errores en la generación de documentos.
           </p>
         </div>
       </div>

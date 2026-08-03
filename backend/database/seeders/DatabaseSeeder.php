@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             DocenteSeeder::class,
             SegundaEspecialidadSemestreCursoSeeder::class,
             DoctoradoSemestreCursoSeeder::class,
+            Periodo2026ISeeder::class,
         ]);
     }
 }

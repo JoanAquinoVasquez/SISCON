@@ -1014,7 +1014,7 @@ export default function PagoDocenteForm() {
                     />
                   </div>
                   <div>
-                    <Label className="text-sm">Fecha Nota de Pago</Label>
+                    <Label className="text-sm">Fecha Emisión Nota de Pago</Label>
                     <Input
                       type="date"
                       value={fechaNotaPago}
@@ -1034,7 +1034,7 @@ export default function PagoDocenteForm() {
                         />
                       </div>
                       <div>
-                        <Label className="text-sm">Fecha 2° Nota de Pago</Label>
+                        <Label className="text-sm">Fecha Emisión 2° Nota de Pago</Label>
                         <Input
                           type="date"
                           value={fechaNotaPago2}

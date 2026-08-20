@@ -160,10 +160,14 @@ class DocumentGeneratorService
             $articuloDelODeLa = 'de la';
             $articuloLaOEl = 'la';
             $articuloAloAla = 'a la';
+            $nombradoA = 'nombrada';
+            $ordinarioNombradoOrdinariaNombrada = 'ordinaria nombrada';
         } else {
             $articuloDelODeLa = 'del';
             $articuloLaOEl = 'el';
             $articuloAloAla = 'al';
+            $nombradoA = 'nombrado';
+            $ordinarioNombradoOrdinariaNombrada = 'ordinario nombrado';
         }
 
         // Determinar artículos y títulos según género del director
@@ -233,6 +237,8 @@ class DocumentGeneratorService
         $template->setValue('Articulo_del_o_de_la', $articuloDelODeLa);
         $template->setValue('Articulo_la_o_el', $articuloLaOEl);
         $template->setValue('Articulo_al_o_a_la', $articuloAloAla);
+        $template->setValue('nombrado_a', $nombradoA);
+        $template->setValue('ordinario_nombrado_ordinaria_nombrada', $ordinarioNombradoOrdinariaNombrada);
 
 
         // Artículos y títulos del director

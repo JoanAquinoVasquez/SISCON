@@ -34,3 +34,6 @@ jobs:
           local-dir: dist/
           server-dir: public_html/siscon/
           port: 21
+          protocol: ftp
+          security: loose
+          timeout: 600000

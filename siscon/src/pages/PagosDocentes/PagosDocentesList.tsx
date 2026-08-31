@@ -44,8 +44,6 @@ import {
   Pencil,
   Trash2,
   FileText,
-  ChevronLeft,
-  ChevronRight,
   Loader2,
   MoreVertical,
   Download,

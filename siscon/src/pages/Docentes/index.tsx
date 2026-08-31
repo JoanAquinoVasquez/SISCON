@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { docenteService, type Docente } from '../../services/docenteService';
 import { DocenteForm } from './DocenteForm';
 import { useToast } from '../../context/ToastContext';

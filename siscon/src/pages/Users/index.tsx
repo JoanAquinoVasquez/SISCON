@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
-import { Plus, Pencil, Trash2, CheckCircle, XCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, CheckCircle, XCircle, Search } from 'lucide-react';
 import { UserForm } from './UserForm';
 import { Pagination } from '../../components/ui/pagination';
 

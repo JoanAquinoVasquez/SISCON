@@ -31,8 +31,6 @@ import {
     Search,
     Pencil,
     Trash2,
-    ChevronLeft,
-    ChevronRight,
     Loader2,
     MoreVertical,
     Upload,

@@ -55,6 +55,7 @@ export default function ExpedienteForm() {
 
   // Faculty code for filtering courses
   const [facultadCodigo, setFacultadCodigo] = useState('');
+  const [isDocumentoModified, setIsDocumentoModified] = useState(false);
 
   // Devolucion fields
   const [personaDevolucion, setPersonaDevolucion] = useState('');
@@ -105,18 +106,20 @@ export default function ExpedienteForm() {
 
   // Auto-detect faculty code from numeroDocumento and fill remitente
   useEffect(() => {
-    if (!numeroDocumento || numeroDocumento.length < 3) {
-      setFacultadCodigo('');
-      return;
+    if (!id || isDocumentoModified) {
+      if (!numeroDocumento || numeroDocumento.length < 3) {
+        setFacultadCodigo('');
+        return;
+      }
+
+      // Debounce the search to avoid too many requests
+      const timeoutId = setTimeout(() => {
+        searchDirectorByCode();
+      }, 800);
+
+      return () => clearTimeout(timeoutId);
     }
-
-    // Debounce the search to avoid too many requests
-    const timeoutId = setTimeout(() => {
-      searchDirectorByCode();
-    }, 800);
-
-    return () => clearTimeout(timeoutId);
-  }, [numeroDocumento]);
+  }, [numeroDocumento, isDocumentoModified]);
 
   // Auto-fill numeroOficioConformidadFacultad for Segunda Especialidad
   useEffect(() => {
@@ -480,7 +483,10 @@ export default function ExpedienteForm() {
                   <Label>N° Documento *</Label>
                   <Input
                     value={numeroDocumento}
-                    onChange={(e) => setNumeroDocumento(e.target.value)}
+                    onChange={(e) => {
+                      setNumeroDocumento(e.target.value);
+                      setIsDocumentoModified(true);
+                    }}
                     placeholder="Ej: OFICIO N° 001-D-2026-EPG"
                     required
                   />

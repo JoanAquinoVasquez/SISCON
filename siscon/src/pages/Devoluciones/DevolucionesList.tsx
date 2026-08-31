@@ -214,21 +214,57 @@ export default function DevolucionesList() {
             }
 
             const result = await updateEstadoDevolucion(selectedDevolucion.id, formData);
-            toast.success('Estado actualizado correctamente');
-            if (result?.drive_error) {
-                toast.error('⚠️ Archivo no subido: ' + result.drive_error, { duration: 6000 });
-            } else if (result?.drive_link) {
-                toast.success('Archivo subido a Drive correctamente');
-            }
+
+            // Close modal immediately
             setIsStatusModalOpen(false);
             setFile(null);
             fetchDevoluciones();
+
+            // If background upload was started, poll for its status
+            const uploadUuid = result?.upload_uuid;
+            if (uploadUuid) {
+                toast.success('Estado actualizado. Subiendo archivo a Google Drive...', { duration: 3000 });
+                pollUploadStatus(uploadUuid);
+            } else {
+                toast.success('Estado actualizado correctamente');
+            }
+
         } catch (error: any) {
             console.error('Error al actualizar estado:', error);
             toast.error(error.message || 'Error al actualizar el estado');
         } finally {
             setUpdatingStatus(false);
         }
+    };
+
+    /**
+     * Poll the backend for upload status until completed or failed.
+     */
+    const pollUploadStatus = (uuid: string) => {
+        const toastId = toast.loading('Subiendo archivo a Google Drive en segundo plano...', { duration: Infinity });
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await axios.get(`/file-uploads/${uuid}/status`);
+                const { status, error_message } = res.data;
+
+                if (status === 'completed') {
+                    clearInterval(interval);
+                    toast.success('Archivo subido a Google Drive exitosamente', { id: toastId, duration: 5000 });
+                    fetchDevoluciones();
+                } else if (status === 'failed') {
+                    clearInterval(interval);
+                    toast.error(`Error al subir archivo: ${error_message || 'Error desconocido'}`, { id: toastId, duration: 8000 });
+                }
+            } catch {
+                // Transient network error, keep polling
+            }
+        }, 3000);
+
+        // Safety: stop polling after 10 minutes max
+        setTimeout(() => {
+            clearInterval(interval);
+        }, 600000);
     };
 
     const submitEdit = async () => {

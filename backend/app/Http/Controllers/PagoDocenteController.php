@@ -847,26 +847,31 @@ class PagoDocenteController extends Controller
         $pago->estado = $request->estado;
         $pago->save();
 
-        // If file is provided, update the related expedientes
+        // If file is provided, save locally and dispatch background upload
+        $uploadUuid = null;
         if ($request->hasFile('file')) {
             try {
                 $file = $request->file('file');
-                $driveService = new \App\Services\GoogleDriveService();
-                $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
-                $link = $driveService->uploadFile($file, $folderId);
 
-                if ($link) {
-                    foreach ($pago->expedientes as $expediente) {
-                        $expediente->update([
-                            'documento_respuesta_url' => $link,
-                            'documento_respuesta_nombre' => $file->getClientOriginalName()
-                        ]);
-                    }
-                } else {
-                    \Illuminate\Support\Facades\Log::warning('Drive upload returned null for Pago ID: ' . $id);
-                }
+                // Save file locally
+                $tempPath = $file->store('temp-uploads', 'local');
+
+                // Create FileUpload tracking record
+                $fileUpload = \App\Models\FileUpload::create([
+                    'uploadable_type' => 'App\\Models\\PagoDocente',
+                    'uploadable_id' => $pago->id,
+                    'status' => 'pending',
+                    'local_path' => $tempPath,
+                    'original_name' => $file->getClientOriginalName(),
+                ]);
+
+                $uploadUuid = $fileUpload->uuid;
+
+                // Dispatch background job
+                \App\Jobs\UploadFileToDriveJob::dispatch($fileUpload->id);
+
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Exception uploading file in PagoDocenteController: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Exception saving temp file in PagoDocenteController: ' . $e->getMessage());
             }
         }
 
@@ -879,9 +884,16 @@ class PagoDocenteController extends Controller
             \Illuminate\Support\Facades\Log::error('Error updating PagoDocente in Sheets: ' . $e->getMessage());
         }
 
-        return response()->json([
+        $response = [
             'message' => 'Estado actualizado exitosamente',
-            'data' => $pago
-        ]);
+            'data' => $pago,
+        ];
+
+        if ($uploadUuid) {
+            $response['upload_uuid'] = $uploadUuid;
+            $response['message'] = 'Estado actualizado. El archivo se está subiendo a Google Drive en segundo plano.';
+        }
+
+        return response()->json($response);
     }
 }

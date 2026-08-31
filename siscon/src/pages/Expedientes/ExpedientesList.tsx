@@ -239,7 +239,7 @@ export default function ExpedientesList() {
         formData.append('motivo_sin_efecto', estadoForm.motivo_sin_efecto);
       }
 
-      await axios.post(`/expedientes/${estadoForm.id}/estado`, formData, {
+      const response = await axios.post(`/expedientes/${estadoForm.id}/estado`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
@@ -248,21 +248,64 @@ export default function ExpedientesList() {
           }
         }
       });
-      toast.success('Estado actualizado exitosamente');
+
+      // Close modal immediately
       setIsEstadoOpen(false);
+      setEstadoForm({ ...estadoForm, file: null });
       refreshExpedientes();
+
+      // If a background upload was started, poll for its status
+      const uploadUuid = response.data?.upload_uuid;
+      if (uploadUuid) {
+        toast.success('Estado actualizado. Subiendo archivo a Google Drive...', { duration: 3000 });
+        pollUploadStatus(uploadUuid);
+      } else {
+        toast.success('Estado actualizado exitosamente');
+      }
+
     } catch (error: any) {
       console.error(error);
       const serverMsg = error?.response?.data?.message;
       if (serverMsg) {
         toast.error(`⚠️ ${serverMsg}`, { duration: 8000 });
       } else {
-        toast.error('Error al actualizar el estado. Si el archivo supera 50MB, asegúrese de tener conexión estable o comprima el documento.');
+        toast.error('Error al actualizar el estado.');
       }
     } finally {
       setLoadingEstado(false);
       setUploadProgress(null);
     }
+  };
+
+  /**
+   * Poll the backend for upload status until completed or failed.
+   */
+  const pollUploadStatus = (uuid: string) => {
+    const toastId = toast.loading('Subiendo archivo a Google Drive en segundo plano...', { duration: Infinity });
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`/file-uploads/${uuid}/status`);
+        const { status, error_message } = res.data;
+
+        if (status === 'completed') {
+          clearInterval(interval);
+          toast.success('Archivo subido a Google Drive exitosamente', { id: toastId, duration: 5000 });
+          refreshExpedientes();
+        } else if (status === 'failed') {
+          clearInterval(interval);
+          toast.error(`Error al subir archivo: ${error_message || 'Error desconocido'}`, { id: toastId, duration: 8000 });
+        }
+        // If still pending/processing, keep polling
+      } catch {
+        // If polling fails, don't kill the interval - might be a transient network error
+      }
+    }, 3000);
+
+    // Safety: stop polling after 10 minutes max
+    setTimeout(() => {
+      clearInterval(interval);
+    }, 600000);
   };
 
   const getEstadoBadge = (estado: string | null) => {

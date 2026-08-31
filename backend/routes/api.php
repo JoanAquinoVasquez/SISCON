@@ -17,6 +17,7 @@ use App\Http\Controllers\PagoDocenteController;
 use App\Http\Controllers\ExpedienteController;
 use App\Http\Controllers\DevolucionController;
 use App\Http\Controllers\FileUploadController;
+use App\Http\Controllers\FileUploadStatusController;
 use App\Http\Controllers\OficioController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\DashboardController;
@@ -157,6 +158,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // File Upload
     Route::post('upload-documento', [FileUploadController::class, 'upload']);
     Route::post('delete-documento', [FileUploadController::class, 'delete']);
+
+    // File Upload Status (polling for background uploads)
+    Route::get('file-uploads/{uuid}/status', [FileUploadStatusController::class, 'status']);
 
     // ========================================
     // Expedientes (Document Tracking)

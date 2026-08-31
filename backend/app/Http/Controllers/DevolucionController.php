@@ -223,43 +223,51 @@ class DevolucionController extends Controller
             $devolucion->save();
         }
 
-        // 3. Upload del archivo a Drive (no bloquea la actualización del estado)
-        $driveLink  = null;
-        $driveError = null;
+        // 3. Upload del archivo en segundo plano via Job
+        $uploadUuid = null;
         if ($request->hasFile('file')) {
             try {
-                $file         = $request->file('file');
-                $driveService = new \App\Services\GoogleDriveService();
-                $folderId     = env('GOOGLE_DRIVE_FOLDER_ID');
-                $link         = $driveService->uploadFile($file, $folderId);
+                $file = $request->file('file');
 
-                if ($link) {
-                    $driveLink = $link;
-                    if ($expedienteIds->isNotEmpty()) {
-                        \App\Models\Expediente::whereIn('id', $expedienteIds)
-                            ->update([
-                                'documento_respuesta_url' => $link,
-                                'documento_respuesta_nombre' => $file->getClientOriginalName()
-                            ]);
-                    }
-                } else {
-                    $driveError = 'No se pudo subir el archivo a Google Drive.';
-                }
+                // Save file locally
+                $tempPath = $file->store('temp-uploads', 'local');
+
+                // Create FileUpload tracking record
+                $fileUpload = \App\Models\FileUpload::create([
+                    'uploadable_type' => 'App\\Models\\Devolucion',
+                    'uploadable_id' => $devolucion->id,
+                    'status' => 'pending',
+                    'local_path' => $tempPath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'metadata' => [
+                        'expediente_ids' => $expedienteIds->toArray(),
+                    ],
+                ]);
+
+                $uploadUuid = $fileUpload->uuid;
+
+                // Dispatch background job
+                \App\Jobs\UploadFileToDriveJob::dispatch($fileUpload->id);
+
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Drive upload error: ' . $e->getMessage());
-                $driveError = 'Error al subir el archivo: ' . $e->getMessage();
+                \Illuminate\Support\Facades\Log::error('Exception saving temp file in DevolucionController: ' . $e->getMessage());
             }
         }
 
         // 4. Re-cargar para devolver estado actualizado
         $devolucion->refresh();
 
-        return response()->json([
+        $response = [
             'message'     => 'Estado actualizado exitosamente',
             'data'        => $devolucion,
-            'drive_link'  => $driveLink,
-            'drive_error' => $driveError,
-        ], 200);
+        ];
+
+        if ($uploadUuid) {
+            $response['upload_uuid'] = $uploadUuid;
+            $response['message'] = 'Estado actualizado. El archivo se está subiendo a Google Drive en segundo plano.';
+        }
+
+        return response()->json($response, 200);
     }
 
     public function exportExcel(Request $request)

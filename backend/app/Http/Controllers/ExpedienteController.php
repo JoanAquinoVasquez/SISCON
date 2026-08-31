@@ -795,27 +795,36 @@ class ExpedienteController extends Controller
             $data['motivo_sin_efecto'] = null;
         }
 
+        $uploadUuid = null;
+
         if ($request->hasFile('file')) {
             try {
                 $file = $request->file('file');
-                $driveService = new \App\Services\GoogleDriveService();
 
-                $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
-                $link = $driveService->uploadFile($file, $folderId);
+                // Save file locally in temp-uploads folder
+                $tempPath = $file->store('temp-uploads', 'local');
 
-                if ($link) {
-                    $data['documento_respuesta_url'] = $link;
-                    $data['documento_respuesta_nombre'] = $file->getClientOriginalName();
-                } else {
-                    \Illuminate\Support\Facades\Log::warning('Drive upload returned null for Expediente ID: ' . $id);
-                    return response()->json([
-                        'message' => 'No se pudo subir el archivo a Google Drive. Si el archivo supera 50MB, asegúrese de tener conexión estable o intente comprimirlo.'
-                    ], 500);
-                }
+                // Create FileUpload tracking record
+                $fileUpload = \App\Models\FileUpload::create([
+                    'uploadable_type' => 'App\\Models\\Expediente',
+                    'uploadable_id' => $expediente->id,
+                    'status' => 'pending',
+                    'local_path' => $tempPath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'metadata' => [
+                        'pago_docente_id' => $expediente->pago_docente_id,
+                    ],
+                ]);
+
+                $uploadUuid = $fileUpload->uuid;
+
+                // Dispatch background job
+                \App\Jobs\UploadFileToDriveJob::dispatch($fileUpload->id);
+
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Exception uploading file in ExpedienteController: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Exception saving temp file in ExpedienteController: ' . $e->getMessage());
                 return response()->json([
-                    'message' => 'Error durante la carga del archivo: ' . $e->getMessage()
+                    'message' => 'Error al guardar el archivo temporalmente: ' . $e->getMessage()
                 ], 500);
             }
         } elseif ($request->filled('documento_respuesta_url')) {
@@ -844,10 +853,17 @@ class ExpedienteController extends Controller
             \Illuminate\Support\Facades\Log::error('Error updating Expediente in Sheets: ' . $e->getMessage());
         }
 
-        return response()->json([
+        $response = [
             'message' => 'Estado actualizado exitosamente',
-            'data' => $expediente
-        ], 200);
+            'data' => $expediente,
+        ];
+
+        if ($uploadUuid) {
+            $response['upload_uuid'] = $uploadUuid;
+            $response['message'] = 'Estado actualizado. El archivo se está subiendo a Google Drive en segundo plano.';
+        }
+
+        return response()->json($response, 200);
     }
 
     /**

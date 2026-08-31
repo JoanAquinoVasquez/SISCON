@@ -42,22 +42,43 @@ class GoogleDriveService
                 $driveFile->setParents([$folderId]);
             }
 
-            // Open file stream to avoid reading whole file into memory
-            $handle = fopen($file->getRealPath(), 'r');
+            // Defer execution to get the request object
+            $this->client->setDefer(true);
+            $request = $service->files->create($driveFile, [
+                'fields' => 'id, webViewLink, webContentLink'
+            ]);
+            $this->client->setDefer(false);
+
+            // Chunk size of 1MB (must be multiple of 256KB)
+            $chunkSize = 1 * 1024 * 1024;
+            $media = new \Google\Http\MediaFileUpload(
+                $this->client,
+                $request,
+                $file->getMimeType(),
+                null,
+                true,
+                $chunkSize
+            );
+            $media->setFileSize($file->getSize());
+
+            $status = false;
+            $handle = fopen($file->getRealPath(), 'rb');
             if ($handle === false) {
                 throw new \Exception("Cannot open file stream");
             }
 
-            $createdFile = $service->files->create($driveFile, [
-                'data' => $handle,
-                'mimeType' => $file->getMimeType(),
-                'uploadType' => 'multipart',
-                'fields' => 'id, webViewLink, webContentLink'
-            ]);
+            while (!$status && !feof($handle)) {
+                $chunk = fread($handle, $chunkSize);
+                $status = $media->nextChunk($chunk);
+            }
 
             fclose($handle);
 
-            return $createdFile->webViewLink;
+            if ($status !== false) {
+                return $status->webViewLink;
+            }
+
+            return null;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error uploading file to Drive: ' . $e->getMessage());
             return null;

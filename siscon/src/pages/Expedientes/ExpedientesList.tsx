@@ -767,7 +767,7 @@ export default function ExpedientesList() {
                 </p>
               </div>
             )}
-            {loadingEstado && uploadProgress !== null && (
+            {loadingEstado && estadoForm.estado === 'completado' && uploadProgress !== null && (
               <div className="space-y-1.5 px-1 mt-4">
                 <div className="flex justify-between text-xs font-semibold text-blue-700">
                   <span>{uploadProgress < 100 ? 'Enviando documento al servidor...' : 'Guardando en Google Drive...'}</span>

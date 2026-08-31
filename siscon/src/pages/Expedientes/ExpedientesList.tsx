@@ -251,9 +251,14 @@ export default function ExpedientesList() {
       toast.success('Estado actualizado exitosamente');
       setIsEstadoOpen(false);
       refreshExpedientes();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast.error('Error al actualizar el estado');
+      const serverMsg = error?.response?.data?.message;
+      if (serverMsg) {
+        toast.error(`⚠️ ${serverMsg}`, { duration: 8000 });
+      } else {
+        toast.error('Error al actualizar el estado. Si el archivo supera 50MB, asegúrese de tener conexión estable o comprima el documento.');
+      }
     } finally {
       setLoadingEstado(false);
       setUploadProgress(null);
@@ -835,17 +840,22 @@ export default function ExpedientesList() {
               </div>
             )}
             {loadingEstado && estadoForm.estado === 'completado' && uploadProgress !== null && (
-              <div className="space-y-1.5 px-1 mt-4">
-                <div className="flex justify-between text-xs font-semibold text-blue-700">
-                  <span>{uploadProgress < 100 ? 'Enviando documento al servidor...' : 'Guardando en Google Drive...'}</span>
+              <div className="space-y-1.5 px-1 mt-4 p-3.5 bg-blue-50/80 rounded-xl border border-blue-100 shadow-2xs">
+                <div className="flex justify-between text-xs font-semibold text-blue-800">
+                  <span>{uploadProgress < 100 ? `Enviando al servidor (${uploadProgress}%)...` : 'Subiendo a Google Drive, por favor espere...'}</span>
                   <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-blue-200/70 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-600 transition-all duration-300 rounded-full" 
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
+                {uploadProgress === 100 && (
+                  <p className="text-[11px] text-blue-700 font-medium animate-pulse mt-1">
+                    ⏳ Guardando en Google Drive... Los archivos grandes (mayores a 50MB) tardan varios segundos en procesarse. No cierre el modal.
+                  </p>
+                )}
               </div>
             )}
           </div>

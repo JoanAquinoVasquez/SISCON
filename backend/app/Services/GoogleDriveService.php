@@ -28,9 +28,10 @@ class GoogleDriveService
      */
     public function uploadFile($file, $folderId = null)
     {
-        // Increase memory limit and execution time for large file uploads
-        ini_set('memory_limit', '512M');
-        set_time_limit(300);
+        // Increase memory limit, execution time, and prevent user abort for large file uploads
+        ini_set('memory_limit', '1024M');
+        set_time_limit(600);
+        @ignore_user_abort(true);
 
         try {
             $service = new \Google\Service\Drive($this->client);
@@ -49,8 +50,9 @@ class GoogleDriveService
             ]);
             $this->client->setDefer(false);
 
-            // Chunk size of 1MB (must be multiple of 256KB)
-            $chunkSize = 1 * 1024 * 1024;
+            // Chunk size of 4MB (must be a multiple of 256KB = 262144 bytes)
+            // 4MB = 4,194,304 bytes -> 4x faster than 1MB chunks for large files (e.g. 86MB)
+            $chunkSize = 4 * 1024 * 1024;
             $media = new \Google\Http\MediaFileUpload(
                 $this->client,
                 $request,
@@ -64,11 +66,15 @@ class GoogleDriveService
             $status = false;
             $handle = fopen($file->getRealPath(), 'rb');
             if ($handle === false) {
-                throw new \Exception("Cannot open file stream");
+                throw new \Exception("Cannot open file stream for upload");
             }
 
             while (!$status && !feof($handle)) {
                 $chunk = fread($handle, $chunkSize);
+                if ($chunk === false) {
+                    fclose($handle);
+                    throw new \Exception("Failed reading file chunk");
+                }
                 $status = $media->nextChunk($chunk);
             }
 
@@ -80,7 +86,9 @@ class GoogleDriveService
 
             return null;
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error uploading file to Drive: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Error uploading file to Drive (' . $file->getClientOriginalName() . '): ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
             return null;
         }
     }

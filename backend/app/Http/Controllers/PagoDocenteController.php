@@ -822,7 +822,7 @@ class PagoDocenteController extends Controller
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'estado' => 'required|in:pendiente,en_proceso,completado,rechazado,sin_efecto',
-            'file' => 'nullable|file|max:102400',
+            'file' => 'nullable|file|max:256000',
             'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 
@@ -849,18 +849,24 @@ class PagoDocenteController extends Controller
 
         // If file is provided, update the related expedientes
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $driveService = new \App\Services\GoogleDriveService();
-            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
-            $link = $driveService->uploadFile($file, $folderId);
+            try {
+                $file = $request->file('file');
+                $driveService = new \App\Services\GoogleDriveService();
+                $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+                $link = $driveService->uploadFile($file, $folderId);
 
-            if ($link) {
-                foreach ($pago->expedientes as $expediente) {
-                    $expediente->update([
-                        'documento_respuesta_url' => $link,
-                        'documento_respuesta_nombre' => $file->getClientOriginalName()
-                    ]);
+                if ($link) {
+                    foreach ($pago->expedientes as $expediente) {
+                        $expediente->update([
+                            'documento_respuesta_url' => $link,
+                            'documento_respuesta_nombre' => $file->getClientOriginalName()
+                        ]);
+                    }
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Drive upload returned null for Pago ID: ' . $id);
                 }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Exception uploading file in PagoDocenteController: ' . $e->getMessage());
             }
         }
 

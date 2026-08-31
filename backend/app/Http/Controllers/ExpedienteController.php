@@ -777,7 +777,7 @@ class ExpedienteController extends Controller
         $validator = Validator::make($request->all(), [
             'estado' => 'required|string',
             'documento_respuesta_url' => 'nullable|string',
-            'file' => 'nullable|file|max:102400',
+            'file' => 'nullable|file|max:256000',
             'motivo_sin_efecto' => 'required_if:estado,sin_efecto|nullable|string|max:1000',
         ]);
 
@@ -796,17 +796,27 @@ class ExpedienteController extends Controller
         }
 
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $driveService = new \App\Services\GoogleDriveService();
+            try {
+                $file = $request->file('file');
+                $driveService = new \App\Services\GoogleDriveService();
 
-            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
-            $link = $driveService->uploadFile($file, $folderId);
+                $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+                $link = $driveService->uploadFile($file, $folderId);
 
-            if ($link) {
-                $data['documento_respuesta_url'] = $link;
-                $data['documento_respuesta_nombre'] = $file->getClientOriginalName();
-            } else {
-                return response()->json(['message' => 'Error al subir archivo a Google Drive'], 500);
+                if ($link) {
+                    $data['documento_respuesta_url'] = $link;
+                    $data['documento_respuesta_nombre'] = $file->getClientOriginalName();
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Drive upload returned null for Expediente ID: ' . $id);
+                    return response()->json([
+                        'message' => 'No se pudo subir el archivo a Google Drive. Si el archivo supera 50MB, asegúrese de tener conexión estable o intente comprimirlo.'
+                    ], 500);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Exception uploading file in ExpedienteController: ' . $e->getMessage());
+                return response()->json([
+                    'message' => 'Error durante la carga del archivo: ' . $e->getMessage()
+                ], 500);
             }
         } elseif ($request->filled('documento_respuesta_url')) {
             $data['documento_respuesta_url'] = $request->documento_respuesta_url;

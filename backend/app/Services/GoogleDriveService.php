@@ -28,6 +28,10 @@ class GoogleDriveService
      */
     public function uploadFile($file, $folderId = null)
     {
+        // Increase memory limit and execution time for large file uploads
+        ini_set('memory_limit', '512M');
+        set_time_limit(300);
+
         try {
             $service = new \Google\Service\Drive($this->client);
             $driveFile = new \Google\Service\Drive\DriveFile();
@@ -38,14 +42,20 @@ class GoogleDriveService
                 $driveFile->setParents([$folderId]);
             }
 
-            $content = file_get_contents($file->getRealPath());
+            // Open file stream to avoid reading whole file into memory
+            $handle = fopen($file->getRealPath(), 'r');
+            if ($handle === false) {
+                throw new \Exception("Cannot open file stream");
+            }
 
             $createdFile = $service->files->create($driveFile, [
-                'data' => $content,
+                'data' => $handle,
                 'mimeType' => $file->getMimeType(),
                 'uploadType' => 'multipart',
                 'fields' => 'id, webViewLink, webContentLink'
             ]);
+
+            fclose($handle);
 
             return $createdFile->webViewLink;
         } catch (\Exception $e) {

@@ -515,145 +515,212 @@ export default function ExpedientesList() {
       </Card>
 
       {/* Modal de Detalle */}
+      {/* Modal de Detalle */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalle del Expediente</DialogTitle>
-            <DialogDescription>
-              Información completa del expediente {selectedExpediente?.numero_expediente_mesa_partes ? `N° ${selectedExpediente.numero_expediente_mesa_partes}` : ''}
-            </DialogDescription>
+        <DialogContent className="w-[95vw] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto p-6 md:p-8">
+          <DialogHeader className="border-b pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  Expediente {selectedExpediente?.numero_expediente_mesa_partes ? `N° ${selectedExpediente.numero_expediente_mesa_partes}` : `#${selectedExpediente?.id || ''}`}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-500 mt-1">
+                  Información
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedExpediente?.tipo_asunto && getTipoAsuntoBadge(selectedExpediente.tipo_asunto)}
+                {selectedExpediente?.estado && getEstadoBadge(selectedExpediente.estado)}
+              </div>
+            </div>
           </DialogHeader>
 
           {loadingDetail ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground animate-pulse">Cargando detalles...</span>
+                <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
+                <span className="text-muted-foreground font-medium animate-pulse">Cargando detalles completos...</span>
               </div>
             </div>
           ) : selectedExpediente ? (
-            <div className="space-y-6">
-              {/* Data General */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 border-b pb-4">
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Doc. Recibido</h3>
-                  <p>{selectedExpediente.numero_documento}</p>
+            <div className="space-y-6 pt-2">
+              {/* Sección 1: Información del Documento Recibido */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                  <FileIcon className="w-4 h-4 text-blue-600" />
+                  Información del Documento y Recepción
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Doc. Recibido</span>
+                    <span className="text-sm font-semibold text-gray-900 break-words">{selectedExpediente.numero_documento || '-'}</span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Remitente</span>
+                    <span className="text-sm font-semibold text-gray-900 break-words">{selectedExpediente.remitente || '-'}</span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Fecha Mesa de Partes</span>
+                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedExpediente.fecha_mesa_partes) || '-'}</span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Recepción Contabilidad</span>
+                    <span className="text-sm font-medium text-gray-900">{formatDate(selectedExpediente.fecha_recepcion_contabilidad) || '-'}</span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Tipo Asunto</h3>
-                  {getTipoAsuntoBadge(selectedExpediente.tipo_asunto)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Remitente</h3>
-                  <p>{selectedExpediente.remitente}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Recep. Contabilidad</h3>
-                  <p>{formatDate(selectedExpediente.fecha_recepcion_contabilidad) || '-'}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estado</h3>
-                  <div className="mb-1">{getEstadoBadge(selectedExpediente.estado)}</div>
-                  {selectedExpediente.estado === 'sin_efecto' && selectedExpediente.motivo_sin_efecto && (
-                    <div className="mt-1 p-2 bg-gray-50 border border-gray-200 rounded-md">
-                      <p className="text-xs font-semibold text-gray-500 mb-0.5">Motivo:</p>
-                      <p className="text-xs text-gray-700 whitespace-pre-wrap">{selectedExpediente.motivo_sin_efecto}</p>
+
+                {selectedExpediente.estado === 'sin_efecto' && selectedExpediente.motivo_sin_efecto && (
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
+                    <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                      Motivo de Anulación (Sin Efecto):
+                    </p>
+                    <p className="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed pl-3.5">{selectedExpediente.motivo_sin_efecto}</p>
+                  </div>
+                )}
+
+                {selectedExpediente.documento_respuesta_url && (
+                  <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0">
+                        <FileIcon className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">Documento de Respuesta Adjunto</p>
+                        <p className="text-sm font-medium text-blue-950 break-all">{selectedExpediente.documento_respuesta_nombre || 'Documento de Respuesta'}</p>
+                      </div>
                     </div>
-                  )}
-                  {selectedExpediente.documento_respuesta_url && (
                     <a
                       href={selectedExpediente.documento_respuesta_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:underline inline-flex items-center gap-1 mt-1 max-w-[200px] truncate"
-                      title={selectedExpediente.documento_respuesta_nombre || 'Ver doc. respuesta'}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors shrink-0"
                     >
-                      <Eye className="w-3.5 h-3.5 shrink-0" />
-                      <span>{selectedExpediente.documento_respuesta_nombre || 'Ver doc. respuesta'}</span>
+                      <Eye className="w-4 h-4" />
+                      Ver Documento Final
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
+              {/* Sección 2: Detalle del Asunto según Tipo */}
               {selectedExpediente.tipo_asunto === 'devolucion' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4 border-b pb-4">
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Persona</h3>
-                      <p>{selectedExpediente.devolucion?.persona || selectedExpediente.persona_devolucion}</p>
+                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    Detalles Específicos de la Devolución
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Solicitante (Persona)</span>
+                      <span className="text-sm font-semibold text-gray-900 break-words">
+                        {selectedExpediente.devolucion?.persona || selectedExpediente.persona_devolucion || '-'}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Programa</h3>
-                      <p>
+
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Tipo de Devolución</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {formatTipoDevolucion(selectedExpediente.devolucion?.tipo_devolucion || selectedExpediente.tipo_devolucion)}
+                      </span>
+                    </div>
+
+                    <div className="bg-emerald-50 p-3.5 rounded-lg border border-emerald-200">
+                      <span className="text-xs text-emerald-700 font-bold block mb-1 uppercase tracking-wide">Importe a Devolver</span>
+                      <span className="text-lg font-bold text-emerald-900">
+                        S/ {Number(selectedExpediente.devolucion?.importe || selectedExpediente.importe_devolucion || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Programa / Grado</span>
+                      <span className="text-sm font-medium text-gray-900 break-words">
                         {selectedExpediente.devolucion?.programa ?
                           `${selectedExpediente.devolucion.programa.grado?.nombre || ''} en ${selectedExpediente.devolucion.programa.nombre}`
                           : '-'}
-                      </p>
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Comprobantes & Oficio</span>
+                      <div className="text-sm font-medium text-gray-900 space-y-0.5">
+                        <p>Voucher: {selectedExpediente.devolucion?.numero_voucher || selectedExpediente.numero_voucher || '-'}</p>
+                        {selectedExpediente.devolucion?.numero_oficio_direccion && (
+                          <p className="text-xs text-blue-700 font-semibold">Oficio Dirección: {selectedExpediente.devolucion.numero_oficio_direccion}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 border-b pb-4">
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Tipo de Devolución</h3>
-                      <p>{formatTipoDevolucion(selectedExpediente.devolucion?.tipo_devolucion || selectedExpediente.tipo_devolucion)}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Importe</h3>
-                      <p className="font-bold">S/ {Number(selectedExpediente.devolucion?.importe || selectedExpediente.importe_devolucion).toFixed(2)}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Voucher / Oficio</h3>
-                      <p>{selectedExpediente.devolucion?.numero_voucher || selectedExpediente.numero_voucher || '-'}</p>
-                      {selectedExpediente.devolucion?.numero_oficio_direccion && (
-                        <p className="text-xs text-muted-foreground mt-1">Oficio: {selectedExpediente.devolucion.numero_oficio_direccion}</p>
-                      )}
-                    </div>
-                  </div>
-                </>
+                </div>
               ) : selectedExpediente.tipo_asunto === 'descripcion' ? (
-                <div className="border-b pb-4">
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-2">Descripción del Asunto</h3>
-                  <div className="bg-muted/30 p-4 rounded-md text-sm whitespace-pre-wrap">
-                    {selectedExpediente.descripcion_asunto || <span className="text-muted-foreground italic">Sin descripción</span>}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Descripción Completa del Asunto
+                  </h3>
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 text-sm text-gray-900 leading-relaxed whitespace-pre-wrap break-words min-h-[100px]">
+                    {selectedExpediente.descripcion_asunto || <span className="text-slate-400 italic">Sin descripción registrada</span>}
                   </div>
                 </div>
               ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4 border-b pb-4">
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Docente</h3>
-                      <p>
+                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Información Académica y Docente Vinculada
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Docente</span>
+                      <span className="text-sm font-semibold text-gray-900 break-words">
                         {selectedExpediente.docente?.titulo_profesional ? `${selectedExpediente.docente.titulo_profesional} ` : ''}
-                        {selectedExpediente.docente?.nombres} {selectedExpediente.docente?.apellido_paterno} {selectedExpediente.docente?.apellido_materno}
-                      </p>
+                        {selectedExpediente.docente ? `${selectedExpediente.docente.nombres} ${selectedExpediente.docente.apellido_paterno} ${selectedExpediente.docente.apellido_materno}` : '-'}
+                      </span>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Programa</h3>
-                      <p>
+
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80 sm:col-span-2">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Programa y Grado</span>
+                      <span className="text-sm font-medium text-gray-900 break-words">
                         {selectedExpediente.semestre?.programa ?
                           `${selectedExpediente.semestre.programa.grado?.nombre || ''} en ${selectedExpediente.semestre.programa.nombre} (${selectedExpediente.semestre.programa.periodo})`
                           : '-'}
-                      </p>
+                      </span>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 border-b pb-4">
-                    <div>
-                      <h3 className="font-semibold text-sm text-muted-foreground mb-1">Curso</h3>
-                      <p>{selectedExpediente.curso?.nombre}</p>
-                      <p className="text-xs text-muted-foreground">Código: {selectedExpediente.curso?.codigo}</p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Curso</span>
+                      <span className="text-sm font-semibold text-gray-900 break-words">{selectedExpediente.curso?.nombre || '-'}</span>
+                      {selectedExpediente.curso?.codigo && (
+                        <span className="text-xs text-slate-500 block mt-0.5 font-mono">Código: {selectedExpediente.curso.codigo}</span>
+                      )}
                     </div>
+
                     {selectedExpediente.pagoDocente && (
-                      <div>
-                        <h3 className="font-semibold text-sm text-muted-foreground mb-1">Total de Pago</h3>
-                        <p className="font-bold text-lg">S/ {selectedExpediente.pagoDocente.importe_total}</p>
+                      <div className="bg-blue-50 p-3.5 rounded-lg border border-blue-200 flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-blue-700 font-bold block mb-0.5 uppercase tracking-wide">Total Pago Vinculado</span>
+                          <span className="text-lg font-bold text-blue-950">
+                            S/ {Number(selectedExpediente.pagoDocente.importe_total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0">
+                          {selectedExpediente.pagoDocente.estado || 'Procesando'}
+                        </Badge>
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No se pudo cargar la información
+            <div className="text-center py-12 text-slate-500">
+              No se pudo cargar la información del expediente.
             </div>
           )}
         </DialogContent>

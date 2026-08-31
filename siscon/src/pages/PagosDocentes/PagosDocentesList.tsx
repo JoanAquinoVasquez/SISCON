@@ -756,70 +756,165 @@ export default function PagosDocentesList() {
 
       {/* Modal de Detalle */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detalle del Pago</DialogTitle>
-            <DialogDescription>Información completa del expediente de pago</DialogDescription>
+        <DialogContent className="w-[95vw] sm:max-w-4xl lg:max-w-5xl max-h-[90vh] overflow-y-auto p-6 md:p-8">
+          <DialogHeader className="border-b pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  Pago Docente #{selectedPago?.id || ''}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-500 mt-1">
+                  Expediente de pago docente y registro de flujo documentario
+                </DialogDescription>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedPago?.docente?.tipo_docente && (
+                  <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-700 capitalize">
+                    Docente {selectedPago.docente.tipo_docente}
+                  </Badge>
+                )}
+                {selectedPago?.estado && getEstadoBadge(selectedPago.estado)}
+              </div>
+            </div>
           </DialogHeader>
+
           {loadingDetail ? (
-            <div className="flex justify-center py-12">
+            <div className="flex justify-center py-16">
               <div className="flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="text-muted-foreground animate-pulse">Cargando detalles...</span>
+                <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
+                <span className="text-muted-foreground font-medium animate-pulse">Cargando detalles del pago...</span>
               </div>
             </div>
           ) : selectedPago ? (
-            <div className="space-y-6">
-              {/* Información General */}
-              <div className="grid grid-cols-2 gap-4 border-b pb-4">
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Docente</h3>
-                  <p>{selectedPago.docente?.titulo_profesional ? selectedPago.docente.titulo_profesional + ' ' : ''}{selectedPago.docente?.nombres} {selectedPago.docente?.apellido_paterno} {selectedPago.docente?.apellido_materno}</p>
-                  <p className="text-sm text-muted-foreground">Docente {selectedPago.docente?.tipo_docente}</p>
+            <div className="space-y-6 pt-2">
+              {/* Banner Destacado de Importe Total */}
+              <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-slate-50 border border-blue-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-blue-800 uppercase tracking-wider">Docente Beneficiario</span>
+                  <p className="text-lg font-bold text-blue-950 break-words">
+                    {selectedPago.docente?.titulo_profesional ? `${selectedPago.docente.titulo_profesional} ` : ''}
+                    {selectedPago.docente?.nombres} {selectedPago.docente?.apellido_paterno} {selectedPago.docente?.apellido_materno}
+                  </p>
+                  {selectedPago.docente?.dni && (
+                    <p className="text-xs text-blue-700 font-mono">DNI: {selectedPago.docente.dni}</p>
+                  )}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Estado</h3>
-                  {getEstadoBadge(selectedPago.estado)}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Programa</h3>
-                  <p>{selectedPago.programa_nombre}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Curso</h3>
-                  <p>{selectedPago.curso?.nombre}</p>
-                  <p className="text-sm text-muted-foreground">Código: {selectedPago.curso?.codigo}</p>
+
+                <div className="sm:text-right bg-white/80 px-5 py-3 rounded-xl border border-blue-200/60 shadow-2xs shrink-0 w-full sm:w-auto">
+                  <span className="text-xs text-blue-700 font-bold uppercase tracking-wider block">Importe Total del Pago</span>
+                  <span className="text-2xl font-black text-blue-950">
+                    S/ {Number(selectedPago.importe_total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
               </div>
 
-              {/* Fechas de Enseñanza */}
-
-
-              {/* Detalles Financieros */}
-              <div className="grid grid-cols-3 gap-5 border-b pb-5">
-                {selectedPago.fechas_ensenanza && selectedPago.fechas_ensenanza.length > 0 && (
-                  <div className="col-span-2">
-                    <h3 className="font-semibold text-sm text-muted-foreground mb-1">Fechas de Enseñanza</h3>
-                    <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm font-medium text-blue-900">
-                        📅 {formatearFechasLegibles(selectedPago.fechas_ensenanza)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="col-span-1">
-                  <h3 className="font-semibold text-sm text-muted-foreground mb-1">Total</h3>
-                  <p className="font-bold text-lg">S/ {selectedPago.importe_total}</p>
-                </div>
-              </div>
-
-              {/* Documentos */}
-              <div className="mt-4 border-t pt-4">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">
-                  Documentos Relacionados
+              {/* Sección 1: Información Académica */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Información del Programa y Curso
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80 sm:col-span-2">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Programa Académico</span>
+                    <span className="text-sm font-semibold text-gray-900 break-words">
+                      {selectedPago.programa_nombre || '-'}
+                    </span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Periodo Lectivo</span>
+                    <span className="text-sm font-semibold text-gray-900">{selectedPago.periodo || '-'}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Curso Dictado</span>
+                    <span className="text-sm font-semibold text-gray-900 break-words">{selectedPago.curso?.nombre || '-'}</span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Código del Curso</span>
+                    <span className="text-sm font-mono font-medium text-gray-900">{selectedPago.curso?.codigo || '-'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sección 2: Desglose Financiero y Fechas */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Desglose Financiero y Fechas de Clases
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Número de Horas</span>
+                    <span className="text-base font-bold text-gray-900">{selectedPago.numero_horas} hrs</span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Costo por Hora</span>
+                    <span className="text-base font-bold text-gray-900">
+                      S/ {Number(selectedPago.costo_por_hora || 0).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Total Calculado</span>
+                    <span className="text-base font-bold text-blue-900">
+                      S/ {Number(selectedPago.importe_total || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedPago.importe_letras && (
+                  <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
+                    <span className="text-xs text-slate-500 font-semibold block mb-1">Importe en Letras</span>
+                    <span className="text-sm font-medium text-gray-800 italic uppercase">{selectedPago.importe_letras}</span>
+                  </div>
+                )}
+
+                {selectedPago.fechas_ensenanza && selectedPago.fechas_ensenanza.length > 0 && (
+                  <div className="bg-blue-50/70 p-4 rounded-xl border border-blue-200/80 space-y-1">
+                    <span className="text-xs text-blue-800 font-bold uppercase tracking-wide block">
+                      📅 Fechas de Enseñanza Registradas
+                    </span>
+                    <p className="text-sm font-semibold text-blue-950 leading-relaxed">
+                      {formatearFechasLegibles(selectedPago.fechas_ensenanza)}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Sección 3: Expedientes de Mesa de Partes Vinculados */}
+              {selectedPago.expedientes && selectedPago.expedientes.length > 0 && (
+                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Expedientes de Mesa de Partes Vinculados ({selectedPago.expedientes.length})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {selectedPago.expedientes.map((exp: any) => (
+                      <div key={exp.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-bold text-blue-900">N° {exp.numero_expediente_mesa_partes || exp.id}</span>
+                          <Badge variant="outline" className="text-[10px]">{exp.tipo_asunto}</Badge>
+                        </div>
+                        <p className="text-xs text-gray-700 truncate">Doc: {exp.numero_documento}</p>
+                        <p className="text-[11px] text-slate-500">Remitente: {exp.remitente}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sección 4: Matriz de Documentos Relacionados */}
+              <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Documentos Generados y Sustentos
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {[
                     {
                       label: "Pres. Facultad",
@@ -846,10 +941,9 @@ export default function PagosDocentesList() {
                     },
                     {
                       label: "Términos de Referencia",
-                      value: "Generar TDR",
-                      show: selectedPago.docente?.tipo_docente?.includes('externo') && 
-                            !!selectedPago.numero_resolucion_aprobacion,
-                      canGenerate: false,
+                      value: selectedPago.numero_resolucion_aprobacion ? "Descargar TDR" : null,
+                      show: selectedPago.docente?.tipo_docente?.includes('externo') && !!selectedPago.numero_resolucion_aprobacion,
+                      canGenerate: true,
                       generateAction: () => handleGenerateTerminos(selectedPago.id),
                       isGenerating: isGeneratingTerminos
                     },
@@ -886,17 +980,15 @@ export default function PagosDocentesList() {
                       show: true
                     },
                     {
-                      label: "Sustento de Pago",
-                      value: selectedPago.documento_respuesta_url ? "Ver Archivo" : null,
+                      label: "Sustento de Pago (Drive)",
+                      value: selectedPago.documento_respuesta_url ? "Ver Documento Sustento" : null,
                       action: () => selectedPago.documento_respuesta_url && window.open(selectedPago.documento_respuesta_url, '_blank'),
                       show: selectedPago.estado === 'completado' && !!selectedPago.documento_respuesta_url
                     }
                   ].map((doc, index) => {
-                    // Si no tiene valor y no se puede generar, no mostrar (ocultar "Pendiente")
                     if (!doc.value && !doc.canGenerate) return null;
                     if (!doc.show) return null;
 
-                    // Determinar si es clickeable (tiene valor y acción, o es generable)
                     const isClickable = (!!doc.value && (!!doc.generateAction || !!doc.action));
 
                     const handleClick = () => {
@@ -909,24 +1001,24 @@ export default function PagosDocentesList() {
                     return (
                       <div
                         key={index}
-                        className={`flex flex-col p-2 rounded-md border transition-colors ${isClickable
-                          ? "bg-primary/10 border-primary/20 hover:bg-primary/20 cursor-pointer"
-                          : "bg-muted/30"
+                        className={`flex flex-col p-3 rounded-xl border transition-all ${isClickable
+                          ? "bg-blue-50/90 border-blue-200 hover:bg-blue-100/80 cursor-pointer shadow-2xs"
+                          : "bg-white border-slate-200"
                           }`}
                         onClick={isClickable ? handleClick : undefined}
                       >
-                        <span className="text-[10px] uppercase font-bold text-muted-foreground leading-none mb-1">
+                        <span className="text-[11px] uppercase font-bold text-slate-500 mb-1">
                           {doc.label}
                         </span>
-                        <div className="min-h-[20px] flex items-center">
+                        <div className="min-h-[24px] flex items-center">
                           {doc.value ? (
-                            <span className="text-sm font-medium truncate flex items-center gap-1" title={doc.value}>
+                            <span className="text-sm font-semibold text-gray-900 break-words flex items-center gap-1.5" title={doc.value}>
                               {doc.value}
                               {isClickable && (
                                 doc.isGenerating ? (
-                                  <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
                                 ) : (
-                                  <span className="text-[10px] text-primary ml-1">(Abrir)</span>
+                                  <span className="text-[11px] font-bold text-blue-700 underline shrink-0">(Abrir)</span>
                                 )
                               )}
                             </span>
@@ -934,7 +1026,7 @@ export default function PagosDocentesList() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="h-6 text-xs w-full mt-1"
+                              className="h-7 text-xs w-full mt-1 border-blue-300 text-blue-700 hover:bg-blue-50"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (doc.generateAction) doc.generateAction();
@@ -942,9 +1034,9 @@ export default function PagosDocentesList() {
                               disabled={doc.isGenerating}
                             >
                               {doc.isGenerating ? (
-                                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Generando...</>
+                                <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-blue-600" /> Generando...</>
                               ) : (
-                                <><FileText className="mr-1 h-3 w-3" /> Generar</>
+                                <><FileText className="mr-1.5 h-3.5 w-3.5 text-blue-600" /> Generar</>
                               )}
                             </Button>
                           ) : null}
@@ -956,8 +1048,8 @@ export default function PagosDocentesList() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No se pudo cargar la información
+            <div className="text-center py-12 text-slate-500">
+              No se pudo cargar la información del pago.
             </div>
           )}
         </DialogContent>

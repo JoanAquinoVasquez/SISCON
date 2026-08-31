@@ -152,6 +152,14 @@ interface PagoDocente {
     codigo: string;
   };
   fechas_ensenanza?: string[];
+  expedientes?: Array<{
+    id: number;
+    numero_expediente_mesa_partes?: string;
+    numero_documento?: string;
+    remitente?: string;
+    tipo_asunto?: string;
+    estado?: string;
+  }>;
 }
 
 interface PaginationData {

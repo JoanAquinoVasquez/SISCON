@@ -67,6 +67,7 @@ export default function ExpedientesList() {
   const [pagination, setPagination] = useState<{ total?: number; from?: number; to?: number; } | null>(null);
   const [fetchId, setFetchId] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
   // Detail Modal
   const [selectedExpediente, setSelectedExpediente] = useState<any | null>(null);
@@ -227,6 +228,7 @@ export default function ExpedientesList() {
   const handleSaveEstado = async () => {
     try {
       setLoadingEstado(true);
+      setUploadProgress(0);
 
       const formData = new FormData();
       formData.append('estado', estadoForm.estado);
@@ -238,7 +240,13 @@ export default function ExpedientesList() {
       }
 
       await axios.post(`/expedientes/${estadoForm.id}/estado`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
+        }
       });
       toast.success('Estado actualizado exitosamente');
       setIsEstadoOpen(false);
@@ -248,6 +256,7 @@ export default function ExpedientesList() {
       toast.error('Error al actualizar el estado');
     } finally {
       setLoadingEstado(false);
+      setUploadProgress(null);
     }
   };
 
@@ -756,6 +765,20 @@ export default function ExpedientesList() {
                   <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 shrink-0" />
                   El archivo se subirá automáticamente a Google Drive y se vinculará al expediente.
                 </p>
+              </div>
+            )}
+            {loadingEstado && uploadProgress !== null && (
+              <div className="space-y-1.5 px-1 mt-4">
+                <div className="flex justify-between text-xs font-semibold text-blue-700">
+                  <span>{uploadProgress < 100 ? 'Enviando documento al servidor...' : 'Guardando en Google Drive...'}</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 transition-all duration-300 rounded-full" 
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>

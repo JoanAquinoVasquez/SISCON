@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Pagination } from '@/components/ui/pagination';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -17,7 +18,8 @@ import {
   CheckCircle,
   Eye,
   Trash2,
-  Pencil
+  Pencil,
+  Download
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -61,7 +63,10 @@ export default function ExpedientesList() {
   const [estado, setEstado] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [pagination, setPagination] = useState<{ total?: number; from?: number; to?: number; } | null>(null);
   const [fetchId, setFetchId] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Detail Modal
   const [selectedExpediente, setSelectedExpediente] = useState<any | null>(null);
@@ -86,7 +91,7 @@ export default function ExpedientesList() {
     const fetchExpedientes = async () => {
       try {
         setLoading(true);
-        const params: any = { page: currentPage };
+        const params: any = { page: currentPage, per_page: perPage };
         if (debouncedSearch) params.search = debouncedSearch;
         if (tipoAsunto) params.tipo_asunto = tipoAsunto;
         if (estado) params.estado = estado;
@@ -96,6 +101,11 @@ export default function ExpedientesList() {
         if (active) {
           setExpedientes(response.data.data);
           setTotalPages(response.data.last_page);
+          setPagination({
+            total: response.data.total,
+            from: response.data.from,
+            to: response.data.to
+          });
         }
       } catch (error) {
         console.error('Error al cargar expedientes:', error);
@@ -111,10 +121,41 @@ export default function ExpedientesList() {
     return () => {
       active = false;
     };
-  }, [debouncedSearch, tipoAsunto, estado, currentPage, fetchId]);
+  }, [debouncedSearch, tipoAsunto, estado, currentPage, perPage, fetchId]);
 
   const refreshExpedientes = () => {
     setFetchId(prev => prev + 1);
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const params: any = {};
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (tipoAsunto) params.tipo_asunto = tipoAsunto;
+      if (estado) params.estado = estado;
+
+      const response = await axios.get('/expedientes/exportar-excel', {
+        params,
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Reporte_Expedientes_${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Reporte exportado exitosamente');
+    } catch (error) {
+      console.error('Error al exportar:', error);
+      toast.error('Error al exportar el reporte');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -219,6 +260,7 @@ export default function ExpedientesList() {
       completado: { variant: 'success', label: 'Completado' },
       rechazado: { variant: 'destructive', label: 'Rechazado' },
       sin_efecto: { variant: 'outline', label: 'Sin Efecto' },
+      para_conocimiento: { variant: 'default', label: 'Para Conocimiento' },
     };
     const config = variants[currentState] || variants.pendiente;
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -233,6 +275,10 @@ export default function ExpedientesList() {
           <p className="text-gray-600 mt-1">Gestión de documentos recibidos en contabilidad</p>
         </div>
         <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={handleExportExcel} disabled={isExporting} size="lg">
+            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            Exportar Excel
+          </Button>
           <Button onClick={() => navigate('/expedientes/nuevo')} size="lg">
             <Plus className="w-5 h-5 mr-2" />
             Nuevo Expediente
@@ -276,6 +322,7 @@ export default function ExpedientesList() {
             <option value="completado">Completado</option>
             <option value="rechazado">Rechazado</option>
             <option value="sin_efecto">Sin Efecto</option>
+            <option value="para_conocimiento">Para Conocimiento</option>
           </select>
         </div>
       </Card>
@@ -440,24 +487,20 @@ export default function ExpedientesList() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center gap-2 p-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-            >
-              Anterior
-            </Button>
-            <span className="flex items-center px-4">
-              Página {currentPage} de {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Siguiente
-            </Button>
+          <div className="p-4 border-t">
+            <Pagination
+              currentPage={currentPage}
+              lastPage={totalPages}
+              total={pagination?.total}
+              from={pagination?.from}
+              to={pagination?.to}
+              onPageChange={setCurrentPage}
+              perPage={perPage}
+              onPerPageChange={(newPerPage) => {
+                setPerPage(newPerPage);
+                setCurrentPage(1);
+              }}
+            />
           </div>
         )}
       </Card>
@@ -632,6 +675,7 @@ export default function ExpedientesList() {
                 <option value="completado">Completado</option>
                 <option value="rechazado">Rechazado</option>
                 <option value="sin_efecto">Sin Efecto</option>
+                <option value="para_conocimiento">Para Conocimiento</option>
               </select>
             </div>
 
@@ -689,12 +733,12 @@ export default function ExpedientesList() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                    <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                  <div className="flex items-center gap-4 p-4 bg-blue-50 border border-blue-100 rounded-xl w-full min-w-0 overflow-hidden">
+                    <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white shrink-0">
                       <FileIcon className="w-5 h-5" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-blue-900 truncate">{estadoForm.file.name}</p>
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <p className="text-sm font-medium text-blue-900 truncate max-w-[200px] sm:max-w-[400px]" title={estadoForm.file.name}>{estadoForm.file.name}</p>
                       <p className="text-xs text-blue-600">{(estadoForm.file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                     <Button

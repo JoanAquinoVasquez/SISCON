@@ -16,6 +16,7 @@ import {
 } from '../../components/ui/select';
 import { Plus, Pencil, Trash2, CheckCircle, XCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { UserForm } from './UserForm';
+import { Pagination } from '../../components/ui/pagination';
 
 export default function UsersPage() {
   const { showToast } = useToast();
@@ -28,12 +29,13 @@ export default function UsersPage() {
   const [role, setRole] = useState<string>('todos');
   const [isActive, setIsActive] = useState<string>('todos');
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   // Fetch users with params
   const { data: response, isLoading, error } = useQuery({
-    queryKey: ['users', page, search, role, isActive],
+    queryKey: ['users', page, perPage, search, role, isActive],
     queryFn: async () => {
-      const params: any = { page, per_page: 10 };
+      const params: any = { page, per_page: perPage };
       if (search) params.search = search;
       if (role && role !== 'todos') params.role = role;
       if (isActive && isActive !== 'todos') params.is_active = isActive === 'activos' ? 1 : 0;
@@ -280,31 +282,19 @@ export default function UsersPage() {
       
           {/* Pagination */}
           {pagination && pagination.last_page > 1 && (
-            <div className="flex items-center justify-between mt-4 border-t pt-4">
-              <div className="text-sm text-muted-foreground">
-                Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-                  disabled={page === pagination.last_page}
-                >
-                  Siguiente
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
-            </div>
+            <Pagination
+              currentPage={page}
+              lastPage={pagination.last_page}
+              total={pagination.total}
+              from={pagination.from}
+              to={pagination.to}
+              onPageChange={setPage}
+              perPage={perPage}
+              onPerPageChange={(newPerPage) => {
+                setPerPage(newPerPage);
+                setPage(1);
+              }}
+            />
           )}
         </CardContent>
       </Card>

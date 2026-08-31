@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from '@/lib/axios';
 import toast from 'react-hot-toast';
 import {
     Table,
@@ -38,7 +39,9 @@ import {
     FileIcon,
     X,
     CheckCircle,
+    Download
 } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
 import {
     getDevoluciones,
     deleteDevolucion,
@@ -84,6 +87,7 @@ export default function DevolucionesList() {
     });
     const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [page, setPage] = useState(1);
+    const [perPage, setPerPage] = useState(15);
 
     // Estado para modal de cambio de estado
     const [selectedDevolucion, setSelectedDevolucion] = useState<Devolucion | null>(null);
@@ -92,17 +96,51 @@ export default function DevolucionesList() {
     const [observaciones, setObservaciones] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Estado para modal de edición
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editFormData, setEditFormData] = useState<Partial<Devolucion>>({});
     const [saving, setSaving] = useState(false);
 
+    const handleExportExcel = async () => {
+        setIsExporting(true);
+        try {
+            const params: any = {};
+            if (search) params.search = search;
+            if (filters.tipo_devolucion) params.tipo_devolucion = filters.tipo_devolucion;
+            if (filters.estado) params.estado = filters.estado;
+            if (exactIdFilter) params.id = exactIdFilter;
+
+            const response = await axios.get('/devoluciones/exportar-excel', {
+                params,
+                responseType: 'blob'
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Reporte_Devoluciones_${new Date().toISOString().split('T')[0]}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Reporte exportado exitosamente');
+        } catch (error) {
+            console.error('Error al exportar:', error);
+            toast.error('Error al exportar el reporte');
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const fetchDevoluciones = async () => {
         try {
             setLoading(true);
             const data = await getDevoluciones({
                 page,
+                per_page: perPage,
                 search,
                 id: exactIdFilter,
                 ...filters
@@ -126,7 +164,7 @@ export default function DevolucionesList() {
 
     useEffect(() => {
         fetchDevoluciones();
-    }, [page, search, filters, exactIdFilter]);
+    }, [page, search, filters, exactIdFilter, perPage]);
 
     const handleDelete = async (id: number) => {
         if (confirm('¿Está seguro de eliminar este registro?')) {
@@ -247,6 +285,12 @@ export default function DevolucionesList() {
                     <p className="text-muted-foreground">
                         Gestión de solicitudes de devolución
                     </p>
+                </div>
+                <div>
+                    <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        Exportar Excel
+                    </Button>
                 </div>
             </div>
 
@@ -403,31 +447,19 @@ export default function DevolucionesList() {
             {/* Paginación */}
             {
                 pagination && pagination.last_page > 1 && (
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm text-muted-foreground">
-                            Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
-                        </div>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                            >
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Anterior
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-                                disabled={page === pagination.last_page}
-                            >
-                                Siguiente
-                                <ChevronRight className="h-4 w-4 ml-1" />
-                            </Button>
-                        </div>
-                    </div>
+                    <Pagination
+                        currentPage={page}
+                        lastPage={pagination.last_page}
+                        total={pagination.total}
+                        from={pagination.from}
+                        to={pagination.to}
+                        onPageChange={setPage}
+                        perPage={perPage}
+                        onPerPageChange={(newPerPage) => {
+                            setPerPage(newPerPage);
+                            setPage(1);
+                        }}
+                    />
                 )
             }
 

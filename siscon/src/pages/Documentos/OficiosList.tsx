@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Search, Loader2, FileText, Eye, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Pagination } from '@/components/ui/pagination';
 
 interface Oficio {
     pago_id: number | null;
@@ -30,17 +31,18 @@ export default function OficiosList() {
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [perPage, setPerPage] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
     const [exportingId, setExportingId] = useState<number | null>(null);
 
     useEffect(() => {
         fetchOficios();
-    }, [search, currentPage]);
+    }, [search, currentPage, perPage]);
 
     const fetchOficios = async () => {
         try {
             setLoading(true);
-            const params: any = { page: currentPage };
+            const params: any = { page: currentPage, per_page: perPage };
             if (search) params.search = search;
 
             const response = await axios.get('/documentos/oficios', { params });
@@ -241,25 +243,19 @@ export default function OficiosList() {
 
                     {/* Pagination */}
                     {totalPages > 1 && (
-                        <div className="flex justify-center gap-2 mt-4">
-                            <Button
-                                variant="outline"
-                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                            >
-                                Anterior
-                            </Button>
-                            <span className="flex items-center px-4 text-sm">
-                                Página {currentPage} de {totalPages}
-                            </span>
-                            <Button
-                                variant="outline"
-                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                            >
-                                Siguiente
-                            </Button>
-                        </div>
+                        <Pagination
+                            currentPage={currentPage}
+                            lastPage={totalPages}
+                            total={totalItems}
+                            from={totalItems > 0 ? (currentPage - 1) * perPage + 1 : 0}
+                            to={Math.min(currentPage * perPage, totalItems)}
+                            onPageChange={setCurrentPage}
+                            perPage={perPage}
+                            onPerPageChange={(newPerPage) => {
+                                setPerPage(newPerPage);
+                                setCurrentPage(1);
+                            }}
+                        />
                     )}
                 </CardContent>
             </Card>

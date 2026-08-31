@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from '@/hooks/useDebounce';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -183,6 +184,7 @@ export default function PagosDocentesList() {
   });
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
   const [totalImporte, setTotalImporte] = useState(0);
 
   const debouncedSearch = useDebounce(search, 500);
@@ -206,6 +208,7 @@ export default function PagosDocentesList() {
       setLoading(true);
       const params: any = {
         page,
+        per_page: perPage,
         ...filters
       };
       if (debouncedSearch) params.search = debouncedSearch;
@@ -231,7 +234,7 @@ export default function PagosDocentesList() {
 
   useEffect(() => {
     fetchPagos();
-  }, [page, debouncedSearch, filters, exactIdFilter]);
+  }, [page, debouncedSearch, filters, exactIdFilter, perPage]);
 
   const handleDelete = async (id: number) => {
     if (confirm('¿Está seguro de eliminar este registro?')) {
@@ -738,31 +741,19 @@ export default function PagosDocentesList() {
 
       {/* Paginación */}
       {pagination && pagination.last_page > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Mostrando {pagination.from} a {pagination.to} de {pagination.total} registros
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(p => Math.min(pagination.last_page, p + 1))}
-              disabled={page === pagination.last_page}
-            >
-              Siguiente
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={page}
+          lastPage={pagination.last_page}
+          total={pagination.total}
+          from={pagination.from}
+          to={pagination.to}
+          onPageChange={setPage}
+          perPage={perPage}
+          onPerPageChange={(newPerPage) => {
+            setPerPage(newPerPage);
+            setPage(1);
+          }}
+        />
       )}
 
       {/* Modal de Detalle */}

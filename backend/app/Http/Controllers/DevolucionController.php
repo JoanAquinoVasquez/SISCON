@@ -49,7 +49,8 @@ class DevolucionController extends Controller
             $query->where('devoluciones.id', $request->id);
         }
 
-        $devoluciones = $query->latest('devoluciones.id')->paginate(15);
+        $perPage = $request->query('per_page', 15);
+        $devoluciones = $query->latest('devoluciones.id')->paginate($perPage);
 
         // Format response
         $devoluciones->getCollection()->transform(function ($devolucion) {
@@ -259,5 +260,13 @@ class DevolucionController extends Controller
             'drive_link'  => $driveLink,
             'drive_error' => $driveError,
         ], 200);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $filters = $request->all();
+        $fileName = 'devoluciones_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\DevolucionExport($filters), $fileName);
     }
 }

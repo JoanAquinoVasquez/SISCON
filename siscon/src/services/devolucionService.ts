@@ -33,6 +33,7 @@ export interface DevolucionFilters {
   estado?: string;
   programa_id?: number;
   page?: number;
+  per_page?: number;
 }
 
 export const getDevoluciones = async (filters: DevolucionFilters = {}) => {
@@ -44,6 +45,8 @@ export const getDevoluciones = async (filters: DevolucionFilters = {}) => {
   if (filters.programa_id)
     params.append("programa_id", filters.programa_id.toString());
   if (filters.page) params.append("page", filters.page.toString());
+  if (filters.per_page) params.append("per_page", filters.per_page.toString());
+  if (filters.id) params.append("id", filters.id);
 
   const response = await api.get<any>(`/devoluciones?${params.toString()}`);
   return response;

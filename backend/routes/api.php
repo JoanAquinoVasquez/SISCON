@@ -167,6 +167,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('expedientes/buscar-curso', [ExpedienteController::class, 'buscarCursos']);
     Route::get('expedientes/buscar-directores', [ExpedienteController::class, 'buscarDirectores']);
     Route::post('expedientes/{id}/estado', [ExpedienteController::class, 'cambiarEstado']);
+    Route::get('expedientes/exportar-excel', [ExpedienteController::class, 'exportExcel']);
     Route::apiResource('expedientes', ExpedienteController::class);
 
     // ========================================
@@ -174,6 +175,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ========================================
 
     Route::post('devoluciones/{id}/estado', [DevolucionController::class, 'actualizarEstado']);
+    Route::get('devoluciones/exportar-excel', [DevolucionController::class, 'exportExcel']);
     Route::apiResource('devoluciones', DevolucionController::class);
 
     // ========================================

@@ -34,8 +34,67 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
     {
         $query = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
 
+        if (isset($this->filters['search']) && $this->filters['search']) {
+            $search = $this->filters['search'];
+            $query->where(function ($q) use ($search) {
+                // Docente
+                $q->whereHas('docente', function ($q) use ($search) {
+                    $q->where('nombres', 'LIKE', "%{$search}%")
+                        ->orWhere('apellido_paterno', 'LIKE', "%{$search}%")
+                        ->orWhere('apellido_materno', 'LIKE', "%{$search}%")
+                        ->orWhereRaw("CONCAT_WS(' ', nombres, apellido_paterno, apellido_materno) LIKE ?", ["%{$search}%"])
+                        ->orWhereRaw("CONCAT_WS(' ', apellido_paterno, apellido_materno, nombres) LIKE ?", ["%{$search}%"])
+                        ->orWhere('dni', 'LIKE', "%{$search}%");
+                })
+                    // Curso
+                    ->orWhereHas('curso', function ($q) use ($search) {
+                        $q->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhere('codigo', 'LIKE', "%{$search}%");
+                    })
+                    // Programa (via Curso -> Semestres -> Programa) and Grado
+                    ->orWhereHas('curso.semestres.programa', function ($q) use ($search) {
+                        $q->where('nombre', 'LIKE', "%{$search}%")
+                            ->orWhereHas('grado', function ($qGrado) use ($search) {
+                                $qGrado->where('nombre', 'LIKE', "%{$search}%");
+                            });
+                    })
+                    // Direct fields
+                    ->orWhere('periodo', 'LIKE', "%{$search}%")
+                    ->orWhere('importe_total', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_horas', 'LIKE', "%{$search}%")
+                    // Document Numbers
+                    ->orWhere('numero_oficio_presentacion_facultad', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_presentacion_coordinador', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_presentacion_direccion', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_resolucion_aprobacion', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_facultad', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_coordinador', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_conformidad_direccion', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_resolucion_pago', 'LIKE', "%{$search}%")
+                    ->orWhere('numero_oficio_contabilidad', 'LIKE', "%{$search}%");
+            });
+        }
+
         if (isset($this->filters['periodo']) && $this->filters['periodo']) {
             $query->where('periodo', $this->filters['periodo']);
+        }
+
+        if (isset($this->filters['programa_id']) && $this->filters['programa_id']) {
+            $programaId = $this->filters['programa_id'];
+            $query->whereHas('curso.semestres', function ($q) use ($programaId) {
+                $q->where('programa_id', $programaId);
+            });
+        }
+
+        if (isset($this->filters['id']) && $this->filters['id']) {
+            $query->where('id', $this->filters['id']);
+        }
+
+        if (isset($this->filters['estado']) && $this->filters['estado'] && $this->filters['estado'] !== 'todos') {
+            $estado = $this->filters['estado'];
+            $query->whereHas('expedientes', function ($q) use ($estado) {
+                $q->where('estado', $estado);
+            });
         }
 
         // Filter by the specific type for this sheet
@@ -64,16 +123,26 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 'DOCENTE',
                 'CURSO',
                 'PROGRAMA',
+                'N° HORAS',
+                'COSTO HORA',
                 'IMPORTE',
                 'FECHAS',
-                'OFICIO DE DIRECCION',
-                'RESOLUCION N°',
+                'OF. PRES. COORD',
+                'OF. PRES. FACULTAD',
+                'OF. PRES. DIRECCIÓN',
+                'OF. CONF. COORD',
+                'OF. CONF. FACULTAD',
+                'OF. CONF. DIRECCIÓN',
+                'OF. CONTABILIDAD',
+                'OF. DIRECCIÓN (ESP)',
+                'RESOLUCIÓN N°',
                 'FN',
                 'DNI',
                 'TELEFONO',
                 'CORREO',
                 'R/H',
-                'F/E'
+                'F/E',
+                'ESTADO DE PAGO'
             ];
         } elseif (strpos($this->tipoDocente, 'interno') !== false) {
             $headers = [
@@ -82,9 +151,18 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 'DOCENTE',
                 'CURSO',
                 'PROGRAMA',
+                'N° HORAS',
+                'COSTO HORA',
                 'IMPORTE',
                 'FECHAS',
-                'OFICIO DE DIRECCIÓN',
+                'OF. PRES. COORD',
+                'OF. PRES. FACULTAD',
+                'OF. PRES. DIRECCIÓN',
+                'OF. CONF. COORD',
+                'OF. CONF. FACULTAD',
+                'OF. CONF. DIRECCIÓN',
+                'OF. CONTABILIDAD',
+                'OF. DIRECCIÓN (ESP)',
                 'RESOLUCIÓN N°',
                 'Registro SIAF',
                 'N/P',
@@ -139,9 +217,18 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 $docenteNombre,
                 $pago->curso->nombre ?? '',
                 $programaNombre,
+                $pago->numero_horas,
+                (float) $pago->costo_por_hora,
                 (float) $pago->importe_total,
                 $fechas,
-                $pago->oficio_direccion_exp_docentes ? 'N° ' . $pago->oficio_direccion_exp_docentes : $pago->oficio_direccion_exp_docentes,
+                $pago->numero_oficio_presentacion_coordinador,
+                $pago->numero_oficio_presentacion_facultad,
+                $pago->numero_oficio_presentacion_direccion,
+                $pago->numero_oficio_conformidad_coordinador,
+                $pago->numero_oficio_conformidad_facultad,
+                $pago->numero_oficio_conformidad_direccion,
+                $pago->numero_oficio_contabilidad,
+                $pago->oficio_direccion_exp_docentes,
                 $pago->numero_resolucion_pago,
                 $pago->docente->fecha_nacimiento ?? '',
                 $pago->docente->dni ?? '',
@@ -149,19 +236,29 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 $pago->docente->email ?? '',
                 $pago->numero_recibo_honorario,
                 $fechaRecibo,
+                ucfirst($pago->estado),
             ];
         }
 
         if (strpos($this->tipoDocente, 'interno') !== false) {
             return [
                 $pago->id,
-                $pago->estado,
+                ucfirst($pago->estado),
                 $docenteNombre,
                 $pago->curso->nombre ?? '',
                 $programaNombre,
+                $pago->numero_horas,
+                (float) $pago->costo_por_hora,
                 (float) $pago->importe_total,
                 $fechas,
-                $pago->oficio_direccion_exp_docentes ? 'N° ' . $pago->oficio_direccion_exp_docentes : $pago->oficio_direccion_exp_docentes,
+                $pago->numero_oficio_presentacion_coordinador,
+                $pago->numero_oficio_presentacion_facultad,
+                $pago->numero_oficio_presentacion_direccion,
+                $pago->numero_oficio_conformidad_coordinador,
+                $pago->numero_oficio_conformidad_facultad,
+                $pago->numero_oficio_conformidad_direccion,
+                $pago->numero_oficio_contabilidad,
+                $pago->oficio_direccion_exp_docentes,
                 $pago->numero_resolucion_pago,
                 $pago->numero_exp_siaf,
                 $notaPago,
@@ -331,19 +428,17 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                     $sheet->getStyle('A3:' . $highestColumn . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                     if (strpos($this->tipoDocente, 'externo') !== false) {
-                        // Docente (G), Curso (H), Programa (I), Fechas (K), Oficio (L)
+                        // Docente (G), Curso (H), Programa (I), Fechas (M)
                         $sheet->getStyle('G3:G' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('H3:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('I3:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                        $sheet->getStyle('K3:K' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                        $sheet->getStyle('L3:L' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                        $sheet->getStyle('M3:M' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                     } elseif (strpos($this->tipoDocente, 'interno') !== false) {
-                        // Docente (C), Curso (D), Programa (E), Fechas (G), Oficio (H)
+                        // Docente (C), Curso (D), Programa (E), Fechas (I)
                         $sheet->getStyle('C3:C' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('D3:D' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                         $sheet->getStyle('E3:E' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                        $sheet->getStyle('G3:G' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
-                        $sheet->getStyle('H3:H' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                        $sheet->getStyle('I3:I' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
                     }
                 }
                 // Add Footer Row with Totals
@@ -351,8 +446,8 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
                 $totalDocentes = $highestRow - 2; // Subtract title and header rows
     
                 // Calculate Total Importe
-                // Column J for Externo, F for Interno
-                $importeColumn = (strpos($this->tipoDocente, 'externo') !== false) ? 'J' : 'F';
+                // Column L for Externo, H for Interno
+                $importeColumn = (strpos($this->tipoDocente, 'externo') !== false) ? 'L' : 'H';
                 $totalImporteFormula = "=SUM({$importeColumn}3:{$importeColumn}{$highestRow})";
 
                 // Set values
@@ -404,13 +499,15 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
 
         if (strpos($this->tipoDocente, 'externo') !== false) {
             return [
-                'J' => $currencyFormat,
+                'K' => $currencyFormat, // Costo Hora
+                'L' => $currencyFormat, // Importe Total
             ];
         }
 
         if (strpos($this->tipoDocente, 'interno') !== false) {
             return [
-                'F' => $currencyFormat,
+                'G' => $currencyFormat, // Costo Hora
+                'H' => $currencyFormat, // Importe Total
             ];
         }
 

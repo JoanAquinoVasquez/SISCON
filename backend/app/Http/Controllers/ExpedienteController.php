@@ -84,7 +84,8 @@ class ExpedienteController extends Controller
             $query->where('estado', $request->estado);
         }
 
-        $expedientes = $query->latest()->paginate(15);
+        $perPage = $request->query('per_page', 15);
+        $expedientes = $query->latest()->paginate($perPage);
 
         // Format response
         $expedientes->getCollection()->transform(function ($expediente) {
@@ -1078,5 +1079,13 @@ class ExpedienteController extends Controller
         }
 
         return response()->json(['data' => $directores]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $filters = $request->all();
+        $fileName = 'expedientes_' . date('Y-m-d_H-i-s') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ExpedienteExport($filters), $fileName);
     }
 }

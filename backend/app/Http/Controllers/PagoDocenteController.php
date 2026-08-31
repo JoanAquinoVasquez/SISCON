@@ -100,7 +100,8 @@ class PagoDocenteController extends Controller
         // Clone query to calculate total sum without pagination
         $totalImporte = $query->clone()->sum('importe_total');
 
-        $pagos = $query->latest('pagos_docentes.id')->paginate(15);
+        $perPage = $request->query('per_page', 15);
+        $pagos = $query->latest('pagos_docentes.id')->paginate($perPage);
 
         // Format response with computed fields
         $pagos->getCollection()->transform(function ($pago) {

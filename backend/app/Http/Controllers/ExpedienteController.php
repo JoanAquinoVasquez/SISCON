@@ -112,6 +112,7 @@ class ExpedienteController extends Controller
                     : null,
                 'docente_titulo_profesional' => $expediente->docente->titulo_profesional ?? null,
                 'curso_nombre' => $expediente->curso->nombre ?? null,
+                'curso_tipo' => $expediente->curso->tipo ?? 'regular',
                 'programa_nombre' => $programa->nombre ?? null,
                 'grado_nombre' => $programa->grado->nombre ?? null,
                 'periodo' => $programa->periodo ?? null,

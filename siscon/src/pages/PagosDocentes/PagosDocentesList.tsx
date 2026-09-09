@@ -110,6 +110,7 @@ interface PagoDocente {
   docente_dni: string;
   tipo_docente: string;
   curso_nombre: string;
+  curso_tipo?: string;
   programa_nombre: string;
   periodo: string;
   numero_horas: number;
@@ -666,8 +667,18 @@ export default function PagosDocentesList() {
                     <div className="font-medium">{pago.docente_nombre}</div>
                     <div className="text-xs text-muted-foreground">Docente {pago.tipo_docente} {pago.periodo}</div>
                   </TableCell>
-                  <TableCell className="" title={pago.curso_nombre}>{pago.curso_nombre}
-                    <div className="text-xs text-muted-foreground" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.programa_nombre} {pago.periodo}</div></TableCell>
+                  <TableCell title={pago.curso_nombre}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium">{pago.curso_nombre}</span>
+                      <Badge
+                        variant="outline"
+                        className={pago.curso_tipo === 'dirigido' ? 'bg-purple-100 text-purple-700 border-purple-200 text-[10px] px-1.5 py-0' : 'bg-slate-100 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0'}
+                      >
+                        {pago.curso_tipo === 'dirigido' ? 'Dirigido' : 'Regular'}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground" title={pago.programa_nombre + ' ' + pago.periodo}>{pago.programa_nombre} {pago.periodo}</div>
+                  </TableCell>
                   <TableCell className='text-center' title={pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}>
                     {pago.numero_oficio_presentacion_facultad ? `${pago.numero_oficio_presentacion_facultad}` : 'Pendiente'}
                     <div className="text-xs text-muted-foreground" title={pago.numero_oficio_presentacion_coordinador ? `N° ${pago.numero_oficio_presentacion_coordinador}` : 'Pendiente'}>Cord. Ofic.{' '}

@@ -127,6 +127,7 @@ class PagoDocenteController extends Controller
                 'docente_dni' => $pago->docente->dni ?? null,
                 'tipo_docente' => $pago->docente->tipo_docente ?? null,
                 'curso_nombre' => $pago->curso->nombre ?? null,
+                'curso_tipo' => $pago->curso->tipo ?? 'regular',
                 'programa_nombre' => $programa ? "{$programa->grado->nombre} en {$programa->nombre}" : null,
                 'periodo' => $pago->periodo,
                 'numero_horas' => $pago->numero_horas,

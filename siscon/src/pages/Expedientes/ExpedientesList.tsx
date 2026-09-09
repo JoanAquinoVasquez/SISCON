@@ -35,6 +35,7 @@ interface Expediente {
   docente_nombre: string | null;
   docente_titulo_profesional: string | null;
   curso_nombre: string | null;
+  curso_tipo?: string;
   periodo: string | null;
   estado: string;
   motivo_sin_efecto?: string | null;
@@ -508,7 +509,15 @@ export default function ExpedientesList() {
                         <TableCell>
                           {exp.curso_nombre ? (
                             <>
-                              <div>{exp.curso_nombre}</div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-medium">{exp.curso_nombre}</span>
+                                <Badge
+                                  variant="outline"
+                                  className={exp.curso_tipo === 'dirigido' ? 'bg-purple-100 text-purple-700 border-purple-200 text-[10px] px-1.5 py-0' : 'bg-slate-100 text-slate-600 border-slate-200 text-[10px] px-1.5 py-0'}
+                                >
+                                  {exp.curso_tipo === 'dirigido' ? 'Dirigido' : 'Regular'}
+                                </Badge>
+                              </div>
                               <div className="text-xs text-muted-foreground">{exp.grado_nombre ? exp.grado_nombre : ''} {exp.grado_nombre ? 'en' : '-'} {exp.programa_nombre ? exp.programa_nombre : ''} {exp.periodo ? exp.periodo : ''}</div>
                             </>
                           ) : (
@@ -754,8 +763,18 @@ export default function ExpedientesList() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
-                      <span className="text-xs text-slate-500 font-semibold block mb-1">Curso</span>
-                      <span className="text-sm font-semibold text-gray-900 break-words">{selectedExpediente.curso?.nombre || '-'}</span>
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-xs text-slate-500 font-semibold block">Curso</span>
+                        {(selectedExpediente.curso?.tipo || selectedExpediente.curso_tipo) && (
+                          <Badge
+                            variant="outline"
+                            className={(selectedExpediente.curso?.tipo || selectedExpediente.curso_tipo) === 'dirigido' ? 'bg-purple-100 text-purple-700 border-purple-200 text-[10px]' : 'bg-slate-100 text-slate-600 border-slate-200 text-[10px]'}
+                          >
+                            {(selectedExpediente.curso?.tipo || selectedExpediente.curso_tipo) === 'dirigido' ? 'Dirigido' : 'Regular'}
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 break-words">{selectedExpediente.curso?.nombre || selectedExpediente.curso_nombre || '-'}</span>
                       {selectedExpediente.curso?.codigo && (
                         <span className="text-xs text-slate-500 block mt-0.5 font-mono">Código: {selectedExpediente.curso.codigo}</span>
                       )}

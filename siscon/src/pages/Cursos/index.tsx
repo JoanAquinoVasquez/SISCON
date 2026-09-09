@@ -672,6 +672,15 @@ export default function CursosPage() {
                         <Badge variant="outline" className="text-xs py-0 h-5 font-mono">
                           {c.codigo}
                         </Badge>
+                        {c.tipo === 'dirigido' ? (
+                          <Badge className="text-xs py-0 h-5 bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
+                            Dirigido
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs py-0 h-5 text-slate-600 bg-slate-100">
+                            Regular
+                          </Badge>
+                        )}
                         {c.creditos != null && c.creditos > 0 && (
                           <span className="text-xs text-muted-foreground">
                             {c.creditos} crédito{c.creditos !== 1 ? 's' : ''}

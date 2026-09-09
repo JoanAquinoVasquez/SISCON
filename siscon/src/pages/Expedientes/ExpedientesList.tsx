@@ -61,6 +61,7 @@ export default function ExpedientesList() {
   const [search, setSearch] = useState('');
   const [tipoAsunto, setTipoAsunto] = useState('');
   const [estado, setEstado] = useState('');
+  const [tipoCurso, setTipoCurso] = useState('todos');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -96,6 +97,7 @@ export default function ExpedientesList() {
         if (debouncedSearch) params.search = debouncedSearch;
         if (tipoAsunto) params.tipo_asunto = tipoAsunto;
         if (estado) params.estado = estado;
+        if (tipoCurso && tipoCurso !== 'todos') params.tipo_curso = tipoCurso;
 
         const response = await axios.get('/expedientes', { params });
 
@@ -122,7 +124,7 @@ export default function ExpedientesList() {
     return () => {
       active = false;
     };
-  }, [debouncedSearch, tipoAsunto, estado, currentPage, perPage, fetchId]);
+  }, [debouncedSearch, tipoAsunto, estado, tipoCurso, currentPage, perPage, fetchId]);
 
   const refreshExpedientes = () => {
     setFetchId(prev => prev + 1);
@@ -135,6 +137,7 @@ export default function ExpedientesList() {
       if (debouncedSearch) params.search = debouncedSearch;
       if (tipoAsunto) params.tipo_asunto = tipoAsunto;
       if (estado) params.estado = estado;
+      if (tipoCurso && tipoCurso !== 'todos') params.tipo_curso = tipoCurso;
 
       const response = await axios.get('/expedientes/exportar-excel', {
         params,
@@ -345,7 +348,7 @@ export default function ExpedientesList() {
 
       {/* Filters */}
       <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -367,6 +370,15 @@ export default function ExpedientesList() {
             <option value="presentacion">Presentación</option>
             <option value="conformidad">Conformidad</option>
             <option value="devolucion">Devolución</option>
+          </select>
+          <select
+            value={tipoCurso}
+            onChange={(e) => { setTipoCurso(e.target.value); setCurrentPage(1); }}
+            className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="todos">Todos los Cursos</option>
+            <option value="regular">Curso Regular</option>
+            <option value="dirigido">Curso Dirigido</option>
           </select>
           <select
             value={estado}

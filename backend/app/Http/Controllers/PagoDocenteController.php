@@ -97,6 +97,13 @@ class PagoDocenteController extends Controller
             });
         }
 
+        // Filter by tipo_curso (regular vs dirigido)
+        if ($request->has('tipo_curso') && $request->tipo_curso && $request->tipo_curso !== 'todos') {
+            $query->whereHas('curso', function ($q) use ($request) {
+                $q->where('tipo', $request->tipo_curso);
+            });
+        }
+
         // Clone query to calculate total sum without pagination
         $totalImporte = $query->clone()->sum('importe_total');
 
@@ -775,6 +782,19 @@ class PagoDocenteController extends Controller
         $fileName = 'Reporte_Cuarta_Categoria_' . str_replace(' ', '_', $nombreMes) . '_' . $year . '.xlsx';
 
         return Excel::download(new \App\Exports\ReportePrestadorCuartaCategoriaExport($month, $year), $fileName);
+    }
+
+    /**
+     * Generar reporte Excel de Cursos Dirigidos
+     */
+    public function reporteCursosDirigidos(Request $request)
+    {
+        $periodo = $request->periodo;
+        $programaId = $request->programa_id;
+
+        $fileName = 'Reporte_Cursos_Dirigidos_' . date('Y-m-d') . '.xlsx';
+
+        return Excel::download(new \App\Exports\ReporteCursosDirigidosExport($periodo, $programaId), $fileName);
     }
 
     protected $googleSheetsService;

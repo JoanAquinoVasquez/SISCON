@@ -77,7 +77,7 @@ function SearchableSelect({
   );
 
   return (
-    <div className="space-y-2 relative" ref={containerRef}>
+    <div className={`space-y-2 relative ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
       <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
         {icon}
         {label}
@@ -177,9 +177,14 @@ export default function ReportePrograma() {
   const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
   const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   
+  // Cursos Dirigidos States
+  const [selectedPeriodoDirigido, setSelectedPeriodoDirigido] = useState<string>('');
+  const [selectedProgramaDirigido, setSelectedProgramaDirigido] = useState<string>('');
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingCuarta, setIsExportingCuarta] = useState(false);
+  const [isExportingDirigido, setIsExportingDirigido] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -308,11 +313,55 @@ export default function ReportePrograma() {
     }
   };
 
+  const handleExportDirigido = async () => {
+    setIsExportingDirigido(true);
+    try {
+      const params: Record<string, string> = {};
+      if (selectedPeriodoDirigido && selectedPeriodoDirigido !== '__todos__') {
+        params.periodo = selectedPeriodoDirigido;
+      }
+      if (selectedProgramaDirigido && selectedProgramaDirigido !== '__todos__') {
+        params.programa_id = selectedProgramaDirigido;
+      }
+
+      const response = await axios.get('/reportes/cursos-dirigidos', {
+        params,
+        responseType: 'blob',
+      });
+
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `Reporte_Cursos_Dirigidos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?([^;\n]*)/i);
+        if (match && match[1]) {
+          fileName = decodeURIComponent(match[1].replace(/['"]/g, ''));
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Reporte de cursos dirigidos generado exitosamente');
+    } catch (error) {
+      console.error('Error al generar reporte de cursos dirigidos:', error);
+      toast.error('Error al generar el reporte');
+    } finally {
+      setIsExportingDirigido(false);
+    }
+  };
+
   const selectedProgramaData = programas.find(p => String(p.id) === selectedPrograma);
 
   const reportTabs = [
     { id: 'programa', label: 'Reporte por Programa', icon: '🎓' },
-    { id: 'cuarta-categoria', label: 'Prestadores de Cuarta Categoría', icon: '💼' }
+    { id: 'cuarta-categoria', label: 'Prestadores de Cuarta Categoría', icon: '💼' },
+    { id: 'cursos-dirigidos', label: 'Cursos Dirigidos', icon: '📖' },
   ];
 
   if (isLoading) {
@@ -340,9 +389,9 @@ export default function ReportePrograma() {
       </div>
 
       {/* Report Card */}
-      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200/60">
         {/* Card Header */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5">
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-6 py-5 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <FileSpreadsheet className="h-6 w-6 text-white/90" />
             <div>
@@ -530,6 +579,88 @@ export default function ReportePrograma() {
                   className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-500/30 px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-emerald-500/40 disabled:opacity-50 disabled:shadow-none"
                 >
                   {isExportingCuarta ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generando...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Generar Reporte Excel
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </TabPanel>
+
+          <TabPanel id="cursos-dirigidos" activeTab={activeTab}>
+            <div className="space-y-6">
+              {/* Filters Section */}
+              <div className="bg-slate-50/80 rounded-xl p-5 border border-slate-100">
+                <div className="flex items-center gap-2 mb-4">
+                  <Filter className="h-4 w-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-600">Filtros del Reporte (Opcionales)</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Period Selector */}
+                  <SearchableSelect
+                    label="Periodo"
+                    placeholder="Todos los periodos"
+                    searchPlaceholder="Buscar periodo..."
+                    icon={<Calendar className="h-4 w-4 text-purple-500" />}
+                    value={selectedPeriodoDirigido}
+                    onChange={(value) => {
+                      setSelectedPeriodoDirigido(value);
+                    }}
+                    options={[
+                      { value: '__todos__', label: 'Todos los periodos' },
+                      ...periodos.map((p) => ({ value: p, label: p })),
+                    ]}
+                  />
+
+                  {/* Program Selector */}
+                  <SearchableSelect
+                    label="Programa"
+                    placeholder="Todos los programas"
+                    searchPlaceholder="Buscar programa por nombre o grado..."
+                    icon={<GraduationCap className="h-4 w-4 text-indigo-500" />}
+                    value={selectedProgramaDirigido}
+                    onChange={setSelectedProgramaDirigido}
+                    options={[
+                      { value: '__todos__', label: 'Todos los programas' },
+                      ...programas.map((p) => ({
+                        value: String(p.id),
+                        label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
+                      })),
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Info/Preview */}
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-100">
+                <h3 className="text-sm font-semibold text-purple-800 mb-3">Información del Reporte de Cursos Dirigidos</h3>
+                <div className="space-y-2 text-sm text-slate-600">
+                  <p>
+                    Este reporte exporta todos los cursos que estén registrados como **Curso Dirigido**, desglosando el Programa, Semestre, Código del Curso, Nombre, Docente asignado, Total Horas, Costo por Hora, Monto Total y EsSalud (9%).
+                  </p>
+                  <p className="text-xs text-purple-600/70 pt-2 border-t border-purple-200/50">
+                    Puedes filtrar por un periodo o programa en específico, o seleccionar "Todos" para descargar el consolidado general.
+                  </p>
+                </div>
+              </div>
+
+              {/* Export Button */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  id="btn-generar-reporte-dirigidos"
+                  onClick={handleExportDirigido}
+                  disabled={isExportingDirigido}
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-500/30 px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:shadow-none"
+                >
+                  {isExportingDirigido ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Generando...

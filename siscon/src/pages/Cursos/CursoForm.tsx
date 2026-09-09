@@ -17,6 +17,7 @@ import type { Curso } from '../../services/cursoService';
 interface CursoFormData {
   nombre: string;
   codigo: string;
+  tipo: 'regular' | 'dirigido';
   creditos?: number;
   horas_teoricas?: number;
   horas_practicas?: number;
@@ -49,6 +50,7 @@ export function CursoForm({
     defaultValues: {
       nombre: curso?.nombre ?? '',
       codigo: curso?.codigo ?? '',
+      tipo: curso?.tipo ?? 'regular',
       creditos: curso?.creditos ?? undefined,
       horas_teoricas: curso?.horas_teoricas ?? undefined,
       horas_practicas: curso?.horas_practicas ?? undefined,
@@ -61,6 +63,7 @@ export function CursoForm({
       reset({
         nombre: curso?.nombre ?? '',
         codigo: curso?.codigo ?? '',
+        tipo: curso?.tipo ?? 'regular',
         creditos: curso?.creditos ?? undefined,
         horas_teoricas: curso?.horas_teoricas ?? undefined,
         horas_practicas: curso?.horas_practicas ?? undefined,
@@ -110,22 +113,36 @@ export function CursoForm({
             )}
           </div>
 
-          {/* Código */}
-          <div className="space-y-2">
-            <Label htmlFor="curso-codigo">Código *</Label>
-            <Input
-              id="curso-codigo"
-              {...register('codigo', {
-                required: 'El código es requerido',
-                minLength: { value: 2, message: 'Al menos 2 caracteres' },
-                pattern: { value: /^[A-Z0-9\-]+$/i, message: 'Solo letras, números y guiones' },
-              })}
-              placeholder="Ej: PI307"
-              style={{ textTransform: 'uppercase' }}
-            />
-            {errors.codigo && (
-              <p className="text-sm text-destructive">{errors.codigo.message}</p>
-            )}
+          {/* Código + Tipo de Curso */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="curso-codigo">Código *</Label>
+              <Input
+                id="curso-codigo"
+                {...register('codigo', {
+                  required: 'El código es requerido',
+                  minLength: { value: 2, message: 'Al menos 2 caracteres' },
+                  pattern: { value: /^[A-Z0-9\-]+$/i, message: 'Solo letras, números y guiones' },
+                })}
+                placeholder="Ej: PI307"
+                style={{ textTransform: 'uppercase' }}
+              />
+              {errors.codigo && (
+                <p className="text-sm text-destructive">{errors.codigo.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="curso-tipo">Tipo de Curso *</Label>
+              <select
+                id="curso-tipo"
+                {...register('tipo', { required: true })}
+                className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <option value="regular">Curso Regular / Normal</option>
+                <option value="dirigido">Curso Dirigido</option>
+              </select>
+            </div>
           </div>
 
           {/* Créditos + Horas */}

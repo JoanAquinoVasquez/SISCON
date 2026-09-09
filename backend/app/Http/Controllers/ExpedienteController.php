@@ -84,6 +84,13 @@ class ExpedienteController extends Controller
             $query->where('estado', $request->estado);
         }
 
+        // Filter by tipo_curso (regular vs dirigido)
+        if ($request->has('tipo_curso') && $request->tipo_curso && $request->tipo_curso !== 'todos') {
+            $query->whereHas('curso', function ($q) use ($request) {
+                $q->where('tipo', $request->tipo_curso);
+            });
+        }
+
         $perPage = $request->query('per_page', 15);
         $expedientes = $query->latest()->paginate($perPage);
 

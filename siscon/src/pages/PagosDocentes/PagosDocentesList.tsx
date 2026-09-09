@@ -150,6 +150,7 @@ interface PagoDocente {
   curso?: {
     nombre: string;
     codigo: string;
+    tipo?: string;
   };
   fechas_ensenanza?: string[];
   expedientes?: Array<{
@@ -186,7 +187,8 @@ export default function PagosDocentesList() {
     periodo: '',
     tipo_docente: '',
     programa_id: '',
-    estado: ''
+    estado: '',
+    tipo_curso: 'todos'
   });
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [page, setPage] = useState(1);
@@ -562,11 +564,24 @@ export default function PagosDocentesList() {
             <SelectValue placeholder="Tipo Docente" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos"><span>Todos</span></SelectItem>
+            <SelectItem value="todos"><span>Todos Docentes</span></SelectItem>
             <SelectItem value="interno"><span>Interno</span></SelectItem>
             <SelectItem value="externo"><span>Externo</span></SelectItem>
             <SelectItem value="interno_enfermeria"><span>Interno Enfermería</span></SelectItem>
             <SelectItem value="externo_enfermeria"><span>Externo Enfermería</span></SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.tipo_curso}
+          onValueChange={(value) => { setFilters({ ...filters, tipo_curso: value }); setPage(1); }}
+        >
+          <SelectTrigger className="w-full md:w-40">
+            <SelectValue placeholder="Tipo Curso" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos"><span>Todos los Cursos</span></SelectItem>
+            <SelectItem value="regular"><span>Curso Regular</span></SelectItem>
+            <SelectItem value="dirigido"><span>Curso Dirigido</span></SelectItem>
           </SelectContent>
         </Select>
         <Select
@@ -839,7 +854,14 @@ export default function PagosDocentesList() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">
                     <span className="text-xs text-slate-500 font-semibold block mb-1">Curso Dictado</span>
-                    <span className="text-sm font-semibold text-gray-900 break-words">{selectedPago.curso?.nombre || '-'}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-gray-900 break-words">{selectedPago.curso?.nombre || '-'}</span>
+                      {selectedPago.curso?.tipo === 'dirigido' ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-purple-100 text-purple-700 border border-purple-200 shrink-0">Dirigido</span>
+                      ) : selectedPago.curso?.tipo === 'regular' ? (
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 shrink-0">Regular</span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="bg-white p-3.5 rounded-lg border border-slate-200/80">

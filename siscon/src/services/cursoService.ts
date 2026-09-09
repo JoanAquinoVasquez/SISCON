@@ -6,6 +6,7 @@ export interface Curso {
   nombre: string;
   codigo: string;
   creditos: number;
+  tipo?: 'regular' | 'dirigido';
   horas_teoricas?: number;
   horas_practicas?: number;
   descripcion?: string;
@@ -18,6 +19,7 @@ export interface CreateCursoDto {
   nombre: string;
   codigo: string;
   creditos?: number;
+  tipo?: 'regular' | 'dirigido';
   horas_teoricas?: number;
   horas_practicas?: number;
   descripcion?: string;
@@ -28,6 +30,7 @@ export interface UpdateCursoDto {
   nombre?: string;
   codigo?: string;
   creditos?: number;
+  tipo?: 'regular' | 'dirigido';
   horas_teoricas?: number;
   horas_practicas?: number;
   descripcion?: string;

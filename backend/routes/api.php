@@ -153,6 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('pagos-docentes/{id}/enviar-sheets', [PagoDocenteController::class, 'enviarASheets']);
     Route::get('reportes/prestador-cuarta-categoria', [PagoDocenteController::class, 'reportePrestadorCuartaCategoria']);
     Route::get('reportes/programa', [PagoDocenteController::class, 'reportePrograma']);
+    Route::get('reportes/cursos-dirigidos', [PagoDocenteController::class, 'reporteCursosDirigidos']);
     Route::apiResource('pagos-docentes', PagoDocenteController::class);
 
     // File Upload

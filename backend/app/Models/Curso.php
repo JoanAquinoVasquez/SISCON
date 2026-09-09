@@ -17,6 +17,11 @@ class Curso extends Model
         'codigo',
         'creditos',
         'descripcion',
+        'tipo',
+    ];
+
+    protected $attributes = [
+        'tipo' => 'regular',
     ];
 
     protected $casts = [

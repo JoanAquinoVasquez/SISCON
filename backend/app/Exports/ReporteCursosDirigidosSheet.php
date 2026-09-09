@@ -2,9 +2,8 @@
 
 namespace App\Exports;
 
+use App\Models\Curso;
 use App\Models\PagoDocente;
-use App\Models\Programa;
-use App\Models\Semestre;
 use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
@@ -15,45 +14,39 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEvents, WithColumnWidths
+class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, WithEvents, WithColumnWidths
 {
-    protected $programaId;
     protected $periodo;
-    protected $programa;
+    protected $programaId;
     protected $rows = [];
     protected $totalRows = 0;
 
-    public function __construct($programaId, $periodo = null)
+    public function __construct($periodo = null, $programaId = null)
     {
-        $this->programaId = $programaId;
         $this->periodo = $periodo;
-        $this->programa = Programa::with('grado')->find($programaId);
+        $this->programaId = $programaId;
         $this->buildRows();
     }
 
     private function buildRows()
     {
-        // Get all semestres for this program, ordered by numero_semestre
-        $semestres = Semestre::where('programa_id', $this->programaId)
-            ->with(['cursos' => function ($q) {
-                $q->orderBy('nombre');
-            }])
-            ->orderBy('numero_semestre')
-            ->get();
+        // Query todos los cursos dirigidos
+        $cursosQuery = Curso::where('tipo', 'dirigido')
+            ->with(['semestres.programa.grado']);
 
-        // Fetch all pagos docentes for this program and period, grouped by curso_id
-        $pagosQuery = PagoDocente::with('docente')
-            ->whereIn('curso_id', function ($query) {
-                $query->select('curso_id')
-                    ->from('curso_semestre')
-                    ->whereIn('semestre_id', function ($q) {
-                        $q->select('id')
-                            ->from('semestres')
-                            ->where('programa_id', $this->programaId);
-                    });
+        if ($this->programaId && $this->programaId !== '__todos__') {
+            $cursosQuery->whereHas('semestres', function ($q) {
+                $q->where('programa_id', $this->programaId);
             });
+        }
+
+        $cursos = $cursosQuery->get();
+        $cursoIds = $cursos->pluck('id');
+
+        // Consultar pagos docentes para estos cursos dirigidos
+        $pagosQuery = PagoDocente::with('docente')
+            ->whereIn('curso_id', $cursoIds);
 
         if ($this->periodo && $this->periodo !== '__todos__') {
             $pagosQuery->where('periodo', $this->periodo);
@@ -61,20 +54,20 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
 
         $pagosGrouped = $pagosQuery->get()->groupBy('curso_id');
 
-        // Build title row
-        $gradoNombre = $this->programa->grado->nombre ?? '';
+        // Título del reporte
         $periodoSuffix = ($this->periodo && $this->periodo !== '__todos__') 
             ? ' - PERIODO ' . $this->periodo 
             : ' - TODOS LOS PERIODOS';
-        $programaNombre = mb_strtoupper($gradoNombre . ' EN ' . $this->programa->nombre . $periodoSuffix, 'UTF-8');
-        $this->rows[] = [$programaNombre, '', '', '', '', '', '', '', '', ''];
+        $titleText = 'REPORTE GENERAL DE CURSOS DIRIGIDOS' . $periodoSuffix;
+        $this->rows[] = [$titleText, '', '', '', '', '', '', '', '', '', ''];
 
         // Header row
         $this->rows[] = [
-            'SEMESTRE',
             'PERIODO',
-            'CURSO',
-            'TIPO DE CURSO',
+            'PROGRAMA',
+            'SEMESTRE',
+            'CÓDIGO',
+            'CURSO DIRIGIDO',
             'DOCENTE',
             'TOTAL HORAS',
             'LUGAR DE PROCEDENCIA',
@@ -84,75 +77,72 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
         ];
 
         // Populate rows
-        foreach ($semestres as $semestre) {
-            $semestreNum = $semestre->numero_semestre;
-            $semestreLabel = $semestre->nombre ? $semestre->nombre : ($semestreNum > 0 ? $semestreNum . '° Semestre' : 'S/N');
-            $isFirstInSemestre = true;
+        foreach ($cursos as $curso) {
+            $semestre = $curso->semestres->first();
+            $programa = $semestre?->programa;
+            $gradoNombre = $programa?->grado?->nombre ?? '';
+            $programaNombre = $programa ? ($gradoNombre ? $gradoNombre . ' en ' : '') . $programa->nombre : 'S/N';
+            $semestreNum = $semestre?->numero_semestre ?? 0;
+            $semestreLabel = $semestre?->nombre ? $semestre->nombre : ($semestreNum > 0 ? $semestreNum . '° Semestre' : 'S/N');
 
-            foreach ($semestres_cursos = $semestre->cursos as $curso) {
-                $cursoPagos = $pagosGrouped->get($curso->id);
-                $tipoCursoLabel = ($curso->tipo === 'dirigido') ? 'Dirigido' : 'Regular';
+            $cursoPagos = $pagosGrouped->get($curso->id);
 
-                if ($cursoPagos && $cursoPagos->count() > 0) {
-                    // One or more teacher payments for this course
-                    foreach ($cursoPagos as $pago) {
-                        $docenteNombre = $pago->docente
-                            ? ($pago->docente->titulo_profesional ? $pago->docente->titulo_profesional . ' ' : '') .
-                              $pago->docente->nombres . ' ' .
-                              $pago->docente->apellido_paterno . ' ' .
-                              $pago->docente->apellido_materno
-                            : '';
+            if ($cursoPagos && $cursoPagos->count() > 0) {
+                foreach ($cursoPagos as $pago) {
+                    $docenteNombre = $pago->docente
+                        ? ($pago->docente->titulo_profesional ? $pago->docente->titulo_profesional . ' ' : '') .
+                          $pago->docente->nombres . ' ' .
+                          $pago->docente->apellido_paterno . ' ' .
+                          $pago->docente->apellido_materno
+                        : '';
 
-                        $totalHoras = (int) $pago->numero_horas;
-                        $costoHora = (float) $pago->costo_por_hora;
-                        $montoTotal = (float) $pago->importe_total;
-                        
-                        // EsSalud is only calculated for internal teachers (regular and enfermeria)
-                        $esInterno = $pago->docente && in_array($pago->docente->tipo_docente, ['interno', 'interno_enfermeria']);
-                        $essalud = $esInterno ? round($montoTotal * 0.09, 2) : '';
+                    $totalHoras = (int) $pago->numero_horas;
+                    $costoHora = (float) $pago->costo_por_hora;
+                    $montoTotal = (float) $pago->importe_total;
+                    
+                    $esInterno = $pago->docente && in_array($pago->docente->tipo_docente, ['interno', 'interno_enfermeria']);
+                    $essalud = $esInterno ? round($montoTotal * 0.09, 2) : '';
 
-                        $periodoFila = $pago->periodo ?? $this->programa->periodo ?? '-';
+                    $periodoFila = $pago->periodo ?? $programa?->periodo ?? '-';
 
-                        $this->rows[] = [
-                            $isFirstInSemestre ? $semestreLabel : '',
-                            $periodoFila,
-                            $curso->nombre,
-                            $tipoCursoLabel,
-                            $docenteNombre,
-                            $totalHoras,
-                            '', // Lugar de procedencia - blank
-                            $costoHora,
-                            $montoTotal,
-                            $essalud,
-                        ];
-
-                        $this->totalRows++;
-                        $isFirstInSemestre = false;
-                    }
-                } else {
-                    $periodoFila = $this->programa->periodo ?? '-';
-                    // No payments for this course, but we still list the course
                     $this->rows[] = [
-                        $isFirstInSemestre ? $semestreLabel : '',
                         $periodoFila,
+                        $programaNombre,
+                        $semestreLabel,
+                        $curso->codigo,
                         $curso->nombre,
-                        $tipoCursoLabel,
-                        '', // No docente
-                        '', // No hours
-                        '', // Lugar de procedencia - blank
-                        '', // No hourly cost
-                        '', // No total amount
-                        '', // No EsSalud
+                        $docenteNombre,
+                        $totalHoras,
+                        '', // Lugar de procedencia
+                        $costoHora,
+                        $montoTotal,
+                        $essalud,
                     ];
 
                     $this->totalRows++;
-                    $isFirstInSemestre = false;
                 }
+            } else {
+                $periodoFila = $programa?->periodo ?? '-';
+                $this->rows[] = [
+                    $periodoFila,
+                    $programaNombre,
+                    $semestreLabel,
+                    $curso->codigo,
+                    $curso->nombre,
+                    '', // No docente
+                    '', // No hours
+                    '', // Lugar de procedencia
+                    '', // No cost
+                    '', // No total
+                    '', // No EsSalud
+                ];
+
+                $this->totalRows++;
             }
         }
 
         // Footer row - TOTAL A PAGAR
-        $dataStartRow = 3; // Row 1 = title, Row 2 = headers, Row 3+ = data
+        $dataStartRow = 3;
         $dataEndRow = $dataStartRow + $this->totalRows - 1;
 
         if ($this->totalRows > 0) {
@@ -165,12 +155,14 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                 '',
                 '',
                 '',
-                "=SUM(I{$dataStartRow}:I{$dataEndRow})",
+                '',
                 "=SUM(J{$dataStartRow}:J{$dataEndRow})",
+                "=SUM(K{$dataStartRow}:K{$dataEndRow})",
             ];
         } else {
             $this->rows[] = [
                 'TOTAL A PAGAR',
+                '',
                 '',
                 '',
                 '',
@@ -191,24 +183,23 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
 
     public function title(): string
     {
-        $nombre = $this->programa->nombre ?? 'Programa';
-        // Excel sheet name max 31 chars
-        return mb_substr($nombre, 0, 31);
+        return 'Cursos Dirigidos';
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 16,  // SEMESTRE
-            'B' => 14,  // PERIODO
-            'C' => 35,  // CURSO
-            'D' => 16,  // TIPO DE CURSO
-            'E' => 40,  // DOCENTE
-            'F' => 14,  // TOTAL HORAS
-            'G' => 22,  // LUGAR DE PROCEDENCIA
-            'H' => 14,  // COSTO HORA
-            'I' => 16,  // MONTO TOTAL
-            'J' => 14,  // ESSALUD 9%
+            'A' => 14,  // PERIODO
+            'B' => 38,  // PROGRAMA
+            'C' => 16,  // SEMESTRE
+            'D' => 14,  // CÓDIGO
+            'E' => 35,  // CURSO DIRIGIDO
+            'F' => 40,  // DOCENTE
+            'G' => 14,  // TOTAL HORAS
+            'H' => 22,  // LUGAR DE PROCEDENCIA
+            'I' => 14,  // COSTO HORA
+            'J' => 16,  // MONTO TOTAL
+            'K' => 14,  // ESSALUD 9%
         ];
     }
 
@@ -223,7 +214,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
                 $highestRow = $sheet->getHighestRow();
-                $lastCol = 'J';
+                $lastCol = 'K';
 
                 // === TITLE ROW (Row 1) ===
                 $sheet->mergeCells("A1:{$lastCol}1");
@@ -235,7 +226,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                     ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['argb' => 'FF1F4E79'],
+                        'startColor' => ['argb' => 'FF5B21B6'], // Purple theme for dirigidos
                     ],
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -253,7 +244,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                     ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['argb' => 'FF2E75B6'],
+                        'startColor' => ['argb' => 'FF7C3AED'],
                     ],
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -271,7 +262,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
 
                 // === DATA ROWS ===
                 if ($highestRow > 2) {
-                    $dataEnd = $highestRow - 1; // Exclude footer
+                    $dataEnd = $highestRow - 1;
                     
                     if ($dataEnd >= 3) {
                         $sheet->getStyle("A3:{$lastCol}{$dataEnd}")->applyFromArray([
@@ -288,18 +279,18 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                         ]);
 
                         // Center specific columns
-                        $sheet->getStyle("A3:B{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("D3:D{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                        $sheet->getStyle("F3:F{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("A3:A{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("C3:D{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                        $sheet->getStyle("G3:G{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         
                         // Currency format for COSTO HORA, MONTO TOTAL, ESSALUD
                         $currencyFormat = '"S/." #,##0.00';
-                        $sheet->getStyle("H3:H{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
                         $sheet->getStyle("I3:I{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
                         $sheet->getStyle("J3:J{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
+                        $sheet->getStyle("K3:K{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
 
-                        // Number format for hours (only integer, no commas or decimals)
-                        $sheet->getStyle("F3:F{$dataEnd}")->getNumberFormat()->setFormatCode('0');
+                        // Number format for hours
+                        $sheet->getStyle("G3:G{$dataEnd}")->getNumberFormat()->setFormatCode('0');
 
                         // Alternate row coloring
                         for ($row = 3; $row <= $dataEnd; $row++) {
@@ -307,7 +298,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                                 $sheet->getStyle("A{$row}:{$lastCol}{$row}")->applyFromArray([
                                     'fill' => [
                                         'fillType' => Fill::FILL_SOLID,
-                                        'startColor' => ['argb' => 'FFDCE6F1'],
+                                        'startColor' => ['argb' => 'FDF4FF'],
                                     ],
                                 ]);
                             }
@@ -324,7 +315,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                     ],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['argb' => 'FF1F4E79'],
+                        'startColor' => ['argb' => 'FF5B21B6'],
                     ],
                     'alignment' => [
                         'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -339,14 +330,13 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                 ]);
                 $sheet->getRowDimension($highestRow)->setRowHeight(28);
 
-                // Currency format for footer totals
                 $currencyFormat = '"S/." #,##0.00';
-                $sheet->getStyle("I{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
                 $sheet->getStyle("J{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
+                $sheet->getStyle("K{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
 
-                // Merge TOTAL A PAGAR label across first columns
-                $sheet->mergeCells("A{$highestRow}:H{$highestRow}");
+                // Merge TOTAL A PAGAR label across first 9 columns
+                $sheet->mergeCells("A{$highestRow}:I{$highestRow}");
             },
         ];
-    }}
+    }
 }

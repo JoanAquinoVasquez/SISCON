@@ -24,6 +24,7 @@ class CursoController extends Controller
             'creditos' => 'nullable|integer|min:1',
             'horas_teoricas' => 'nullable|integer|min:0',
             'horas_practicas' => 'nullable|integer|min:0',
+            'tipo' => 'nullable|string|in:regular,dirigido',
         ]);
 
         if ($validator->fails()) {
@@ -63,6 +64,7 @@ class CursoController extends Controller
             'creditos' => 'nullable|integer|min:1',
             'horas_teoricas' => 'nullable|integer|min:0',
             'horas_practicas' => 'nullable|integer|min:0',
+            'tipo' => 'nullable|string|in:regular,dirigido',
         ]);
 
         if ($validator->fails()) {

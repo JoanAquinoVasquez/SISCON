@@ -195,6 +195,19 @@ export default function PagosDocentesList() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [totalImporte, setTotalImporte] = useState(0);
+  const [periodosList, setPeriodosList] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchPeriodos = async () => {
+      try {
+        const response = await axios.get('/pagos-docentes/periodos');
+        setPeriodosList(response.data.data || []);
+      } catch (error) {
+        console.error('Error al cargar periodos:', error);
+      }
+    };
+    fetchPeriodos();
+  }, []);
 
   const debouncedSearch = useDebounce(search, 500);
 
@@ -551,12 +564,20 @@ export default function PagosDocentesList() {
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <Input
-          placeholder="Periodo (ej. 2024-I)"
-          className="w-full md:w-40"
-          value={filters.periodo}
-          onChange={(e) => { setFilters({ ...filters, periodo: e.target.value }); setPage(1); }}
-        />
+        <Select
+          value={filters.periodo || 'todos'}
+          onValueChange={(value) => { setFilters({ ...filters, periodo: value === 'todos' ? '' : value }); setPage(1); }}
+        >
+          <SelectTrigger className="w-full md:w-40">
+            <SelectValue placeholder="Periodo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos"><span>Todos Periodos</span></SelectItem>
+            {periodosList.map((p) => (
+              <SelectItem key={p} value={p}><span>{p}</span></SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select
           value={filters.tipo_docente}
           onValueChange={(value) => { setFilters({ ...filters, tipo_docente: value }); setPage(1); }}

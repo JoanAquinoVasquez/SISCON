@@ -142,6 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('pagos-docentes/buscar-docente', [PagoDocenteController::class, 'buscarDocentes']);
     Route::get('pagos-docentes/buscar-programa', [PagoDocenteController::class, 'buscarProgramas']);
     Route::get('pagos-docentes/programa/{id}/datos', [PagoDocenteController::class, 'obtenerDatosPrograma']);
+    Route::get('pagos-docentes/periodos', [PagoDocenteController::class, 'getPeriodos']);
     Route::get('pagos-docentes/buscar-curso', [PagoDocenteController::class, 'buscarCursos']);
     Route::get('pagos-docentes/curso/{id}/datos', [PagoDocenteController::class, 'obtenerDatosCurso']);
     Route::post('pagos-docentes/{id}/generar-resolucion', [PagoDocenteController::class, 'generateResolucion']);

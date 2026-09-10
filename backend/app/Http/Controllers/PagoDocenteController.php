@@ -917,4 +917,17 @@ class PagoDocenteController extends Controller
 
         return response()->json($response);
     }
+
+    public function getPeriodos()
+    {
+        $periodosPagos = PagoDocente::whereNotNull('periodo')->where('periodo', '!=', '')->pluck('periodo')->toArray();
+        $periodosProgramas = \App\Models\Programa::whereNotNull('periodo')->where('periodo', '!=', '')->pluck('periodo')->toArray();
+
+        $merged = array_unique(array_merge($periodosPagos, $periodosProgramas));
+        usort($merged, function ($a, $b) {
+            return strcmp($b, $a);
+        });
+
+        return response()->json(['data' => array_values($merged)]);
+    }
 }

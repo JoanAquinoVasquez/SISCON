@@ -37,6 +37,7 @@ interface SearchableSelectProps {
   placeholder: string;
   searchPlaceholder?: string;
   icon?: React.ReactNode;
+  className?: string;
 }
 
 function SearchableSelect({
@@ -47,6 +48,7 @@ function SearchableSelect({
   placeholder,
   searchPlaceholder = 'Buscar...',
   icon,
+  className = '',
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -77,7 +79,7 @@ function SearchableSelect({
   );
 
   return (
-    <div className={`space-y-2 relative ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
+    <div className={`space-y-2 relative ${isOpen ? 'z-50' : 'z-10'} ${className}`} ref={containerRef}>
       <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
         {icon}
         {label}
@@ -86,16 +88,19 @@ function SearchableSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 hover:bg-slate-50 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left shadow-sm"
+        className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 hover:bg-slate-50 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-left shadow-sm"
       >
-        <span className={selectedOption ? 'text-slate-800 font-medium truncate' : 'text-slate-400 truncate'}>
+        <span
+          className={selectedOption ? 'text-slate-800 font-medium truncate' : 'text-slate-400 truncate'}
+          title={selectedOption ? selectedOption.label : placeholder}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`h-4 w-4 text-slate-500 shrink-0 ml-2 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 overflow-hidden animate-in fade-in duration-100">
+        <div className="absolute z-50 mt-1 left-0 w-full min-w-full rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-200/80 overflow-hidden animate-in fade-in duration-100">
           {/* Search Input */}
           <div className="relative border-b border-slate-100">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -110,7 +115,7 @@ function SearchableSelect({
           </div>
 
           {/* Options List */}
-          <div className="max-h-60 overflow-y-auto py-1 divide-y divide-slate-50">
+          <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-50">
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-slate-400 text-center">
                 No se encontraron resultados
@@ -126,6 +131,7 @@ function SearchableSelect({
                       onChange(opt.value);
                       setIsOpen(false);
                     }}
+                    title={opt.label}
                     className={`w-full flex items-center justify-between px-4 py-2.5 text-sm text-left transition-colors duration-150 ${
                       isSelected
                         ? 'bg-blue-50/70 text-blue-700 font-semibold'
@@ -376,7 +382,7 @@ export default function ReportePrograma() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto w-full">
       {/* Page Header */}
       <div className="flex items-center gap-3">
         <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
@@ -416,7 +422,7 @@ export default function ReportePrograma() {
                   <span className="text-sm font-medium text-slate-600">Filtros del Reporte</span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   {/* Period Selector */}
                   <SearchableSelect
                     label="Periodo"
@@ -432,6 +438,7 @@ export default function ReportePrograma() {
                       { value: '__todos__', label: 'Todos los periodos' },
                       ...periodos.map((p) => ({ value: p, label: p })),
                     ]}
+                    className="lg:col-span-4 xl:col-span-3"
                   />
 
                   {/* Program Selector */}
@@ -446,6 +453,7 @@ export default function ReportePrograma() {
                       value: String(p.id),
                       label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
                     }))}
+                    className="lg:col-span-8 xl:col-span-9"
                   />
                 </div>
               </div>
@@ -603,7 +611,7 @@ export default function ReportePrograma() {
                   <span className="text-sm font-medium text-slate-600">Filtros del Reporte (Opcionales)</span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   {/* Period Selector */}
                   <SearchableSelect
                     label="Periodo"
@@ -618,6 +626,7 @@ export default function ReportePrograma() {
                       { value: '__todos__', label: 'Todos los periodos' },
                       ...periodos.map((p) => ({ value: p, label: p })),
                     ]}
+                    className="lg:col-span-4 xl:col-span-3"
                   />
 
                   {/* Program Selector */}
@@ -635,6 +644,7 @@ export default function ReportePrograma() {
                         label: `${p.grado?.nombre ? `${p.grado.nombre} en ` : ''}${p.nombre}${p.periodo ? ` (${p.periodo})` : ''}`,
                       })),
                     ]}
+                    className="lg:col-span-8 xl:col-span-9"
                   />
                 </div>
               </div>

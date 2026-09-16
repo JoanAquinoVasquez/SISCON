@@ -376,7 +376,7 @@ class ExpedienteController extends Controller
             if (in_array($expediente->tipo_asunto, ['presentacion', 'conformidad'])) {
 
                 if ($expediente->tipo_asunto === 'presentacion') {
-                    // Re-evaluar vinculación basada en fechas
+                    // Re-evaluar vinculación basada en docente, curso y periodo
                     if ($pagoAnterior) {
                         // Verificar si el pago anterior aún existe
                         $pagoAnteriorObj = PagoDocente::find($pagoAnterior);
@@ -386,34 +386,27 @@ class ExpedienteController extends Controller
                             if ($semestre && $semestre->programa) {
                                 $periodo = $semestre->programa->periodo;
 
-                                // Verificar si el pago anterior aún coincide
-                                $monthsYearsPagoAnterior = $this->extractMonthsYearsFromArray($pagoAnteriorObj->fechas_ensenanza);
-                                $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
                                 $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
 
-                                if ($mismoDocenteCurso && $monthsYearsPagoAnterior === $monthsYearsExpediente) {
+                                if ($mismoDocenteCurso) {
                                     // Sigue siendo válido -> Actualizar
-                                    $pagoAnteriorObj->update([
+                                    $updateData = [
                                         'numero_oficio_presentacion_facultad' => $expediente->numero_documento,
                                         'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
                                         'fecha_mesa_partes' => $expediente->fecha_mesa_partes,
-                                    ]);
+                                    ];
+
+                                    if (empty($pagoAnteriorObj->fechas_ensenanza) && !empty($expediente->fechas_ensenanza)) {
+                                        $updateData['fechas_ensenanza'] = $expediente->fechas_ensenanza;
+                                    }
+
+                                    $pagoAnteriorObj->update($updateData);
                                 } else {
-                                    // Buscar otro coincidente
-                                    $pagos = PagoDocente::where('docente_id', $expediente->docente_id)
+                                    // Buscar otro coincidente por docente, curso, periodo
+                                    $pagoCoincidente = PagoDocente::where('docente_id', $expediente->docente_id)
                                         ->where('curso_id', $expediente->curso_id)
                                         ->where('periodo', $periodo)
-                                        ->get();
-
-                                    $pagoCoincidente = null;
-                                    foreach ($pagos as $p) {
-                                        $monthsYearsPago = $this->extractMonthsYearsFromArray($p->fechas_ensenanza);
-                                        $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
-                                        if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
-                                            $pagoCoincidente = $p;
-                                            break;
-                                        }
-                                    }
+                                        ->first();
 
                                     if ($pagoCoincidente) {
                                         // Capturar datos financieros antes de limpiar/borrar el anterior (solo si es presentacion)
@@ -452,7 +445,11 @@ class ExpedienteController extends Controller
                                             'numero_oficio_presentacion_coordinador' => $request->numero_oficio_presentacion_coordinador,
                                         ];
 
-                                        // Solo transferir si el coincidente tiene 0 y el anterior tenia algo (evita perder datos si ya habia algo en el nuevo)
+                                        if (empty($pagoCoincidente->fechas_ensenanza) && !empty($expediente->fechas_ensenanza)) {
+                                            $updateData['fechas_ensenanza'] = $expediente->fechas_ensenanza;
+                                        }
+
+                                        // Solo transferir si el coincidente tiene 0 y el anterior tenia algo
                                         if ($pagoCoincidente->importe_total == 0 && $datosFinancieros['importe_total'] > 0) {
                                             $updateData = array_merge($updateData, $datosFinancieros);
                                         }
@@ -512,7 +509,7 @@ class ExpedienteController extends Controller
                         $expediente->procesarPresentacion($request->numero_oficio_presentacion_coordinador);
                     }
                 } elseif ($expediente->tipo_asunto === 'conformidad') {
-                    // Re-evaluar vinculación basada en fechas
+                    // Re-evaluar vinculación basada en docente, curso y periodo
                     if ($pagoAnterior) {
                         // Verificar si el pago anterior aún existe
                         $pagoAnteriorObj = PagoDocente::find($pagoAnterior);
@@ -523,40 +520,29 @@ class ExpedienteController extends Controller
                             if ($semestre && $semestre->programa) {
                                 $periodo = $semestre->programa->periodo;
 
-                                // Verificar si el pago anterior aún coincide con los nuevos datos
-                                $monthsYearsPagoAnterior = $this->extractMonthsYearsFromArray($pagoAnteriorObj->fechas_ensenanza);
-                                $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
                                 $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
 
-                                if ($mismoDocenteCurso && $monthsYearsPagoAnterior === $monthsYearsExpediente) {
+                                if ($mismoDocenteCurso) {
                                     // El pago anterior sigue siendo válido -> Actualizarlo
-                                    $pagoAnteriorObj->update([
+                                    $updateData = [
                                         'numero_oficio_conformidad_direccion' => $expediente->numero_documento,
                                         'numero_oficio_conformidad_coordinador' => $request->numero_oficio_conformidad_coordinador,
                                         'numero_oficio_conformidad_facultad' => $request->numero_oficio_conformidad_facultad,
                                         'estado' => 'en_proceso',
-                                    ]);
+                                    ];
+
+                                    if (empty($pagoAnteriorObj->fechas_ensenanza) && !empty($expediente->fechas_ensenanza)) {
+                                        $updateData['fechas_ensenanza'] = $expediente->fechas_ensenanza;
+                                    }
+
+                                    $pagoAnteriorObj->update($updateData);
                                     // No es necesario cambiar pago_docente_id
                                 } else {
-                                    // El pago anterior ya no coincide -> Buscar otro
-                                    // Buscar pagos que coincidan, ignorando estado para permitir asociar también si el pago está completado/en proceso.
-                                    $pagos = PagoDocente::where('docente_id', $expediente->docente_id)
+                                    // El pago anterior ya no coincide -> Buscar otro por docente, curso, periodo
+                                    $pagoCoincidente = PagoDocente::where('docente_id', $expediente->docente_id)
                                         ->where('curso_id', $expediente->curso_id)
                                         ->where('periodo', $periodo)
-                                        ->get();
-
-                                    $pagoCoincidente = null;
-                                    foreach ($pagos as $p) {
-                                        // Comparar por mes y año en lugar de fechas exactas
-                                        $monthsYearsPago = $this->extractMonthsYearsFromArray($p->fechas_ensenanza);
-                                        $monthsYearsExpediente = $this->extractMonthsYearsFromArray($expediente->fechas_ensenanza);
-
-                                        // Si los meses y años coinciden, vincular
-                                        if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
-                                            $pagoCoincidente = $p;
-                                            break;
-                                        }
-                                    }
+                                        ->first();
 
                                     if ($pagoCoincidente) {
                                         // Cambió de pago → Desvincular anterior
@@ -583,12 +569,18 @@ class ExpedienteController extends Controller
                                         }
 
                                         // Vincular al nuevo pago
-                                        $pagoCoincidente->update([
+                                        $updateData = [
                                             'numero_oficio_conformidad_direccion' => $expediente->numero_documento,
                                             'numero_oficio_conformidad_coordinador' => $request->numero_oficio_conformidad_coordinador,
                                             'numero_oficio_conformidad_facultad' => $request->numero_oficio_conformidad_facultad,
                                             'estado' => 'en_proceso',
-                                        ]);
+                                        ];
+
+                                        if (empty($pagoCoincidente->fechas_ensenanza) && !empty($expediente->fechas_ensenanza)) {
+                                            $updateData['fechas_ensenanza'] = $expediente->fechas_ensenanza;
+                                        }
+
+                                        $pagoCoincidente->update($updateData);
 
                                         // Force update using DB facade
                                         \Illuminate\Support\Facades\DB::table('expedientes')->where('id', $expediente->id)->update(['pago_docente_id' => $pagoCoincidente->id]);

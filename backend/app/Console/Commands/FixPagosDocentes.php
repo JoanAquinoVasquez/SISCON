@@ -102,7 +102,8 @@ class FixPagosDocentes extends Command
                                 'numero_horas',
                                 'costo_por_hora',
                                 'importe_total',
-                                'importe_letras'
+                                'importe_letras',
+                                'fechas_ensenanza'
                             ];
 
                             foreach ($fields as $f) {

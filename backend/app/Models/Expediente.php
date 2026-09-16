@@ -170,34 +170,27 @@ class Expediente extends Model
         }
 
         // Buscar pago que coincida en docente, curso, periodo
-        $pagos = PagoDocente::where('docente_id', $this->docente_id)
+        $pago = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
-            ->get();
-
-        // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)
-        $pago = null;
-        foreach ($pagos as $p) {
-            $monthsYearsPago = $this->extractMonthsYears($p->fechas_ensenanza);
-            $monthsYearsExpediente = $this->extractMonthsYears($this->fechas_ensenanza);
-
-            // Si los meses y años coinciden, vincular
-            if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
-                $pago = $p;
-                break;
-            }
-        }
+            ->first();
 
         if ($pago) {
             // Encontró un pago coincidente -> Vincular
-            $pago->update([
+            $updateData = [
                 'numero_oficio_presentacion_facultad' => $this->numero_documento,
                 'numero_oficio_presentacion_coordinador' => $oficioPresentacionCoordinador,
                 'fecha_mesa_partes' => $this->fecha_mesa_partes,
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,
                 'coordinador_nombre' => $coordinadorNombre,
-            ]);
+            ];
+
+            if (empty($pago->fechas_ensenanza) && !empty($this->fechas_ensenanza)) {
+                $updateData['fechas_ensenanza'] = $this->fechas_ensenanza;
+            }
+
+            $pago->update($updateData);
 
             $this->estado = 'en_proceso'; // Si encuentra uno (ej. conformidad estaba primero), en proceso
             $this->pago_docente_id = $pago->id;
@@ -266,7 +259,7 @@ class Expediente extends Model
         if ($this->pago_docente_id) {
             $pago = PagoDocente::find($this->pago_docente_id);
             if ($pago) {
-                $pago->update([
+                $updateData = [
                     'numero_oficio_conformidad_direccion' => $this->numero_documento,
                     'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
                     'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
@@ -274,7 +267,13 @@ class Expediente extends Model
                     'facultad_nombre' => $facultadNombre,
                     'director_nombre' => $directorNombre,
                     'coordinador_nombre' => $coordinadorNombre,
-                ]);
+                ];
+
+                if (empty($pago->fechas_ensenanza) && !empty($this->fechas_ensenanza)) {
+                    $updateData['fechas_ensenanza'] = $this->fechas_ensenanza;
+                }
+
+                $pago->update($updateData);
                 $this->update(['estado' => 'en_proceso']);
                 return $pago;
             }
@@ -282,35 +281,27 @@ class Expediente extends Model
         }
 
         // Buscar pago que coincida en docente, curso y periodo
-        $pagos = PagoDocente::where('docente_id', $this->docente_id)
+        $pago = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
-            ->get();
-
-        // Buscar el pago que tenga las mismas fechas de enseñanza (por mes y año)
-        $pago = null;
-        foreach ($pagos as $p) {
-            // Comparar por mes y año en lugar de fechas exactas
-            $monthsYearsPago = $this->extractMonthsYears($p->fechas_ensenanza);
-            $monthsYearsExpediente = $this->extractMonthsYears($this->fechas_ensenanza);
-
-            // Si los meses y años coinciden, vincular
-            if ($monthsYearsPago === $monthsYearsExpediente && !empty($monthsYearsPago)) {
-                $pago = $p;
-                break;
-            }
-        }
+            ->first();
 
         if ($pago) {
-            // Encontró un pago pendiente con mismo docente, curso, periodo y fechas → Vincular
-            $pago->update([
+            // Encontró un pago pendiente con mismo docente, curso, periodo → Vincular
+            $updateData = [
                 'numero_oficio_conformidad_direccion' => $this->numero_documento,
                 'numero_oficio_conformidad_coordinador' => $oficioConformidadCoordinador,
                 'numero_oficio_conformidad_facultad' => $oficioConformidadFacultad,
                 'facultad_nombre' => $facultadNombre,
                 'director_nombre' => $directorNombre,
                 'coordinador_nombre' => $coordinadorNombre,
-            ]);
+            ];
+
+            if (empty($pago->fechas_ensenanza) && !empty($this->fechas_ensenanza)) {
+                $updateData['fechas_ensenanza'] = $this->fechas_ensenanza;
+            }
+
+            $pago->update($updateData);
 
             $this->estado = 'en_proceso';
             $this->pago_docente_id = $pago->id;

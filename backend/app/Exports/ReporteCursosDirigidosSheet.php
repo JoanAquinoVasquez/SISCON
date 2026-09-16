@@ -59,7 +59,7 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
             ? ' - PERIODO ' . $this->periodo 
             : ' - TODOS LOS PERIODOS';
         $titleText = 'REPORTE GENERAL DE CURSOS DIRIGIDOS' . $periodoSuffix;
-        $this->rows[] = [$titleText, '', '', '', '', '', '', '', '', '', ''];
+        $this->rows[] = [$titleText, '', '', '', '', '', '', '', ''];
 
         // Header row
         $this->rows[] = [
@@ -70,8 +70,6 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
             'CURSO DIRIGIDO',
             'DOCENTE',
             'TOTAL HORAS',
-            'LUGAR DE PROCEDENCIA',
-            'COSTO HORA',
             'MONTO TOTAL',
             'ESSALUD 9%',
         ];
@@ -97,7 +95,6 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                         : '';
 
                     $totalHoras = (int) $pago->numero_horas;
-                    $costoHora = (float) $pago->costo_por_hora;
                     $montoTotal = (float) $pago->importe_total;
                     
                     $esInterno = $pago->docente && in_array($pago->docente->tipo_docente, ['interno', 'interno_enfermeria']);
@@ -113,8 +110,6 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                         $curso->nombre,
                         $docenteNombre,
                         $totalHoras,
-                        '', // Lugar de procedencia
-                        $costoHora,
                         $montoTotal,
                         $essalud,
                     ];
@@ -131,8 +126,6 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                     $curso->nombre,
                     '', // No docente
                     '', // No hours
-                    '', // Lugar de procedencia
-                    '', // No cost
                     '', // No total
                     '', // No EsSalud
                 ];
@@ -154,16 +147,12 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                 '',
                 '',
                 '',
-                '',
-                '',
-                "=SUM(J{$dataStartRow}:J{$dataEndRow})",
-                "=SUM(K{$dataStartRow}:K{$dataEndRow})",
+                "=SUM(H{$dataStartRow}:H{$dataEndRow})",
+                "=SUM(I{$dataStartRow}:I{$dataEndRow})",
             ];
         } else {
             $this->rows[] = [
                 'TOTAL A PAGAR',
-                '',
-                '',
                 '',
                 '',
                 '',
@@ -196,10 +185,8 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
             'E' => 35,  // CURSO DIRIGIDO
             'F' => 40,  // DOCENTE
             'G' => 14,  // TOTAL HORAS
-            'H' => 22,  // LUGAR DE PROCEDENCIA
-            'I' => 14,  // COSTO HORA
-            'J' => 16,  // MONTO TOTAL
-            'K' => 14,  // ESSALUD 9%
+            'H' => 16,  // MONTO TOTAL
+            'I' => 14,  // ESSALUD 9%
         ];
     }
 
@@ -214,7 +201,7 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
                 $highestRow = $sheet->getHighestRow();
-                $lastCol = 'K';
+                $lastCol = 'I';
 
                 // === TITLE ROW (Row 1) ===
                 $sheet->mergeCells("A1:{$lastCol}1");
@@ -283,11 +270,10 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                         $sheet->getStyle("C3:D{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         $sheet->getStyle("G3:G{$dataEnd}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                         
-                        // Currency format for COSTO HORA, MONTO TOTAL, ESSALUD
+                        // Currency format for MONTO TOTAL, ESSALUD
                         $currencyFormat = '"S/." #,##0.00';
+                        $sheet->getStyle("H3:H{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
                         $sheet->getStyle("I3:I{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
-                        $sheet->getStyle("J3:J{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
-                        $sheet->getStyle("K3:K{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
 
                         // Number format for hours
                         $sheet->getStyle("G3:G{$dataEnd}")->getNumberFormat()->setFormatCode('0');
@@ -331,11 +317,11 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
                 $sheet->getRowDimension($highestRow)->setRowHeight(28);
 
                 $currencyFormat = '"S/." #,##0.00';
-                $sheet->getStyle("J{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
-                $sheet->getStyle("K{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
+                $sheet->getStyle("H{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
+                $sheet->getStyle("I{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
 
-                // Merge TOTAL A PAGAR label across first 9 columns
-                $sheet->mergeCells("A{$highestRow}:I{$highestRow}");
+                // Merge TOTAL A PAGAR label across first 7 columns (A to G)
+                $sheet->mergeCells("A{$highestRow}:G{$highestRow}");
             },
         ];
     }

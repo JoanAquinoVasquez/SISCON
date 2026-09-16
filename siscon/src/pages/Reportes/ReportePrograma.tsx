@@ -485,7 +485,7 @@ export default function ReportePrograma() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-blue-200/50">
                     <p className="text-xs text-blue-600/70">
-                      El reporte incluirá: Semestre, Curso, Docente, Total Horas, Costo Hora, Monto Total y EsSalud 9%
+                      El reporte incluirá: Semestre, Curso, Docente, Total Horas, Fechas de Enseñanza, Costo Hora, Monto Total y EsSalud 9%
                     </p>
                   </div>
                 </div>
@@ -654,7 +654,7 @@ export default function ReportePrograma() {
                 <h3 className="text-sm font-semibold text-purple-800 mb-3">Información del Reporte de Cursos Dirigidos</h3>
                 <div className="space-y-2 text-sm text-slate-600">
                   <p>
-                    Este reporte exporta todos los cursos que estén registrados como **Curso Dirigido**, desglosando el Programa, Semestre, Código del Curso, Nombre, Docente asignado, Total Horas, Costo por Hora, Monto Total y EsSalud (9%).
+                    Este reporte exporta todos los cursos que estén registrados como **Curso Dirigido**, desglosando el Programa, Semestre, Código del Curso, Nombre, Docente asignado, Total Horas, Monto Total y EsSalud (9%).
                   </p>
                   <p className="text-xs text-purple-600/70 pt-2 border-t border-purple-200/50">
                     Puedes filtrar por un periodo o programa en específico, o seleccionar "Todos" para descargar el consolidado general.

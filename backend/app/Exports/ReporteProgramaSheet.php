@@ -67,7 +67,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
             ? ' - PERIODO ' . $this->periodo 
             : ' - TODOS LOS PERIODOS';
         $programaNombre = mb_strtoupper($gradoNombre . ' EN ' . $this->programa->nombre . $periodoSuffix, 'UTF-8');
-        $this->rows[] = [$programaNombre, '', '', '', '', '', '', '', '', ''];
+        $this->rows[] = [$programaNombre, '', '', '', '', '', '', '', '', '', ''];
 
         // Header row
         $this->rows[] = [
@@ -77,6 +77,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
             'TIPO DE CURSO',
             'DOCENTE',
             'TOTAL HORAS',
+            'FECHAS DE ENSEÑANZA',
             'LUGAR DE PROCEDENCIA',
             'COSTO HORA',
             'MONTO TOTAL',
@@ -103,6 +104,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                               $pago->docente->apellido_materno
                             : '';
 
+                        $fechasEnsenanzaStr = $this->formatFechasEnsenanza($pago->fechas_ensenanza);
                         $totalHoras = (int) $pago->numero_horas;
                         $costoHora = (float) $pago->costo_por_hora;
                         $montoTotal = (float) $pago->importe_total;
@@ -120,6 +122,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                             $tipoCursoLabel,
                             $docenteNombre,
                             $totalHoras,
+                            $fechasEnsenanzaStr,
                             '', // Lugar de procedencia - blank
                             $costoHora,
                             $montoTotal,
@@ -139,6 +142,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                         $tipoCursoLabel,
                         '', // No docente
                         '', // No hours
+                        '', // No fechas
                         '', // Lugar de procedencia - blank
                         '', // No hourly cost
                         '', // No total amount
@@ -165,8 +169,9 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                 '',
                 '',
                 '',
-                "=SUM(I{$dataStartRow}:I{$dataEndRow})",
+                '',
                 "=SUM(J{$dataStartRow}:J{$dataEndRow})",
+                "=SUM(K{$dataStartRow}:K{$dataEndRow})",
             ];
         } else {
             $this->rows[] = [
@@ -178,10 +183,83 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                 '',
                 '',
                 '',
+                '',
                 0,
                 0,
             ];
         }
+    }
+
+    private function formatFechasEnsenanza($fechas): string
+    {
+        if (!$fechas || !is_array($fechas) || empty($fechas)) {
+            return '';
+        }
+
+        sort($fechas);
+
+        $meses = [
+            1 => 'enero',
+            2 => 'febrero',
+            3 => 'marzo',
+            4 => 'abril',
+            5 => 'mayo',
+            6 => 'junio',
+            7 => 'julio',
+            8 => 'agosto',
+            9 => 'septiembre',
+            10 => 'octubre',
+            11 => 'noviembre',
+            12 => 'diciembre'
+        ];
+
+        $groups = [];
+        foreach ($fechas as $fecha) {
+            $timestamp = strtotime($fecha);
+            $month = date('n', $timestamp);
+            $year = date('Y', $timestamp);
+            $day = date('d', $timestamp);
+
+            $key = "{$month}-{$year}";
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'month' => $month,
+                    'year' => $year,
+                    'days' => []
+                ];
+            }
+            $groups[$key]['days'][] = $day;
+        }
+
+        $parts = [];
+        $keys = array_keys($groups);
+        $lastIndex = count($keys) - 1;
+
+        foreach ($keys as $index => $key) {
+            $group = $groups[$key];
+            $days = $group['days'];
+
+            $daysStr = '';
+            if (count($days) === 1) {
+                $daysStr = $days[0];
+            } else {
+                $lastDay = array_pop($days);
+                $daysStr = implode(', ', $days) . ' y ' . $lastDay;
+            }
+
+            $part = "{$daysStr} de {$meses[$group['month']]}";
+
+            $nextKey = $keys[$index + 1] ?? null;
+            $nextYear = $nextKey ? $groups[$nextKey]['year'] : null;
+
+            if ($index === $lastIndex || $group['year'] !== $nextYear) {
+                $part .= " de {$group['year']}";
+            }
+
+            $parts[] = $part;
+        }
+
+        return implode(', ', $parts);
     }
 
     public function array(): array
@@ -205,10 +283,11 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
             'D' => 16,  // TIPO DE CURSO
             'E' => 40,  // DOCENTE
             'F' => 14,  // TOTAL HORAS
-            'G' => 22,  // LUGAR DE PROCEDENCIA
-            'H' => 14,  // COSTO HORA
-            'I' => 16,  // MONTO TOTAL
-            'J' => 14,  // ESSALUD 9%
+            'G' => 35,  // FECHAS DE ENSEÑANZA
+            'H' => 22,  // LUGAR DE PROCEDENCIA
+            'I' => 14,  // COSTO HORA
+            'J' => 16,  // MONTO TOTAL
+            'K' => 14,  // ESSALUD 9%
         ];
     }
 
@@ -223,7 +302,7 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet;
                 $highestRow = $sheet->getHighestRow();
-                $lastCol = 'J';
+                $lastCol = 'K';
 
                 // === TITLE ROW (Row 1) ===
                 $sheet->mergeCells("A1:{$lastCol}1");
@@ -294,9 +373,9 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                         
                         // Currency format for COSTO HORA, MONTO TOTAL, ESSALUD
                         $currencyFormat = '"S/." #,##0.00';
-                        $sheet->getStyle("H3:H{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
                         $sheet->getStyle("I3:I{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
                         $sheet->getStyle("J3:J{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
+                        $sheet->getStyle("K3:K{$dataEnd}")->getNumberFormat()->setFormatCode($currencyFormat);
 
                         // Number format for hours (only integer, no commas or decimals)
                         $sheet->getStyle("F3:F{$dataEnd}")->getNumberFormat()->setFormatCode('0');
@@ -341,11 +420,11 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
 
                 // Currency format for footer totals
                 $currencyFormat = '"S/." #,##0.00';
-                $sheet->getStyle("I{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
                 $sheet->getStyle("J{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
+                $sheet->getStyle("K{$highestRow}")->getNumberFormat()->setFormatCode($currencyFormat);
 
                 // Merge TOTAL A PAGAR label across first columns
-                $sheet->mergeCells("A{$highestRow}:H{$highestRow}");
+                $sheet->mergeCells("A{$highestRow}:I{$highestRow}");
             },
         ];
     }

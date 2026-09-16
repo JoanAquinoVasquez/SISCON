@@ -348,5 +348,6 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
                 $sheet->mergeCells("A{$highestRow}:H{$highestRow}");
             },
         ];
-    }}
+    }
 }
+

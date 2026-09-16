@@ -485,7 +485,7 @@ export default function ReportePrograma() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-blue-200/50">
                     <p className="text-xs text-blue-600/70">
-                      El reporte incluirá: Semestre, Curso, Docente, Total Horas, Fechas de Enseñanza, Costo Hora, Monto Total y EsSalud 9%
+                      El reporte incluirá: Semestre, Curso, Docente, Total Horas, Fechas de Enseñanza, Mes de Pago, N° SIAF, N° Oficio Dirección, Costo Hora, Monto Total y EsSalud 9%
                     </p>
                   </div>
                 </div>

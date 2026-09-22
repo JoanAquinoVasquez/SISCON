@@ -393,7 +393,7 @@ export default function PagosDocentesList() {
     }
   };
 
-  // Generar resolución de aceptación (Nueva función)
+  // Generar resolución de desarrollo de curso / aceptación
   const [isGeneratingResolucionAceptacion, setIsGeneratingResolucionAceptacion] = useState(false);
   const handleGenerateResolucionAceptacion = async (id: number) => {
     setIsGeneratingResolucionAceptacion(true);
@@ -406,7 +406,7 @@ export default function PagosDocentesList() {
 
       // Extraer nombre de archivo del header Content-Disposition
       const contentDisposition = response.headers['content-disposition'];
-      let filename = `Resolucion_Aceptacion_${id}.docx`; // Fallback
+      let filename = `Resolucion_Desarrollo_Curso_${id}.docx`; // Fallback
       if (contentDisposition) {
         const filenameMatch = contentDisposition.match(/filename\*=UTF-8''([^;\n]+)/);
         if (filenameMatch && filenameMatch[1]) {
@@ -424,10 +424,10 @@ export default function PagosDocentesList() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success('Resolución de Aprobación generada exitosamente');
+      toast.success('Resolución Desarrollo de Curso generada exitosamente');
     } catch (error) {
       console.error('Error al generar resolución:', error);
-      toast.error('Error al generar la resolución de aprobación');
+      toast.error('Error al generar la resolución de desarrollo de curso');
     } finally {
       setIsGeneratingResolucionAceptacion(false);
     }

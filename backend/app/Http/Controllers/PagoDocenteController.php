@@ -646,7 +646,7 @@ class PagoDocenteController extends Controller
             ])->deleteFileAfterSend(true);
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Error al generar la resolución de aceptación',
+                'message' => 'Error al generar la resolución de desarrollo de curso',
                 'error' => $e->getMessage()
             ], 500);
         }

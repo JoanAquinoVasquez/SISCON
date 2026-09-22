@@ -19,13 +19,14 @@ class DocumentGeneratorService
             'docente',
             'curso.semestres.programa.grado',
             'curso.semestres.programa.facultad',
-            'curso.semestres.programa.coordinadores'
+            'curso.semestres.programa.coordinadores',
+            'expedientes'
         ]);
 
         // Determinar plantilla según tipo de docente
         $tipoDocente = $pago->docente->tipo_docente;
         $templateName = '';
-        if ($pago->periodo === '2025-I') {
+        if ($pago->periodo === '2026-I' || $pago->periodo === '2025-I') {
             if ($tipoDocente === 'interno_enfermeria') {
                 $templateName = 'Resoluciones Plantilla Pago DI FE 2025.docx';
             } elseif ($tipoDocente === 'externo_enfermeria') {
@@ -41,13 +42,15 @@ class DocumentGeneratorService
             } else {
                 $templateName = 'Resolucion Plantilla Pago DE 2024.docx';
             }
+        } else {
+            if (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Resoluciones Plantilla Pago DI 2025.docx';
+            } else {
+                $templateName = 'Resoluciones Plantilla Pago DE 2025.docx';
+            }
         }
 
-        $templatePath = storage_path('templates/' . $templateName);
-
-        if (!file_exists($templatePath)) {
-            throw new \Exception("Plantilla no encontrada: {$templateName}");
-        }
+        $templatePath = $this->getTemplatePath($templateName);
 
         // Crear procesador de plantilla
         $template = new TemplateProcessor($templatePath);
@@ -80,13 +83,14 @@ class DocumentGeneratorService
             'docente',
             'curso.semestres.programa.grado',
             'curso.semestres.programa.facultad',
-            'curso.semestres.programa.coordinadores'
+            'curso.semestres.programa.coordinadores',
+            'expedientes'
         ]);
 
         // Determinar plantilla según tipo de docente
         $tipoDocente = $pago->docente->tipo_docente;
         $templateName = '';
-        if ($pago->periodo === '2025-I') {
+        if ($pago->periodo === '2026-I' || $pago->periodo === '2025-I') {
             if (str_contains($tipoDocente, 'interno')) {
                 $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
             } else {
@@ -98,13 +102,15 @@ class DocumentGeneratorService
             } else {
                 $templateName = 'Ofic. Conta Plantilla DE 2024.docx';
             }
+        } else {
+            if (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Ofic. Conta Plantilla DI 2025.docx';
+            } else {
+                $templateName = 'Ofic. Conta Plantilla DE 2025.docx';
+            }
         }
 
-        $templatePath = storage_path('templates/' . $templateName);
-
-        if (!file_exists($templatePath)) {
-            throw new \Exception("Plantilla no encontrada: {$templateName}");
-        }
+        $templatePath = $this->getTemplatePath($templateName);
 
         // Crear procesador de plantilla
         $template = new TemplateProcessor($templatePath);
@@ -300,7 +306,7 @@ class DocumentGeneratorService
         $template->setValue('COSTO_X_HORA_PRACTICA', number_format((float) $pago->costo_hora_practica, 2));
 
         // Variables solo para externos (incluye enfermería)
-        if ($pago->docente->tipo_docente === 'externo' || $pago->docente->tipo_docente === 'externo_enfermeria') {
+        if (str_contains($pago->docente->tipo_docente ?? '', 'externo')) {
             $template->setValue('NUMERO_RECIBO_HONORARIO', $pago->numero_recibo_honorario ?? '');
             $template->setValue('FECHA_RECIBO_HONORARIO', $this->formatearFecha($pago->fecha_recibo_honorario));
             $template->setValue('PS', $pago->numero_pedido_servicio ?? ''); // PS = Pedido de Servicio
@@ -308,46 +314,50 @@ class DocumentGeneratorService
             $template->setValue('RETENCION', $pago->tiene_retencion_8_porciento ? 'Sí' : 'No');
         }
 
-        // Fecha de mesa de partes (para resoluciones de aceptación)
+        // Fecha de mesa de partes (para resoluciones de aceptación / desarrollo de curso)
         $template->setValue('FECHA_MESA_PARTES', $this->formatearFecha($pago->fecha_mesa_partes));
         $template->setValue('FECHA_RECIBIDA', $this->formatearFecha($pago->fecha_mesa_partes));
         #El numero de expediente que tiene tipo de asunto = presentacion
-        $template->setValue('N_MESA_DE_PARTES', $pago->expedientes->where('tipo_asunto', 'presentacion')->first()->numero_expediente_mesa_partes ?? '');
+        $expedientePresentacion = $pago->relationLoaded('expedientes') && $pago->expedientes
+            ? $pago->expedientes->where('tipo_asunto', 'presentacion')->first()
+            : null;
+        $template->setValue('N_MESA_DE_PARTES', $expedientePresentacion->numero_expediente_mesa_partes ?? '');
     }
 
     /**
-     * Genera una resolución de aceptación para docentes externos
+     * Genera una resolución de aceptación / desarrollo de curso para docentes externos
      */
     public function generateResolucionAceptacion(PagoDocente $pago): string
     {
-        Log::info('Pago docente: ' . $pago);
+        Log::info('Pago docente para resolución de desarrollo de curso/aceptación: ' . $pago->id);
         // Cargar relaciones necesarias
         $pago->load([
             'docente',
             'curso.semestres.programa.grado',
             'curso.semestres.programa.facultad',
-            'curso.semestres.programa.coordinadores'
+            'curso.semestres.programa.coordinadores',
+            'expedientes'
         ]);
 
-        if ($pago->docente->tipo_docente !== 'externo' && $pago->docente->tipo_docente !== 'externo_enfermeria') {
+        if (!str_contains($pago->docente->tipo_docente ?? '', 'externo')) {
             throw new \Exception("Esta resolución solo es para docentes externos.");
         }
+
         // Determinar plantilla según periodo
-        if ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
-            $templateName = 'Resolución Aceptacion DocExt 2025.docx';
+        if ($pago->periodo === '2026-I') {
+            $templateName = 'Resolución Desarrollo de Curso DocExt 2026-I.docx';
+        } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo') {
+            $templateName = 'Resolución Desarrollo de Curso DocExt 2025.docx';
         } elseif ($pago->periodo === '2024-II' && $pago->docente->tipo_docente === 'externo') {
-            $templateName = 'Resolución Aceptacion DocExt 2024.docx';
+            $templateName = 'Resolución Desarrollo de Curso DocExt 2024.docx';
         } elseif ($pago->periodo === '2025-I' && $pago->docente->tipo_docente === 'externo_enfermeria') {
-            $templateName = 'Resolución Aceptacion DocExt FE 2025.docx';
+            $templateName = 'Resolución Desarrollo de Curso DocExt FE 2025.docx';
         } else {
-            throw new \Exception("No hay plantilla definida para el periodo {$pago->periodo}");
+            // Fallback por defecto si se trata de un nuevo periodo docente externo
+            $templateName = 'Resolución Desarrollo de Curso DocExt 2026-I.docx';
         }
 
-        $templatePath = storage_path('templates/' . $templateName);
-
-        if (!file_exists($templatePath)) {
-            throw new \Exception("Plantilla no encontrada: {$templateName}");
-        }
+        $templatePath = $this->getTemplatePath($templateName);
 
         // Crear procesador de plantilla
         $template = new TemplateProcessor($templatePath);
@@ -356,7 +366,7 @@ class DocumentGeneratorService
         $this->replaceVariables($template, $pago);
 
         // Generar nombre de archivo
-        $fileName = 'RES N° ' . $pago->numero_resolucion_aprobacion . '.docx';
+        $fileName = 'RES N° ' . ($pago->numero_resolucion_aprobacion ?? $pago->id) . '.docx';
         $outputPath = storage_path('app/temp/' . $fileName);
 
         // Asegurar que el directorio existe
@@ -368,6 +378,47 @@ class DocumentGeneratorService
         $template->saveAs($outputPath);
 
         return $outputPath;
+    }
+
+    /**
+     * Obtiene la ruta completa a una plantilla en storage/templates manejando diferencias de acentos/UTF-8
+     */
+    private function getTemplatePath(string $templateName): string
+    {
+        $directPath = storage_path('templates/' . $templateName);
+
+        if (file_exists($directPath)) {
+            return $directPath;
+        }
+
+        $templatesDir = storage_path('templates');
+        if (file_exists($templatesDir)) {
+            $files = scandir($templatesDir);
+            $cleanSearch = $this->normalizeString($templateName);
+
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
+                if ($cleanSearch === $this->normalizeString($file)) {
+                    return $templatesDir . '/' . $file;
+                }
+            }
+        }
+
+        throw new \Exception("Plantilla no encontrada: {$templateName}");
+    }
+
+    /**
+     * Normaliza cadenas para comparación de archivos ignorando acentos y diferencias UTF-8
+     */
+    private function normalizeString(string $str): string
+    {
+        $str = mb_strtolower($str, 'UTF-8');
+        $unaccented = strtr($str, [
+            'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+            'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u',
+            'ñ' => 'n', 'Ñ' => 'n'
+        ]);
+        return preg_replace('/[\x{0300}-\x{036f}]/u', '', $unaccented);
     }
 
     /**
@@ -605,11 +656,7 @@ class DocumentGeneratorService
         ]);
 
         $templateName = 'PLANTILLA TÉRMINOS DE REFERENCIA.docx';
-        $templatePath = storage_path('templates/' . $templateName);
-
-        if (!file_exists($templatePath)) {
-            throw new \Exception("Plantilla no encontrada: {$templateName}");
-        }
+        $templatePath = $this->getTemplatePath($templateName);
 
         // Crear procesador de plantilla
         $template = new TemplateProcessor($templatePath);
@@ -636,3 +683,4 @@ class DocumentGeneratorService
         return $outputPath;
     }
 }
+

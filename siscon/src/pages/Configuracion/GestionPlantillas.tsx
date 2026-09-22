@@ -30,7 +30,24 @@ interface Template {
   last_modified: string;
 }
 
+const normalizeName = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 const getTemplateDescription = (name: string): string => {
+  const norm = normalizeName(name);
+
+  if (norm.includes('Desarrollo de Curso DocExt 2026-I')) {
+    return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2026-I)';
+  }
+  if (norm.includes('Desarrollo de Curso DocExt FE 2025')) {
+    return 'Resolución Desarrollo de Curso para Docente Externo Enfermería (Periodo 2025-I)';
+  }
+  if (norm.includes('Desarrollo de Curso DocExt 2025')) {
+    return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2025-I)';
+  }
+  if (norm.includes('Desarrollo de Curso DocExt 2024')) {
+    return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2024-II)';
+  }
+
   switch (name) {
     case 'Resoluciones Plantilla Pago DI 2025.docx':
       return 'Resolución para Docente Interno (Periodo 2025-I)';
@@ -52,12 +69,8 @@ const getTemplateDescription = (name: string): string => {
       return 'Oficio de Contabilidad para Docente Interno (Periodo 2024-II)';
     case 'Ofic. Conta Plantilla DE 2024.docx':
       return 'Oficio de Contabilidad para Docente Externo (Periodo 2024-II)';
-    case 'Resolución Aceptacion DocExt 2025.docx':
-      return 'Resolución de Aceptación para Docente Externo (Periodo 2025-I)';
-    case 'Resolución Aceptacion DocExt 2024.docx':
-      return 'Resolución de Aceptación para Docente Externo (Periodo 2024-II)';
-    case 'Resolución Aceptacion DocExt FE 2025.docx':
-      return 'Resolución de Aceptación para Docente Externo Enfermería (Periodo 2025-I)';
+    case 'PLANTILLA TÉRMINOS DE REFERENCIA.docx':
+      return 'Plantilla de Términos de Referencia para Docente Externo';
     default:
       return 'Plantilla del sistema';
   }

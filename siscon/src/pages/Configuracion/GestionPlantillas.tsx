@@ -30,50 +30,65 @@ interface Template {
   last_modified: string;
 }
 
-const normalizeName = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const normalizeName = (str: string) => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 const getTemplateDescription = (name: string): string => {
   const norm = normalizeName(name);
 
-  if (norm.includes('Desarrollo de Curso DocExt 2026-I')) {
+  // Resoluciones Desarrollo de Curso / Aceptación (Docente Externo)
+  if ((norm.includes('desarrollo de curso') || norm.includes('aceptacion')) && norm.includes('2026-i')) {
     return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2026-I)';
   }
-  if (norm.includes('Desarrollo de Curso DocExt FE 2025')) {
+  if ((norm.includes('desarrollo de curso') || norm.includes('aceptacion')) && norm.includes('fe') && norm.includes('2025')) {
     return 'Resolución Desarrollo de Curso para Docente Externo Enfermería (Periodo 2025-I)';
   }
-  if (norm.includes('Desarrollo de Curso DocExt 2025')) {
+  if ((norm.includes('desarrollo de curso') || norm.includes('aceptacion')) && norm.includes('2025')) {
     return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2025-I)';
   }
-  if (norm.includes('Desarrollo de Curso DocExt 2024')) {
+  if ((norm.includes('desarrollo de curso') || norm.includes('aceptacion')) && norm.includes('2024')) {
     return 'Resolución Desarrollo de Curso para Docente Externo (Periodo 2024-II)';
   }
 
-  switch (name) {
-    case 'Resoluciones Plantilla Pago DI 2025.docx':
-      return 'Resolución para Docente Interno (Periodo 2025-I)';
-    case 'Resoluciones Plantilla Pago DI FE 2025.docx':
-      return 'Resolución para Docente Interno de Enfermería (Periodo 2025-I)';
-    case 'Resoluciones Plantilla Pago FE DocExt 2025.docx':
-      return 'Resolución de Pago para Docente Externo Enfermería (Periodo 2025-I)';
-    case 'Resoluciones Plantilla Pago DE 2025.docx':
-      return 'Resolución para Docente Externo (Periodo 2025-I)';
-    case 'Resolucion Plantilla Pago DI 2024.docx':
-      return 'Resolución para Docente Interno (Periodo 2024-II)';
-    case 'Resolucion Plantilla Pago DE 2024.docx':
-      return 'Resolución para Docente Externo (Periodo 2024-II)';
-    case 'Ofic. Conta Plantilla DI 2025.docx':
-      return 'Oficio de Contabilidad para Docente Interno (Periodo 2025-I)';
-    case 'Ofic. Conta Plantilla DE 2025.docx':
-      return 'Oficio de Contabilidad para Docente Externo (Periodo 2025-I)';
-    case 'Ofic. Conta Plantilla DI 2024.docx':
-      return 'Oficio de Contabilidad para Docente Interno (Periodo 2024-II)';
-    case 'Ofic. Conta Plantilla DE 2024.docx':
-      return 'Oficio de Contabilidad para Docente Externo (Periodo 2024-II)';
-    case 'PLANTILLA TÉRMINOS DE REFERENCIA.docx':
-      return 'Plantilla de Términos de Referencia para Docente Externo';
-    default:
-      return 'Plantilla del sistema';
+  // Resoluciones de Pago
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('fe') && norm.includes('docext')) {
+    return 'Resolución de Pago para Docente Externo Enfermería (Periodo 2025-I)';
   }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('di') && norm.includes('fe') && norm.includes('2025')) {
+    return 'Resolución para Docente Interno de Enfermería (Periodo 2025-I)';
+  }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('di') && norm.includes('2025')) {
+    return 'Resolución para Docente Interno (Periodo 2025-I)';
+  }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('de') && norm.includes('2025')) {
+    return 'Resolución para Docente Externo (Periodo 2025-I)';
+  }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('di') && norm.includes('2024')) {
+    return 'Resolución para Docente Interno (Periodo 2024-II)';
+  }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('de') && norm.includes('2024')) {
+    return 'Resolución para Docente Externo (Periodo 2024-II)';
+  }
+
+  // Oficios de Contabilidad
+  if (norm.includes('ofic') && norm.includes('di') && norm.includes('2025')) {
+    return 'Oficio de Contabilidad para Docente Interno (Periodo 2025-I)';
+  }
+  if (norm.includes('ofic') && norm.includes('de') && norm.includes('2025')) {
+    return 'Oficio de Contabilidad para Docente Externo (Periodo 2025-I)';
+  }
+  if (norm.includes('ofic') && norm.includes('di') && norm.includes('2024')) {
+    return 'Oficio de Contabilidad para Docente Interno (Periodo 2024-II)';
+  }
+  if (norm.includes('ofic') && norm.includes('de') && norm.includes('2024')) {
+    return 'Oficio de Contabilidad para Docente Externo (Periodo 2024-II)';
+  }
+
+  // Términos de Referencia
+  if (norm.includes('terminos de referencia')) {
+    return 'Plantilla de Términos de Referencia para Docente Externo';
+  }
+
+  return 'Plantilla del sistema';
 };
 
 export default function GestionPlantillas() {

@@ -59,6 +59,9 @@ const getTemplateDescription = (name: string): string => {
   if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('di') && norm.includes('2025')) {
     return 'Resolución para Docente Interno (Periodo 2025-I)';
   }
+  if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('de') && norm.includes('2026')) {
+    return 'Resolución para Docente Externo (Periodo 2026-I)';
+  }
   if (norm.includes('resolucion') && norm.includes('pago') && norm.includes('de') && norm.includes('2025')) {
     return 'Resolución para Docente Externo (Periodo 2025-I)';
   }

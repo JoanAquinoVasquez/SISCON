@@ -26,7 +26,17 @@ class DocumentGeneratorService
         // Determinar plantilla según tipo de docente
         $tipoDocente = $pago->docente->tipo_docente;
         $templateName = '';
-        if ($pago->periodo === '2026-I' || $pago->periodo === '2025-I') {
+        if ($pago->periodo === '2026-I') {
+            if ($tipoDocente === 'interno_enfermeria') {
+                $templateName = 'Resoluciones Plantilla Pago DI FE 2025.docx';
+            } elseif ($tipoDocente === 'externo_enfermeria') {
+                $templateName = 'Resoluciones Plantilla Pago FE DocExt 2025.docx';
+            } elseif (str_contains($tipoDocente, 'interno')) {
+                $templateName = 'Resoluciones Plantilla Pago DI 2025.docx';
+            } else {
+                $templateName = 'Resoluciones Plantilla Pago DE 2026-I.docx';
+            }
+        } elseif ($pago->periodo === '2025-I') {
             if ($tipoDocente === 'interno_enfermeria') {
                 $templateName = 'Resoluciones Plantilla Pago DI FE 2025.docx';
             } elseif ($tipoDocente === 'externo_enfermeria') {

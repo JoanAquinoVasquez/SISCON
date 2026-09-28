@@ -33,6 +33,7 @@ class PagoDocente extends Model
     protected $fillable = [
         'docente_id',
         'curso_id',
+        'programa_id',
         'periodo',
         'facultad_nombre',
         'director_nombre',
@@ -119,18 +120,7 @@ class PagoDocente extends Model
 
     public function programa()
     {
-        // Como la relación es compleja (Pago -> Curso -> Semestre -> Programa)
-        // y un curso puede tener muchos semestres, pero el pago es por un periodo específico
-        // Lo mejor es definir un accessor o usar una relación manual si se necesita eager loading
-        // Por ahora, para el index, podemos usar un accessor o modificar la consulta
-        return $this->hasOneThrough(
-            Programa::class,
-            Curso::class,
-            'id', // Foreign key on cursos table...
-            'id', // Foreign key on programas table...
-            'curso_id', // Local key on pagos_docentes table...
-            'programa_id' // Local key on cursos table...
-        );
+        return $this->belongsTo(Programa::class, 'programa_id');
     }
 
     public function curso()

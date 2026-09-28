@@ -20,7 +20,7 @@ class GoogleSheetsService
     public function appendPagoDocente(\App\Models\PagoDocente $pago)
     {
         // Cargar relaciones si no están cargadas
-        $pago->loadMissing(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+        $pago->loadMissing(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'programa.facultad', 'programa.grado']);
 
         $data = $this->formatPagoDocenteData($pago);
         $sheetId = env('GOOGLE_SHEETS_PAGOS_ID');
@@ -37,7 +37,7 @@ class GoogleSheetsService
     public function updatePagoDocente(\App\Models\PagoDocente $pago)
     {
         // Cargar relaciones si no están cargadas
-        $pago->loadMissing(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+        $pago->loadMissing(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'programa.facultad', 'programa.grado']);
 
         $data = $this->formatPagoDocenteData($pago);
         $sheetId = env('GOOGLE_SHEETS_PAGOS_ID');
@@ -69,10 +69,13 @@ class GoogleSheetsService
 
     private function formatPagoDocenteData(\App\Models\PagoDocente $pago): array
     {
-        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
-            return $s->programa && $s->programa->periodo === $pago->periodo;
-        });
-        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        $programa = $pago->programa;
+        if (!$programa && $pago->curso) {
+            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                return $s->programa && $s->programa->periodo === $pago->periodo;
+            });
+            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        }
         $programaNombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre}" : '';
         $mesPago = '';
         $docenteNombre = $pago->docente

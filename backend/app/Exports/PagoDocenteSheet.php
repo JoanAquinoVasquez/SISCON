@@ -177,10 +177,13 @@ class PagoDocenteSheet implements FromCollection, WithHeadings, WithMapping, Wit
 
     public function map($pago): array
     {
-        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
-            return $s->programa && $s->programa->periodo === $pago->periodo;
-        });
-        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        $programa = $pago->programa;
+        if (!$programa && $pago->curso) {
+            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                return $s->programa && $s->programa->periodo === $pago->periodo;
+            });
+            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        }
         $programaNombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre}" : '';
 
         $docenteNombre = $pago->docente

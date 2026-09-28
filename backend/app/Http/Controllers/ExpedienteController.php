@@ -386,7 +386,7 @@ class ExpedienteController extends Controller
                             if ($semestre && $semestre->programa) {
                                 $periodo = $semestre->programa->periodo;
 
-                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
+                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo && $pagoAnteriorObj->programa_id == $semestre->programa->id;
 
                                 if ($mismoDocenteCurso) {
                                     // Sigue siendo válido -> Actualizar
@@ -406,6 +406,7 @@ class ExpedienteController extends Controller
                                     $pagoCoincidente = PagoDocente::where('docente_id', $expediente->docente_id)
                                         ->where('curso_id', $expediente->curso_id)
                                         ->where('periodo', $periodo)
+                                        ->where('programa_id', $semestre->programa->id)
                                         ->first();
 
                                     if ($pagoCoincidente) {
@@ -520,7 +521,7 @@ class ExpedienteController extends Controller
                             if ($semestre && $semestre->programa) {
                                 $periodo = $semestre->programa->periodo;
 
-                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo;
+                                $mismoDocenteCurso = $pagoAnteriorObj->docente_id == $expediente->docente_id && $pagoAnteriorObj->curso_id == $expediente->curso_id && $pagoAnteriorObj->periodo === $periodo && $pagoAnteriorObj->programa_id == $semestre->programa->id;
 
                                 if ($mismoDocenteCurso) {
                                     // El pago anterior sigue siendo válido -> Actualizarlo
@@ -542,6 +543,7 @@ class ExpedienteController extends Controller
                                     $pagoCoincidente = PagoDocente::where('docente_id', $expediente->docente_id)
                                         ->where('curso_id', $expediente->curso_id)
                                         ->where('periodo', $periodo)
+                                        ->where('programa_id', $semestre->programa->id)
                                         ->first();
 
                                     if ($pagoCoincidente) {
@@ -647,13 +649,13 @@ class ExpedienteController extends Controller
 
             // Sync with Google Sheets if a PagoDocente is linked
             if ($expediente->pago_docente_id) {
-                $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado'])
+                $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'programa.facultad', 'programa.grado'])
                     ->find($expediente->pago_docente_id);
 
                 if ($pago) {
                     // Refrescar el modelo y FORZAR recarga de relaciones
                     $pago->refresh();
-                    $pago->load(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado']);
+                    $pago->load(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'programa.facultad', 'programa.grado']);
 
                     try {
                         $this->googleSheetsService->updatePagoDocente($pago);

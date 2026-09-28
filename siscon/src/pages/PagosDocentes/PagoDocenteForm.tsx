@@ -237,8 +237,13 @@ export default function PagoDocenteForm() {
             tipo_docente: data.docente.tipo_docente
           });
 
-          // Encontrar el semestre que coincide con el periodo para construir el ID compuesto
-          const matchingSemestre = data.curso.semestres?.find((s: any) => s.programa?.periodo === data.periodo);
+          // Encontrar el semestre que coincide con el programa y/o periodo para construir el ID compuesto
+          const matchingSemestre = data.curso.semestres?.find((s: any) => {
+            if (data.programa_id) {
+              return s.programa_id === data.programa_id;
+            }
+            return s.programa?.periodo === data.periodo;
+          });
           const compositeId = matchingSemestre ? `${data.curso_id}-${matchingSemestre.id}` : data.curso_id;
 
           setCurso({
@@ -449,6 +454,7 @@ export default function PagoDocenteForm() {
         curso_id: typeof curso?.id === 'string' && curso?.id.includes('-')
           ? curso?.id.split('-')[0]
           : curso?.id,
+        programa_id: datosCurso.programa_id || null,
         periodo: periodo || '', // Ensure empty string is sent if null/undefined
         facultad_nombre: datosCurso.facultad_nombre,
         director_nombre: datosCurso.director_nombre,

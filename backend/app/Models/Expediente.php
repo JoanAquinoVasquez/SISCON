@@ -143,6 +143,7 @@ class Expediente extends Model
             }
 
             $periodo = $semestre->programa->periodo;
+            $programa_id = $semestre->programa->id;
             $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
             $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
 
@@ -169,10 +170,13 @@ class Expediente extends Model
             }
         }
 
-        // Buscar pago que coincida en docente, curso, periodo
+        // Buscar pago que coincida en docente, curso, periodo y programa
         $pago = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
+            ->when($this->semestre_id, function($q) use ($programa_id) {
+                return $q->where('programa_id', $programa_id);
+            })
             ->first();
 
         if ($pago) {
@@ -202,6 +206,7 @@ class Expediente extends Model
             $pago = PagoDocente::create([
                 'docente_id' => $this->docente_id,
                 'curso_id' => $this->curso_id,
+                'programa_id' => $this->semestre_id ? $programa_id : null,
                 'periodo' => $periodo,
                 'fechas_ensenanza' => $this->fechas_ensenanza,
                 'facultad_nombre' => $facultadNombre,
@@ -248,6 +253,7 @@ class Expediente extends Model
             }
 
             $periodo = $semestre->programa->periodo;
+            $programa_id = $semestre->programa->id;
             $facultadNombre = $semestre->programa->facultad ? $semestre->programa->facultad->nombre : null;
             $directorNombre = $semestre->programa->facultad ? $semestre->programa->facultad->director_nombre : null;
 
@@ -280,10 +286,13 @@ class Expediente extends Model
             // Si el pago fue eliminado, continuar con la búsqueda/creación
         }
 
-        // Buscar pago que coincida en docente, curso y periodo
+        // Buscar pago que coincida en docente, curso, periodo y programa
         $pago = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
+            ->when($this->semestre_id, function($q) use ($programa_id) {
+                return $q->where('programa_id', $programa_id);
+            })
             ->first();
 
         if ($pago) {
@@ -313,6 +322,7 @@ class Expediente extends Model
             $nuevoPago = PagoDocente::create([
                 'docente_id' => $this->docente_id,
                 'curso_id' => $this->curso_id,
+                'programa_id' => $this->semestre_id ? $programa_id : null,
                 'periodo' => $periodo,
                 'fechas_ensenanza' => $this->fechas_ensenanza,
                 'numero_horas' => 0, // Se actualizará después
@@ -358,12 +368,16 @@ class Expediente extends Model
             }
 
             $periodo = $semestre->programa->periodo;
+            $programa_id = $semestre->programa->id;
         }
 
         // Buscar pago en proceso que coincida
         $pago = PagoDocente::where('docente_id', $this->docente_id)
             ->where('curso_id', $this->curso_id)
             ->where('periodo', $periodo)
+            ->when($this->semestre_id, function($q) use ($programa_id) {
+                return $q->where('programa_id', $programa_id);
+            })
             ->whereIn('estado', ['pendiente', 'en_proceso'])
             ->first();
 

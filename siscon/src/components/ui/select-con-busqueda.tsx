@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Input } from './input';
 import { Label } from './label';
@@ -37,6 +37,7 @@ export function SelectConBusqueda({
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isTyping = useRef(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -76,6 +77,10 @@ export function SelectConBusqueda({
 
   // Sincronizar searchTerm con el valor cuando este cambia (desde fuera o por selección)
   useEffect(() => {
+    if (isTyping.current) {
+      isTyping.current = false;
+      return;
+    }
     if (value) {
       setSearchTerm(value.label);
     } else {
@@ -84,6 +89,7 @@ export function SelectConBusqueda({
   }, [value]);
 
   const handleSelect = (option: Option) => {
+    isTyping.current = true;
     onChange(option);
     setSearchTerm(option.label);
     setIsOpen(false);
@@ -119,6 +125,7 @@ export function SelectConBusqueda({
             
             // Si el usuario edita el texto y ya no coincide con el valor seleccionado, lo limpiamos
             if (value && newVal !== value.label) {
+              isTyping.current = true;
               onChange(null);
             }
           }}

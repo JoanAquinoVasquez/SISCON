@@ -20,6 +20,9 @@ class DocumentGeneratorService
             'curso.semestres.programa.grado',
             'curso.semestres.programa.facultad',
             'curso.semestres.programa.coordinadores',
+            'programa.facultad',
+            'programa.grado',
+            'programa.coordinadores',
             'expedientes'
         ]);
 
@@ -94,6 +97,9 @@ class DocumentGeneratorService
             'curso.semestres.programa.grado',
             'curso.semestres.programa.facultad',
             'curso.semestres.programa.coordinadores',
+            'programa.facultad',
+            'programa.grado',
+            'programa.coordinadores',
             'expedientes'
         ]);
 
@@ -148,11 +154,14 @@ class DocumentGeneratorService
      */
     private function replaceVariables(TemplateProcessor $template, PagoDocente $pago): void
     {
-        // Obtener programa del semestre del curso que coincida con el periodo del pago, o el primero por defecto
-        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
-            return $s->programa && $s->programa->periodo === $pago->periodo;
-        });
-        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        // Obtener programa directamente de la relación, o usar fallback si es un registro antiguo
+        $programa = $pago->programa;
+        if (!$programa && $pago->curso) {
+            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                return $s->programa && $s->programa->periodo === $pago->periodo;
+            });
+            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        }
 
         // Nombre completo del docente con título profesional
         $nombreCompleto = '';

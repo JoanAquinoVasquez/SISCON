@@ -112,13 +112,15 @@ class PagoDocenteController extends Controller
 
         // Format response with computed fields
         $pagos->getCollection()->transform(function ($pago) {
-            // Obtener programa que coincida con el periodo del pago, o el primero por defecto
-            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
-                return $s->programa && $s->programa->periodo === $pago->periodo;
-            });
-            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
-
-            return [
+            $programa = $pago->programa;
+            if (!$programa) {
+                // Obtener programa que coincida con el periodo del pago, o el primero por defecto
+                $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                    return $s->programa && $s->programa->periodo === $pago->periodo;
+                });
+                $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+            }
+                        return [
                 'id' => $pago->id,
                 'docente_nombre' => $pago->docente
                     ? ($pago->docente->titulo_profesional ? $pago->docente->titulo_profesional . ' ' : '') .
@@ -170,6 +172,7 @@ class PagoDocenteController extends Controller
         $validator = Validator::make($request->all(), [
             'docente_id' => 'required|exists:docentes,id',
             'curso_id' => 'required|exists:cursos,id',
+            'programa_id' => 'nullable|exists:programas,id',
             'periodo' => 'required|string',
             'numero_horas' => 'required|numeric|min:0',
             'costo_por_hora' => 'required|numeric|min:0',
@@ -218,13 +221,16 @@ class PagoDocenteController extends Controller
      */
     public function show($id)
     {
-        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'expedientes'])->findOrFail($id);
+        $pago = PagoDocente::with(['docente', 'curso.semestres.programa.facultad', 'curso.semestres.programa.grado', 'programa.facultad', 'programa.grado', 'expedientes'])->findOrFail($id);
 
-        // Obtener programa que coincida con el periodo del pago, o el primero por defecto
-        $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
-            return $s->programa && $s->programa->periodo === $pago->periodo;
-        });
-        $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        $programa = $pago->programa;
+        if (!$programa) {
+            // Fallback
+            $semestre = $pago->curso->semestres->first(function ($s) use ($pago) {
+                return $s->programa && $s->programa->periodo === $pago->periodo;
+            });
+            $programa = $semestre ? $semestre->programa : ($pago->curso->semestres->first()->programa ?? null);
+        }
 
         $pago->programa_nombre = $programa ? "{$programa->grado->nombre} en {$programa->nombre} ({$programa->periodo})" : null;
         $pago->facultad_codigo = $programa->facultad->codigo ?? null;
@@ -247,6 +253,7 @@ class PagoDocenteController extends Controller
         $validator = Validator::make($request->all(), [
             'docente_id' => 'sometimes|exists:docentes,id',
             'curso_id' => 'sometimes|exists:cursos,id',
+            'programa_id' => 'nullable|exists:programas,id',
             'periodo' => 'sometimes|string',
             'numero_horas' => 'sometimes|numeric|min:0',
             'costo_por_hora' => 'sometimes|numeric|min:0',

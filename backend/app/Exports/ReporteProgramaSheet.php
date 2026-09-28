@@ -45,6 +45,10 @@ class ReporteProgramaSheet implements FromArray, WithStyles, WithTitle, WithEven
 
         // Fetch all pagos docentes for this program and period, grouped by curso_id
         $pagosQuery = PagoDocente::with('docente')
+            ->where(function($q) {
+                $q->whereNotIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento'])
+                  ->orWhereNull('estado');
+            })
             ->whereIn('curso_id', function ($query) {
                 $query->select('curso_id')
                     ->from('curso_semestre')

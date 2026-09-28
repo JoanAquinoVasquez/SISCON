@@ -84,6 +84,10 @@ class ReporteRetencionImpuestoSheet implements FromArray, WithStyles, WithTitle,
 
         // Fetch payments for external teachers in the given month/year
         $pagos = PagoDocente::with('docente')
+            ->where(function($q) {
+                $q->whereNotIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento'])
+                  ->orWhereNull('estado');
+            })
             ->whereHas('docente', function ($q) {
                 $q->where('tipo_docente', 'LIKE', '%externo%');
             })

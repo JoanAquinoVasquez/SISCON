@@ -84,9 +84,8 @@ class ReporteDetCompSheet implements FromArray, WithStyles, WithTitle, WithEvent
 
         // Fetch payments for external teachers in the given month/year
         $pagos = PagoDocente::with('docente')
-            ->where(function($q) {
-                $q->whereNotIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento'])
-                  ->orWhereNull('estado');
+            ->whereDoesntHave('expedientes', function($q) {
+                $q->whereIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento']);
             })
             ->whereHas('docente', function ($q) {
                 $q->where('tipo_docente', 'LIKE', '%externo%');

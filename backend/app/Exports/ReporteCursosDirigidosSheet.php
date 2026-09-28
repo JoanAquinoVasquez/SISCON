@@ -47,9 +47,8 @@ class ReporteCursosDirigidosSheet implements FromArray, WithStyles, WithTitle, W
         // Consultar pagos docentes para estos cursos dirigidos
         $pagosQuery = PagoDocente::with('docente')
             ->whereIn('curso_id', $cursoIds)
-            ->where(function($q) {
-                $q->whereNotIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento'])
-                  ->orWhereNull('estado');
+            ->whereDoesntHave('expedientes', function($q) {
+                $q->whereIn('estado', ['rechazado', 'sin_efecto', 'para_conocimiento']);
             });
 
         if ($this->periodo && $this->periodo !== '__todos__') {
